@@ -7,7 +7,7 @@ Webbsida med fågelobservationer från området kring Tåkern, baserat på data 
 | Sida | Beskrivning |
 |------|-------------|
 | `index.html` | Senaste observationerna (live från API) |
-| `dashboard.html` | Dashboard med översikt |
+| `veckorapport.html` | Veckorapport – senaste veckans obs med historisk jämförelse |
 | `monitor.html` | Realtidsmonitor |
 | `statistik.html` | Historisk statistik 2006–2026 (från SQLite-databas) |
 

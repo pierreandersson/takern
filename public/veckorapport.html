@@ -302,11 +302,11 @@
       return Math.floor((d - start) / 86400000);
     }
 
-    function doyToDateStr(doy) {
-      // Convert day-of-year to readable date (approximate, using 2024 as reference)
-      const d = new Date(2024, 0, doy);
-      const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
-      return `${d.getDate()} ${months[d.getMonth()]}`;
+    function mmddToDoy(mmdd) {
+      if (!mmdd) return null;
+      const [m, d] = mmdd.split("-").map(Number);
+      const date = new Date(2024, m - 1, d);
+      return Math.floor((date - new Date(2024, 0, 0)) / 86400000);
     }
 
     function redlistBadge(cat) {
@@ -335,14 +335,13 @@
         if (byDate[dateKey]) byDate[dateKey].push(obs);
       }
 
-      // Daily stats
       const dailyStats = allDates.map(date => {
         const dayObs = byDate[date];
         const species = new Set(dayObs.map(o => o.taxon?.vernacularName));
         return { date, obs: dayObs.length, species: species.size };
       });
 
-      // Species aggregation
+      // Species aggregation – also track first occurrenceId for Artportalen link
       const speciesMap = {};
       for (const obs of records) {
         const name = obs.taxon?.vernacularName || obs.taxon?.scientificName;
@@ -357,7 +356,8 @@
             totalCount: 0,
             maxCount: 0,
             daysSeen: new Set(),
-            dates: [],
+            firstOccurrenceId: null,
+            firstObsDate: null,
           };
         }
         const sp = speciesMap[name];
@@ -366,7 +366,11 @@
         if (count > sp.maxCount) sp.maxCount = count;
         const dateKey = (obs.event?.startDate || "").slice(0, 10);
         sp.daysSeen.add(dateKey);
-        sp.dates.push(dateKey);
+        // Track earliest observation's occurrenceId for linking
+        if (!sp.firstObsDate || dateKey < sp.firstObsDate) {
+          sp.firstObsDate = dateKey;
+          sp.firstOccurrenceId = obs.occurrence?.occurrenceId || null;
+        }
       }
 
       const speciesList = Object.values(speciesMap).map(sp => ({
@@ -382,18 +386,23 @@
       return { dailyStats, speciesList, totalObs, uniqueSpecies, allDates };
     }
 
-    function crossReference(liveData, context) {
+    function crossReference(liveData, context, phenologyJson) {
       const yearFirsts = context.year_firsts || {};
-      const phenology = context.phenology || {};
-      const currentYear = String(context.year || new Date().getFullYear());
 
-      const firstOfYear = [];  // Species with recent first-of-year arrival
-      const earlyArrivals = []; // Species arriving earlier than historical average
+      // Build phenology lookup by scientific name (matching phenology.json keys)
+      const phenByScientific = {};
+      for (const [sci, data] of Object.entries(phenologyJson)) {
+        phenByScientific[sci] = data;
+      }
 
+      const firstOfYear = [];
+      const earlyArrivals = [];
+
+      const weekStart = liveData.allDates[0];
       const weekEnd = liveData.allDates[liveData.allDates.length - 1];
-      // Look back 21 days for "first of year" arrivals (covers species arriving just before this week)
+      // Look back 14 days for "first of year" to capture recent arrivals
       const recentCutoff = new Date(weekEnd);
-      recentCutoff.setDate(recentCutoff.getDate() - 21);
+      recentCutoff.setDate(recentCutoff.getDate() - 14);
       const recentCutoffStr = recentCutoff.toISOString().slice(0, 10);
 
       for (const sp of liveData.speciesList) {
@@ -401,47 +410,72 @@
         if (!tid) continue;
 
         const yearData = yearFirsts[tid];
-        const phenData = phenology[tid];
-
-        // "Årets första": species whose first obs this year is recent (last 21 days)
-        // and that are seasonal (not year-round residents with avg_first_doy in January)
-        const isSeasonalSpecies = !phenData || phenData.avg_first_doy > 45;
+        const phenData = phenByScientific[sp.scientific]; // phenology.json keyed by scientific name
         const firstDateThisYear = yearData?.first_date;
-        const isRecentFirstArrival = !firstDateThisYear || firstDateThisYear >= recentCutoffStr;
 
-        if (isRecentFirstArrival && isSeasonalSpecies) {
+        // ── Årets första ──
+        // Species whose first obs this year is recent (within last 14 days)
+        // If phenology.json has the species, it's a known seasonal migrant – prioritize these
+        // Also include species not in year_firsts at all (first time in DB this year)
+        const isRecentFirst = !firstDateThisYear || firstDateThisYear >= recentCutoffStr;
+        // Exclude obvious year-round residents: if in DB and first_date is January, skip
+        const isJanuaryResident = firstDateThisYear && firstDateThisYear.slice(5, 7) === "01";
+
+        if (isRecentFirst && !isJanuaryResident) {
+          const histTypical = phenData?.typical;
+          const histEarliest = phenData?.earliest;
           firstOfYear.push({
             ...sp,
             firstDate: firstDateThisYear || sp.firstSeen,
-            historicalAvgFirst: phenData?.avg_first_date || null,
-            historicalAvgDoy: phenData?.avg_first_doy || null,
-            historicalEarliest: phenData?.earliest_date || null,
-            yearsSeen: phenData?.years_seen || null,
+            historicalTypical: histTypical ? histTypical.replace(/^0/, "").replace("-", "/") : null,
+            historicalEarliest: histEarliest ? histEarliest.replace(/^0/, "").replace("-", "/") : null,
+            yearsSeen: phenData?.years_found || null,
+            hasPhenology: !!phenData,
           });
         }
 
-        // Check if early arrival (current DOY is at least 7 days before historical average)
-        if (phenData && phenData.avg_first_doy > 30) { // Skip year-round species
+        // ── Tidiga ankomster (uses phenology.json – same logic as index.html) ──
+        if (phenData) {
           const obsDoy = dayOfYear(firstDateThisYear || sp.firstSeen);
-          const daysEarly = phenData.avg_first_doy - obsDoy;
-          if (daysEarly >= 7) {
-            earlyArrivals.push({
-              ...sp,
-              daysEarly,
-              historicalAvgFirst: phenData.avg_first_date,
-              historicalEarliest: phenData.earliest_date,
-              historicalEarliestDoy: phenData.earliest_doy,
-              yearsSeen: phenData.years_seen,
-              isNewRecord: obsDoy < phenData.earliest_doy,
-            });
+          const earliestDoy = mmddToDoy(phenData.earliest);
+          const typicalDoy = mmddToDoy(phenData.typical);
+          if (obsDoy !== null && typicalDoy !== null) {
+            // Only flag during spring arrival period
+            if (obsDoy <= typicalDoy + 10) {
+              const isNewRecord = earliestDoy !== null && obsDoy < earliestDoy;
+              const daysBeforeTypical = typicalDoy - obsDoy;
+              if (isNewRecord || daysBeforeTypical >= 5) {
+                earlyArrivals.push({
+                  ...sp,
+                  daysEarly: daysBeforeTypical,
+                  isNewRecord,
+                  typicalDate: phenData.typical,
+                  earliestDate: phenData.earliest,
+                  yearsSeen: phenData.years_found,
+                  label: isNewRecord ? "Ovanligt tidig obs" : "Tidig obs",
+                });
+              }
+            }
           }
         }
       }
 
-      // Sort early arrivals by days early (most noteworthy first)
-      earlyArrivals.sort((a, b) => b.daysEarly - a.daysEarly);
+      // Sort: species with phenology data first, then by how early
+      firstOfYear.sort((a, b) => (b.hasPhenology ? 1 : 0) - (a.hasPhenology ? 1 : 0) || a.firstDate.localeCompare(b.firstDate));
+      earlyArrivals.sort((a, b) => (b.isNewRecord ? 1 : 0) - (a.isNewRecord ? 1 : 0) || b.daysEarly - a.daysEarly);
 
       return { firstOfYear, earlyArrivals };
+    }
+
+    // ── Artportalen link helper ──
+    function apLink(occurrenceId, text) {
+      if (!occurrenceId) return text;
+      // occurrenceId format: "urn:lsid:artportalen.se:Sighting:XXXXXXX"
+      const match = occurrenceId.match(/Sighting:(\d+)/);
+      if (match) {
+        return `<a href="https://www.artportalen.se/Sighting/${match[1]}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline dotted">${text}</a>`;
+      }
+      return text;
     }
 
     // ── Rendering ──
@@ -470,7 +504,7 @@
       html += `<div class="summary-card">
         <div class="label">Årets första</div>
         <div class="value">${highlights.firstOfYear.length}</div>
-        <div class="detail">arter nya för året</div>
+        <div class="detail">arter nya för säsongen</div>
       </div>`;
       html += `<div class="summary-card">
         <div class="label">Tidiga ankomster</div>
@@ -486,39 +520,42 @@
         for (const sp of highlights.firstOfYear) {
           const countStr = sp.maxCount > 1 ? ` · ${sp.maxCount} ex` : "";
           let contextParts = [];
-          if (sp.historicalAvgFirst) contextParts.push(`Normalt först ${sp.historicalAvgFirst}`);
+          if (sp.historicalTypical) contextParts.push(`Normalt först ${sp.historicalTypical}`);
           if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}`);
-          if (sp.yearsSeen) contextParts.push(`Sedd ${sp.yearsSeen} av 20 år`);
+          if (sp.yearsSeen) contextParts.push(`${sp.yearsSeen} års data`);
           const context = contextParts.join(" · ");
 
+          const nameLinked = apLink(sp.firstOccurrenceId, sp.name);
+
           html += `<div class="highlight-card first-of-year">
-            <div class="highlight-icon">&#11088;</div>
             <div class="highlight-content">
-              <div class="species">${sp.name}${countStr} <span class="badge badge-purple">Årets första</span></div>
+              <div class="species">${nameLinked}${countStr} <span class="badge badge-purple">Årets första</span></div>
               <div class="context">Först sedd ${formatDateNice(sp.firstDate)} · ${sp.scientific}${context ? ` · ${context}` : ""}</div>
             </div>
           </div>`;
         }
         html += `</div>`;
       } else {
-        html += `<p class="no-highlights">Inga nya arter för året denna vecka.</p>`;
+        html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
       }
 
       // Early arrivals section
       html += `<div class="section-title">Tidiga ankomster</div>`;
+      html += `<p style="font-size:0.85rem;color:var(--muted);margin-top:-0.5rem;margin-bottom:1rem">Jämfört med kurerade ankomstdata (${highlights.earlyArrivals.length > 0 ? highlights.earlyArrivals[0].yearsSeen || 6 : 6} års historik för ~50 nyckelarter)</p>`;
       if (highlights.earlyArrivals.length > 0) {
         html += `<div class="highlights">`;
         for (const sp of highlights.earlyArrivals) {
-          const recordStr = sp.isNewRecord ? ` <span class="badge badge-red">Nytt rekord!</span>` : "";
+          const recordBadge = sp.isNewRecord ? ` <span class="badge badge-red">Nytt rekord!</span>` : "";
           let contextParts = [];
-          contextParts.push(`${sp.daysEarly} dagar tidigare än normalt`);
-          if (sp.historicalAvgFirst) contextParts.push(`Snitt: ${sp.historicalAvgFirst}`);
-          if (sp.historicalEarliest) contextParts.push(`Tidigast: ${sp.historicalEarliest}`);
+          if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före normalt`);
+          if (sp.typicalDate) contextParts.push(`Snitt: ${sp.typicalDate.replace(/^0/,"").replace("-","/")}`);
+          if (sp.earliestDate) contextParts.push(`Tidigast: ${sp.earliestDate.replace(/^0/,"").replace("-","/")}`);
+
+          const nameLinked = apLink(sp.firstOccurrenceId, sp.name);
 
           html += `<div class="highlight-card early-arrival">
-            <div class="highlight-icon">&#9200;</div>
             <div class="highlight-content">
-              <div class="species">${sp.name}${recordStr}</div>
+              <div class="species">${nameLinked}${recordBadge}</div>
               <div class="context">${contextParts.join(" · ")}</div>
             </div>
           </div>`;
@@ -567,9 +604,9 @@
 
       html += `</tbody></table>`;
 
-      // Footer
       html += `<footer>
-        Historisk jämförelse baserad på 20 års data (2006–2026) ·
+        Tidig ankomst = jämfört med kurerade fenologidata (2020–2025) ·
+        Årets första = arten ej rapporterad vid Tåkern tidigare i år ·
         Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a> ·
         Uppdaterad ${new Date().toLocaleString("sv-SE")}
       </footer>`;
@@ -645,15 +682,18 @@
 
     async function init() {
       try {
-        // Fetch live data and historical context in parallel
-        const [liveResp, contextResp] = await Promise.all([
+        // Fetch live data, historical context, and curated phenology in parallel
+        const [liveResp, contextResp, phenResp] = await Promise.all([
           fetch(`api.php?radius=10&days=${DAYS_BACK}`),
           fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`),
+          fetch("phenology.json"),
         ]);
 
         const liveRaw = await liveResp.json();
         let context = {};
         try { context = await contextResp.json(); } catch (e) { console.warn("Could not load historical context:", e); }
+        let phenologyJson = {};
+        try { phenologyJson = await phenResp.json(); } catch (e) { console.warn("Could not load phenology.json:", e); }
 
         if (liveRaw.error) {
           document.getElementById("main").innerHTML =
@@ -669,7 +709,7 @@
         }
 
         const liveData = processLiveData(records);
-        const highlights = crossReference(liveData, context);
+        const highlights = crossReference(liveData, context, phenologyJson);
         render(liveData, highlights);
       } catch (err) {
         document.getElementById("main").innerHTML =
