@@ -1,0 +1,31 @@
+name: Deploy to Websupport
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+
+  # Allow manual trigger from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: ./deploy/
+          server-dir: ${{ secrets.FTP_PATH }}
+          exclude: |
+            **/.DS_Store
+            **/takern_api_key.txt
+            **/cron_secret.txt
+            **/takern_observations.db
+            **/cron-update.log
