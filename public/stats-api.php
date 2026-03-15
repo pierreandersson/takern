@@ -367,37 +367,42 @@ if ($q === 'week_context') {
         ];
     }
 
-    // Historical phenology: average first day-of-year per species
-    $phenology = [];
+    // Historical phenology: last 5 years, excluding January (filters winter outliers)
+    $maxYear = $year - 1;
+    $minYear = $year - 5;
+    $phenRaw = [];
     $res = $db->query("SELECT taxon_id, vernacular_name,
-        CAST(ROUND(AVG(first_doy)) AS INTEGER) avg_first_doy,
-        MIN(first_doy) earliest_doy,
-        MAX(first_doy) latest_first_doy,
-        COUNT(*) years_seen
-        FROM (
-            SELECT taxon_id, vernacular_name,
-                CAST(STRFTIME('%j', MIN(event_start_date)) AS INTEGER) first_doy
-            FROM observations
-            WHERE event_start_date IS NOT NULL AND vernacular_name IS NOT NULL
-            GROUP BY taxon_id, SUBSTR(event_start_date,1,4)
-        )
-        GROUP BY taxon_id
-        HAVING years_seen >= 3");
+        SUBSTR(event_start_date,1,4) obs_year,
+        CAST(STRFTIME('%j', MIN(event_start_date)) AS INTEGER) first_doy
+        FROM observations
+        WHERE event_start_date IS NOT NULL AND vernacular_name IS NOT NULL
+            AND CAST(SUBSTR(event_start_date,1,4) AS INTEGER) >= $minYear
+            AND CAST(SUBSTR(event_start_date,1,4) AS INTEGER) <= $maxYear
+            AND CAST(SUBSTR(event_start_date,6,2) AS INTEGER) >= 2
+        GROUP BY taxon_id, SUBSTR(event_start_date,1,4)");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        $avgDoy = intval($row['avg_first_doy']);
-        $earliestDoy = intval($row['earliest_doy']);
-        $phenology[strval($row['taxon_id'])] = [
-            'avg_first_doy' => $avgDoy,
-            'avg_first_date' => doyToStr($avgDoy),
-            'earliest_doy' => $earliestDoy,
-            'earliest_date' => doyToStr($earliestDoy),
-            'latest_first_doy' => intval($row['latest_first_doy']),
-            'years_seen' => intval($row['years_seen']),
-        ];
+        $tid = strval($row['taxon_id']);
+        if (!isset($phenRaw[$tid])) $phenRaw[$tid] = ['name' => $row['vernacular_name'], 'years' => []];
+        $phenRaw[$tid]['years'][$row['obs_year']] = intval($row['first_doy']);
     }
 
-    // Total years in database (for context)
-    $totalYears = $db->querySingle("SELECT COUNT(DISTINCT SUBSTR(event_start_date,1,4)) FROM observations");
+    $phenology = [];
+    foreach ($phenRaw as $tid => $data) {
+        if (count($data['years']) < 3) continue;
+        $doys = array_values($data['years']);
+        $avgDoy = intval(round(array_sum($doys) / count($doys)));
+        $minDoy = min($doys);
+        $earliestYear = array_search($minDoy, $data['years']);
+        $phenology[$tid] = [
+            'avg_first_doy' => $avgDoy,
+            'avg_first_date' => doyToStr($avgDoy),
+            'earliest_doy' => $minDoy,
+            'earliest_date' => doyToStr($minDoy),
+            'earliest_year' => strval($earliestYear),
+            'years_seen' => count($data['years']),
+            'year_range' => "$minYear–$maxYear",
+        ];
+    }
 
     jsonOut([
         'year' => $year,

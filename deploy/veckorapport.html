@@ -145,10 +145,6 @@
       border-left: 4px solid var(--purple);
     }
 
-    .highlight-card.early-arrival {
-      border-left: 4px solid var(--orange);
-    }
-
     .highlight-card.notable {
       border-left: 4px solid var(--red);
     }
@@ -296,26 +292,6 @@
       return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
     }
 
-    function dayOfYear(dateStr) {
-      const d = new Date(dateStr);
-      const start = new Date(d.getFullYear(), 0, 0);
-      return Math.floor((d - start) / 86400000);
-    }
-
-    function mmddToSwedish(mmdd) {
-      if (!mmdd) return null;
-      const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
-      const [m, d] = mmdd.split("-").map(Number);
-      return `${d} ${months[m - 1]}`;
-    }
-
-    function mmddToDoy(mmdd) {
-      if (!mmdd) return null;
-      const [m, d] = mmdd.split("-").map(Number);
-      const date = new Date(2024, m - 1, d);
-      return Math.floor((date - new Date(2024, 0, 0)) / 86400000);
-    }
-
     function redlistBadge(cat) {
       if (!cat || cat === "LC") return "";
       const colors = { CR: "red", EN: "red", VU: "orange", NT: "orange" };
@@ -393,20 +369,12 @@
       return { dailyStats, speciesList, totalObs, uniqueSpecies, allDates };
     }
 
-    function crossReference(liveData, context, phenologyJson) {
+    function crossReference(liveData, context) {
       const yearFirsts = context.year_firsts || {};
       const dbPhenology = context.phenology || {};
 
-      // Build phenology lookup by scientific name (matching phenology.json keys)
-      const phenByScientific = {};
-      for (const [sci, data] of Object.entries(phenologyJson)) {
-        phenByScientific[sci] = data;
-      }
-
       const firstOfYear = [];
-      const earlyArrivals = [];
 
-      const weekStart = liveData.allDates[0];
       const weekEnd = liveData.allDates[liveData.allDates.length - 1];
       // Look back 14 days for "first of year" to capture recent arrivals
       const recentCutoff = new Date(weekEnd);
@@ -418,107 +386,33 @@
         if (!tid) continue;
 
         const yearData = yearFirsts[tid];
-        const phenData = phenByScientific[sp.scientific]; // phenology.json keyed by scientific name
-        const dbPhen = dbPhenology[tid]; // stats-api phenology (all species, 20 yrs)
+        const phen = dbPhenology[tid]; // DB phenology (5 yrs, excl. January)
         const firstDateThisYear = yearData?.first_date;
 
-        // ── Årets första ──
         // Species whose first obs this year is recent (within last 14 days)
-        // Also include species not in year_firsts at all (first time in DB this year)
         const isRecentFirst = !firstDateThisYear || firstDateThisYear >= recentCutoffStr;
         // Exclude obvious year-round residents: if in DB and first_date is January, skip
         const isJanuaryResident = firstDateThisYear && firstDateThisYear.slice(5, 7) === "01";
 
         if (isRecentFirst && !isJanuaryResident) {
-          // Use phenology.json (curated, 6 yrs) if available, else fall back to DB (20 yrs)
-          let historicalTypical, historicalEarliest, earliestYear, yearsSeen;
-          if (phenData) {
-            historicalTypical = mmddToSwedish(phenData.typical);
-            historicalEarliest = mmddToSwedish(phenData.earliest);
-            yearsSeen = phenData.years_found;
-            // Find year of earliest from curated data
-            earliestYear = null;
-            if (phenData.data) {
-              for (const [yr, dt] of Object.entries(phenData.data)) {
-                if (dt === phenData.earliest) { earliestYear = yr; break; }
-              }
-            }
-          } else if (dbPhen) {
-            historicalTypical = dbPhen.avg_first_date; // already Swedish format from API
-            historicalEarliest = dbPhen.earliest_date;
-            yearsSeen = dbPhen.years_seen;
-            earliestYear = null; // DB doesn't track which year
-          } else {
-            historicalTypical = null;
-            historicalEarliest = null;
-            yearsSeen = null;
-            earliestYear = null;
-          }
-
           firstOfYear.push({
             ...sp,
             firstDate: firstDateThisYear || sp.firstSeen,
             firstUrl: yearData?.first_url || null,
-            historicalTypical,
-            historicalEarliest,
-            earliestYear,
-            yearsSeen,
-            hasPhenology: !!(phenData || dbPhen),
+            historicalTypical: phen?.avg_first_date || null,
+            historicalEarliest: phen?.earliest_date || null,
+            earliestYear: phen?.earliest_year || null,
+            yearsSeen: phen?.years_seen || null,
+            yearRange: phen?.year_range || null,
+            hasPhenology: !!phen,
           });
         }
-
-        // ── Tidiga ankomster (uses phenology.json – same logic as index.html) ──
-        // Only consider species whose first obs this year is RECENT (last 14 days)
-        // A snatterand seen in January is a wintering bird, not an early spring arrival
-        if (phenData && isRecentFirst && !isJanuaryResident) {
-          const arrivalDate = firstDateThisYear || sp.firstSeen;
-          const obsDoy = dayOfYear(arrivalDate);
-          const earliestDoy = mmddToDoy(phenData.earliest);
-          const typicalDoy = mmddToDoy(phenData.typical);
-          if (obsDoy !== null && typicalDoy !== null) {
-            // Only flag during spring arrival period
-            if (obsDoy <= typicalDoy + 10) {
-              const daysBeforeTypical = typicalDoy - obsDoy;
-              if (daysBeforeTypical >= 5) {
-                // Find year of earliest observation
-                let earliestYear = null;
-                if (phenData.data) {
-                  for (const [yr, dt] of Object.entries(phenData.data)) {
-                    if (dt === phenData.earliest) { earliestYear = yr; break; }
-                  }
-                }
-                earlyArrivals.push({
-                  ...sp,
-                  firstDate: arrivalDate,
-                  firstUrl: yearData?.first_url || null,
-                  daysEarly: daysBeforeTypical,
-                  typicalDate: phenData.typical,
-                  earliestDate: phenData.earliest,
-                  earliestYear,
-                  yearsSeen: phenData.years_found,
-                });
-              }
-            }
-          }
-        }
       }
 
-      // Sort: species with phenology data first, then by how early
+      // Sort: species with phenology data first, then by date
       firstOfYear.sort((a, b) => (b.hasPhenology ? 1 : 0) - (a.hasPhenology ? 1 : 0) || a.firstDate.localeCompare(b.firstDate));
-      earlyArrivals.sort((a, b) => b.daysEarly - a.daysEarly);
 
-      return { firstOfYear, earlyArrivals };
-    }
-
-    // ── Artportalen link helper ──
-    function apLink(occurrenceId) {
-      if (!occurrenceId) return null;
-      // occurrenceId format: "urn:lsid:artportalen.se:sighting:XXXXXXX"
-      const match = occurrenceId.match(/sighting:(\d+)/i);
-      if (match) {
-        return `<a href="https://www.artportalen.se/Sighting/${match[1]}" target="_blank" rel="noopener" style="color:var(--accent)">Senaste obs</a>`;
-      }
-      return null;
+      return { firstOfYear };
     }
 
     // ── Rendering ──
@@ -549,10 +443,13 @@
         <div class="value">${highlights.firstOfYear.length}</div>
         <div class="detail">arter nya för säsongen</div>
       </div>`;
+      const redlistedThisWeek = [...new Set(liveData.speciesList
+        .filter(s => s.redlist && s.redlist !== "LC")
+        .map(s => s.name))];
       html += `<div class="summary-card">
-        <div class="label">Tidiga ankomster</div>
-        <div class="value">${highlights.earlyArrivals.length}</div>
-        <div class="detail">tidigare än normalt</div>
+        <div class="label">Rödlistade</div>
+        <div class="value">${redlistedThisWeek.length}</div>
+        <div class="detail">${redlistedThisWeek.slice(0, 3).join(", ") || "–"}${redlistedThisWeek.length > 3 ? " ..." : ""}</div>
       </div>`;
       html += `</div>`;
 
@@ -583,32 +480,6 @@
         html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
       }
 
-      // Early arrivals section
-      html += `<div class="section-title">Tidiga ankomster</div>`;
-      html += `<p style="font-size:0.85rem;color:var(--muted);margin-top:-0.5rem;margin-bottom:1rem">Jämfört med kurerade ankomstdata (${highlights.earlyArrivals.length > 0 ? highlights.earlyArrivals[0].yearsSeen || 6 : 6} års historik för ~50 nyckelarter)</p>`;
-      if (highlights.earlyArrivals.length > 0) {
-        html += `<div class="highlights">`;
-        for (const sp of highlights.earlyArrivals) {
-          let contextParts = [];
-          contextParts.push(`Först sedd ${formatDateNice(sp.firstDate)}`);
-          if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före snitt (${mmddToSwedish(sp.typicalDate)})`);
-          if (sp.earliestDate) contextParts.push(`Tidigast: ${mmddToSwedish(sp.earliestDate)}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
-
-          const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
-          const firstObsLink = sp.firstUrl ? `<a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Första obs</a>` : "";
-
-          html += `<div class="highlight-card early-arrival">
-            <div class="highlight-content">
-              <div class="species">${speciesLink} <span class="badge badge-orange">Tidig obs</span></div>
-              <div class="context">${contextParts.join(" · ")}${firstObsLink ? ` · ${firstObsLink}` : ""}</div>
-            </div>
-          </div>`;
-        }
-        html += `</div>`;
-      } else {
-        html += `<p class="no-highlights">Inga ovanligt tidiga ankomster denna vecka.</p>`;
-      }
-
       // Chart
       html += `<div class="chart-section">
         <h2>Aktivitet per dag</h2>
@@ -626,12 +497,10 @@
         </tr></thead><tbody>`;
 
       const firstOfYearNames = new Set(highlights.firstOfYear.map(s => s.name));
-      const earlyNames = new Set(highlights.earlyArrivals.map(s => s.name));
 
       for (const sp of liveData.speciesList) {
         let statusBadges = "";
         if (firstOfYearNames.has(sp.name)) statusBadges += `<span class="badge badge-purple">Årets 1:a</span> `;
-        if (earlyNames.has(sp.name)) statusBadges += `<span class="badge badge-orange">Tidig</span> `;
         const rlBadge = redlistBadge(sp.redlist);
 
         const dots = liveData.allDates.map(d =>
@@ -649,8 +518,7 @@
       html += `</tbody></table>`;
 
       html += `<footer>
-        Tidig ankomst = jämfört med kurerade fenologidata (2020–2025) ·
-        Årets första = arten ej rapporterad vid Tåkern tidigare i år ·
+        Fenologi baserad på senaste 5 åren (exkl. januariobservationer) ·
         Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a> ·
         Uppdaterad ${new Date().toLocaleString("sv-SE")}
       </footer>`;
@@ -726,18 +594,15 @@
 
     async function init() {
       try {
-        // Fetch live data, historical context, and curated phenology in parallel
-        const [liveResp, contextResp, phenResp] = await Promise.all([
+        // Fetch live data and historical context in parallel
+        const [liveResp, contextResp] = await Promise.all([
           fetch(`api.php?radius=10&days=${DAYS_BACK}`),
           fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`),
-          fetch("phenology.json"),
         ]);
 
         const liveRaw = await liveResp.json();
         let context = {};
         try { context = await contextResp.json(); } catch (e) { console.warn("Could not load historical context:", e); }
-        let phenologyJson = {};
-        try { phenologyJson = await phenResp.json(); } catch (e) { console.warn("Could not load phenology.json:", e); }
 
         if (liveRaw.error) {
           document.getElementById("main").innerHTML =
@@ -753,7 +618,7 @@
         }
 
         const liveData = processLiveData(records);
-        const highlights = crossReference(liveData, context, phenologyJson);
+        const highlights = crossReference(liveData, context);
         render(liveData, highlights);
       } catch (err) {
         document.getElementById("main").innerHTML =
