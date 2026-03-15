@@ -454,39 +454,40 @@ if ($q === 'week_context') {
         }
     }
 
-    // Same week last year: species count, obs count, species list, redlisted, first-of-year
+    // Same week last year: species count, obs count, species list, first-of-year
+    // Calculate date range for same ISO week last year (avoids %G/%V SQLite compatibility issues)
     $lastYear = $year - 1;
     $isoWeek = isset($_GET['week']) ? intval($_GET['week']) : intval(date('W'));
-    $lastYearWeek = [];
+    $lyWeekStart = new DateTime();
+    $lyWeekStart->setISODate($lastYear, $isoWeek, 1); // Monday
+    $lyWeekEnd = clone $lyWeekStart;
+    $lyWeekEnd->modify('+6 days'); // Sunday
+    $lyStart = $lyWeekStart->format('Y-m-d');
+    $lyEnd = $lyWeekEnd->format('Y-m-d');
 
-    // All species observed during this ISO week last year
-    $res = $db->query("SELECT DISTINCT taxon_id, vernacular_name, scientific_name,
+    // All species observed during this week last year
+    $res = $db->query("SELECT taxon_id, vernacular_name,
         COUNT(*) AS obs_count
         FROM observations
         WHERE vernacular_name IS NOT NULL
-            AND CAST(STRFTIME('%G', event_start_date) AS INTEGER) = $lastYear
-            AND CAST(STRFTIME('%V', event_start_date) AS INTEGER) = $isoWeek
+            AND event_start_date >= '$lyStart'
+            AND event_start_date <= '$lyEnd'
         GROUP BY taxon_id");
     $lySpecies = [];
     $lyObs = 0;
-    $lyRedlisted = 0;
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
         $lySpecies[] = $row['vernacular_name'];
         $lyObs += intval($row['obs_count']);
     }
 
-    // Count redlisted from last year's week (check against this year's redlist status via current data)
-    // Simpler: count species observed last year same week that had redlist observations
-    // We'll let the frontend handle redlist matching since it has the attribute data
-
-    // First-of-year count last year: species whose first obs last year fell in this week
+    // First-of-year count last year: species whose first obs last year fell in this date range
     $lyFirstOfYear = 0;
     $res = $db->query("SELECT COUNT(*) AS cnt FROM (
         SELECT taxon_id, MIN(event_start_date) AS first_date
         FROM observations
         WHERE SUBSTR(event_start_date,1,4) = '$lastYear' AND vernacular_name IS NOT NULL
         GROUP BY taxon_id
-        HAVING CAST(STRFTIME('%V', first_date) AS INTEGER) = $isoWeek
+        HAVING first_date >= '$lyStart' AND first_date <= '$lyEnd'
     )");
     $row = $res->fetchArray(SQLITE3_ASSOC);
     $lyFirstOfYear = intval($row['cnt']);
