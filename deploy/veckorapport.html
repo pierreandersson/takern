@@ -627,8 +627,7 @@
         maxZoom: 18,
       }).addTo(map);
 
-      // Collect heatmap points [lat, lng, intensity]
-      // Aggregate by rounded coordinates so multiple obs at same spot stack
+      // Aggregate heatmap points by rounded coordinates
       const grid = {};
       for (const obs of records) {
         const lat = obs.location?.decimalLatitude;
@@ -642,7 +641,7 @@
       const points = Object.values(grid);
       if (points.length === 0) return;
 
-      // Use log scale like statistik.html for better visual distribution
+      // Heatmap layer – log scale, same style as statistik.html
       const logPoints = points.map(p => [p.lat, p.lng, Math.log(p.count + 1)]);
       const vals = logPoints.map(p => p[2]).sort((a, b) => a - b);
       const n = points.length;
@@ -654,6 +653,34 @@
         radius: r, blur: bl, maxZoom: 17, minOpacity: 0.25, max: p50,
         gradient: { 0.05: "#2166ac", 0.2: "#67a9cf", 0.4: "#d1e5f0", 0.6: "#fddbc7", 0.8: "#ef8a62", 1: "#b2182b" },
       }).addTo(map);
+
+      // Locality markers – shown when zoomed in (>= 15), like statistik.html
+      const localities = {};
+      for (const obs of records) {
+        const loc = obs.location?.locality;
+        const lat = obs.location?.decimalLatitude;
+        const lng = obs.location?.decimalLongitude;
+        if (!loc || !lat || !lng) continue;
+        if (!localities[loc]) localities[loc] = { name: loc, lat, lng, obs: 0, species: new Set() };
+        localities[loc].obs++;
+        const sp = obs.taxon?.vernacularName || obs.taxon?.scientificName;
+        if (sp) localities[loc].species.add(sp);
+      }
+
+      const localityLayer = L.layerGroup();
+      for (const loc of Object.values(localities)) {
+        const cr = Math.min(8, 3 + Math.log10(loc.obs) * 2);
+        L.circleMarker([loc.lat, loc.lng], {
+          radius: cr, fillColor: "#2d6a4f", fillOpacity: 0.7,
+          color: "#fff", weight: 1,
+        }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs} obs · ${loc.species.size} arter`)
+          .addTo(localityLayer);
+      }
+      if (map.getZoom() >= 15) localityLayer.addTo(map);
+      map.on("zoomend", () => {
+        if (map.getZoom() >= 15) localityLayer.addTo(map);
+        else map.removeLayer(localityLayer);
+      });
     }
 
     // ── Init ──
