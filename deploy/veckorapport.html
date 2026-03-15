@@ -363,7 +363,11 @@
         if (onlyLastYear.length > 0) {
           const lyRange = ly.date_range ? ly.date_range.split(" – ").map(d => formatDateSwedish(d)).join(" – ") : ly.year;
           html += `<div class="section-title">Sågs ${lyRange} men ej i år <span class="badge badge-orange">${onlyLastYear.length}</span></div>`;
-          html += `<div class="compare-list">${onlyLastYear.join(", ")}</div>`;
+          html += `<div class="highlight-card" style="border-left:4px solid var(--orange)">
+            <div class="highlight-content">
+              <div style="line-height:1.7">${onlyLastYear.join(", ")}</div>
+            </div>
+          </div>`;
         }
       }
 
@@ -408,10 +412,14 @@
         lookAhead.sort((a, b) => a.avgDoy - b.avgDoy);
         if (lookAhead.length > 0) {
           html += `<div class="section-title">Håll utkik efter <span class="badge">${lookAhead.length}</span></div>`;
-          html += `<p class="no-highlights" style="margin-top:-0.5rem">Arter som brukar dyka upp de närmaste tre veckorna men som inte rapporterats i år ännu.</p>`;
-          html += `<div class="compare-list">${lookAhead.map(s =>
-            `<a href="statistik.html?art=${toSlug(s.name)}" style="color:inherit;text-decoration:underline dotted">${s.name}</a> <span style="color:var(--muted);font-size:0.85rem">(${s.avgDate})</span>`
-          ).join(", ")}</div>`;
+          html += `<div class="highlights">${lookAhead.map(s => `
+            <div class="highlight-card" style="border-left:4px solid var(--accent)">
+              <div class="highlight-content">
+                <div class="species"><a href="statistik.html?art=${toSlug(s.name)}" style="color:inherit">${s.name}</a></div>
+                <div class="context">Brukar komma runt ${s.avgDate} – inte sedd i år ännu</div>
+              </div>
+            </div>`).join("")}
+          </div>`;
         }
       }
 
