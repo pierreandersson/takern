@@ -501,31 +501,30 @@ if ($q === 'week_context') {
         'first_of_year' => $lyFirstOfYear,
     ];
 
-    // Spring progress: how many expected migrants have arrived? (week 8–22 only)
+    // Spring progress: how many of all spring migrants (Feb-Jun) have arrived? (week 8–22 only)
     $springProgress = null;
     $currentDoy = intval(date('z')) + 1; // current day of year
     if ($isoWeek >= 8 && $isoWeek <= 22) {
-        $expectedCount = 0;
+        // Count all spring migrants (avg arrival Feb-Jun) and how many have been seen this year
+        $totalMigrants = 0;
         $arrivedCount = 0;
         foreach ($phenology as $tid => $ph) {
-            if ($ph['avg_first_doy'] <= $currentDoy + 7) { // expected by now (with 1 week margin)
-                $expectedCount++;
-                if (isset($yearFirsts[$tid])) {
-                    $arrivedCount++;
-                }
+            if ($ph['avg_first_doy'] < 32 || $ph['avg_first_doy'] > 180) continue;
+            $totalMigrants++;
+            if (isset($yearFirsts[$tid])) {
+                $arrivedCount++;
             }
         }
-        // Compare median arrival this year vs historical
-        // Only include genuine migrants: avg arrival Feb-Jun (doy 32-180)
-        // and this year's first obs within ±30 days of expected (filters out overwintering residents)
+        // Compare median arrival this year vs historical for species that have arrived
+        // Filter: only species whose first obs is within ±30/+60 days of expected (skip winter residents)
         $thisYearDoys = [];
         foreach ($yearFirsts as $tid => $yf) {
             if (!isset($phenology[$tid])) continue;
             $avgDoy = $phenology[$tid]['avg_first_doy'];
-            if ($avgDoy < 32 || $avgDoy > 180) continue; // not a spring migrant
+            if ($avgDoy < 32 || $avgDoy > 180) continue;
             $obsDoy = intval(date('z', strtotime($yf['first_date']))) + 1;
             $diff = $obsDoy - $avgDoy;
-            if ($diff < -30 || $diff > 60) continue; // likely resident seen in winter, skip
+            if ($diff < -30 || $diff > 60) continue;
             $thisYearDoys[] = $diff;
         }
         $medianDiff = null;
@@ -536,9 +535,9 @@ if ($q === 'week_context') {
         }
 
         $springProgress = [
-            'expected' => $expectedCount,
+            'total' => $totalMigrants,
             'arrived' => $arrivedCount,
-            'pct' => $expectedCount > 0 ? round(100 * $arrivedCount / $expectedCount) : null,
+            'pct' => $totalMigrants > 0 ? round(100 * $arrivedCount / $totalMigrants) : null,
             'median_diff_days' => $medianDiff, // negative = early, positive = late
         ];
     }

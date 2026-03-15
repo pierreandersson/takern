@@ -354,7 +354,7 @@
         html += `<div class="summary-card">
           <div class="label">Vårens framsteg</div>
           <div class="value">${springProgress.pct}%</div>
-          <div class="detail">${springProgress.arrived} av ${springProgress.expected} väntade arter</div>
+          <div class="detail">${springProgress.arrived} av ${springProgress.total} flyttfåglar</div>
           ${earlyLate ? `<div class="detail compare ${springProgress.median_diff_days < -2 ? "up" : springProgress.median_diff_days > 2 ? "down" : ""}">${earlyLate}</div>` : ""}
         </div>`;
       }
