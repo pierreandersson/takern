@@ -445,18 +445,15 @@
           if (obsDoy !== null && typicalDoy !== null) {
             // Only flag during spring arrival period
             if (obsDoy <= typicalDoy + 10) {
-              const isNewRecord = earliestDoy !== null && obsDoy < earliestDoy;
               const daysBeforeTypical = typicalDoy - obsDoy;
-              if (isNewRecord || daysBeforeTypical >= 5) {
+              if (daysBeforeTypical >= 5) {
                 earlyArrivals.push({
                   ...sp,
                   firstDate: arrivalDate,
                   daysEarly: daysBeforeTypical,
-                  isNewRecord,
                   typicalDate: phenData.typical,
                   earliestDate: phenData.earliest,
                   yearsSeen: phenData.years_found,
-                  label: isNewRecord ? "Ovanligt tidig obs" : "Tidig obs",
                 });
               }
             }
@@ -466,7 +463,7 @@
 
       // Sort: species with phenology data first, then by how early
       firstOfYear.sort((a, b) => (b.hasPhenology ? 1 : 0) - (a.hasPhenology ? 1 : 0) || a.firstDate.localeCompare(b.firstDate));
-      earlyArrivals.sort((a, b) => (b.isNewRecord ? 1 : 0) - (a.isNewRecord ? 1 : 0) || b.daysEarly - a.daysEarly);
+      earlyArrivals.sort((a, b) => b.daysEarly - a.daysEarly);
 
       return { firstOfYear, earlyArrivals };
     }
@@ -474,8 +471,8 @@
     // ── Artportalen link helper ──
     function apLink(occurrenceId, text) {
       if (!occurrenceId) return text;
-      // occurrenceId format: "urn:lsid:artportalen.se:Sighting:XXXXXXX"
-      const match = occurrenceId.match(/Sighting:(\d+)/);
+      // occurrenceId format: "urn:lsid:artportalen.se:sighting:XXXXXXX"
+      const match = occurrenceId.match(/sighting:(\d+)/i);
       if (match) {
         return `<a href="https://www.artportalen.se/Sighting/${match[1]}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline dotted">${text}</a>`;
       }
@@ -549,7 +546,6 @@
       if (highlights.earlyArrivals.length > 0) {
         html += `<div class="highlights">`;
         for (const sp of highlights.earlyArrivals) {
-          const recordBadge = sp.isNewRecord ? ` <span class="badge badge-red">Nytt rekord!</span>` : "";
           let contextParts = [];
           contextParts.push(`Först sedd ${formatDateNice(sp.firstDate)}`);
           if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före snitt (${sp.typicalDate.replace(/^0/,"").replace("-","/")})`);
@@ -559,7 +555,7 @@
 
           html += `<div class="highlight-card early-arrival">
             <div class="highlight-content">
-              <div class="species">${nameLinked}${recordBadge}</div>
+              <div class="species">${nameLinked} <span class="badge badge-orange">Tidig obs</span></div>
               <div class="context">${contextParts.join(" · ")}</div>
             </div>
           </div>`;
