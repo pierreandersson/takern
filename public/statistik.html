@@ -407,15 +407,31 @@
       <p>20 år av fågeldata · 2006–2026</p>
     </div>
     <nav>
-      <a href="/">Senaste obs</a>
-      <a href="/dashboard.html">Dashboard</a>
+      <a href="index.html">Senaste obs</a>
     </nav>
   </header>
 
   <div class="container">
-    <!-- Overview section -->
+    <!-- Summary cards (shown immediately with skeleton) -->
+    <div id="summary-cards">
+      <div class="summary">
+        <div class="summary-card"><div class="label">Observationer</div><div class="value" id="stat-obs">–</div><div class="detail" id="stat-dates">Laddar...</div></div>
+        <div class="summary-card"><div class="label">Arter</div><div class="value" id="stat-species">–</div><div class="detail">registrerade fågelarter</div></div>
+        <div class="summary-card"><div class="label">Observatörer</div><div class="value" id="stat-observers">–</div><div class="detail">unika rapportörer</div></div>
+        <div class="summary-card"><div class="label">Snitt per år</div><div class="value" id="stat-avg">–</div><div class="detail">observationer</div></div>
+      </div>
+    </div>
+
+    <!-- Search (shown immediately) -->
+    <div class="section-title">Sök art</div>
+    <div class="search-box">
+      <input type="text" id="species-search" placeholder="Skriv artnamn..." autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <!-- Overview section (filled progressively) -->
     <div id="overview-section">
-      <div class="loading" id="loading">Laddar statistik...</div>
+      <div class="loading" id="loading">Laddar diagram och kartor...</div>
     </div>
 
     <!-- Species detail (hidden until selected) -->
@@ -442,42 +458,18 @@
     // ── Load overview ──
 
     async function loadOverview() {
-      const overviewResp = await fetch("data/overview.json");
+      const overviewResp = await fetch("stats-api.php?q=overview");
       const overview = await overviewResp.json();
+
+      // Fill in summary cards
+      document.getElementById("stat-obs").textContent = overview.total_observations.toLocaleString("sv");
+      document.getElementById("stat-dates").textContent = `${overview.date_range.from} – ${overview.date_range.to}`;
+      document.getElementById("stat-species").textContent = overview.total_species;
+      document.getElementById("stat-observers").textContent = overview.total_observers.toLocaleString("sv");
+      document.getElementById("stat-avg").textContent = Math.round(overview.total_observations / Object.keys(overview.observations_per_year).length).toLocaleString("sv");
 
       const section = document.getElementById("overview-section");
       let html = "";
-
-      // Summary cards
-      html += `<div class="summary">
-        <div class="summary-card">
-          <div class="label">Observationer</div>
-          <div class="value">${overview.total_observations.toLocaleString("sv")}</div>
-          <div class="detail">${overview.date_range.from} – ${overview.date_range.to}</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Arter</div>
-          <div class="value">${overview.total_species}</div>
-          <div class="detail">registrerade fågelarter</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Observatörer</div>
-          <div class="value">${overview.total_observers.toLocaleString("sv")}</div>
-          <div class="detail">unika rapportörer</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Snitt per år</div>
-          <div class="value">${Math.round(overview.total_observations / Object.keys(overview.observations_per_year).length).toLocaleString("sv")}</div>
-          <div class="detail">observationer</div>
-        </div>
-      </div>`;
-
-      // 1. Search (top priority interaction)
-      html += `<div class="section-title">Sök art</div>
-      <div class="search-box">
-        <input type="text" id="species-search" placeholder="Skriv artnamn..." autocomplete="off">
-        <div class="search-results" id="search-results"></div>
-      </div>`;
 
       // 2. Geo heatmap + localities
       html += `<div class="chart-section">
@@ -562,9 +554,10 @@
         <div class="chart-container"><canvas id="yearChart"></canvas></div>
       </div>`;
 
-      // 7. New species per year
+      // 7. New species per year (skip first year – all species are "new")
       if (overview.new_species_per_year) {
-        const nsYears = Object.keys(overview.new_species_per_year).sort();
+        const allNsYears = Object.keys(overview.new_species_per_year).sort();
+        const nsYears = allNsYears.slice(1);
         html += `<div class="chart-section">
           <h2>Nya arter per år</h2>
           <div class="chart-container"><canvas id="newSpeciesChart"></canvas></div>
@@ -638,7 +631,7 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 18,
       }).addTo(overviewMap);
-      fetch("data/geo-heatmap.json")
+      fetch("stats-api.php?q=geo")
         .then(r => r.json())
         .then(data => {
           const logPoints = data.points.map(p => [p[0], p[1], Math.log(p[2] + 1)]);
@@ -648,6 +641,21 @@
             radius: 22, blur: 12, maxZoom: 17, minOpacity: 0.15, max: p50,
             gradient: { 0.05: "#2166ac", 0.2: "#67a9cf", 0.4: "#d1e5f0", 0.6: "#fddbc7", 0.8: "#ef8a62", 1: "#b2182b" },
           }).addTo(overviewMap);
+        });
+
+      // Load locality markers
+      const localityLayer = L.layerGroup().addTo(overviewMap);
+      fetch("stats-api.php?q=localities")
+        .then(r => r.json())
+        .then(data => {
+          data.localities.forEach(loc => {
+            const r = Math.min(8, 3 + Math.log10(loc.obs) * 2);
+            L.circleMarker([loc.lat, loc.lng], {
+              radius: r, fillColor: "#2d6a4f", fillOpacity: 0.7,
+              color: "#fff", weight: 1,
+            }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs.toLocaleString("sv")} obs · ${loc.species} arter`)
+              .addTo(localityLayer);
+          });
         });
 
       // Render year chart
@@ -707,9 +715,9 @@
         });
       }
 
-      // Render new species per year chart
+      // Render new species per year chart (skip first year)
       if (overview.new_species_per_year) {
-        const nsYears = Object.keys(overview.new_species_per_year).sort();
+        const nsYears = Object.keys(overview.new_species_per_year).sort().slice(1);
         new Chart(document.getElementById("newSpeciesChart"), {
           type: "bar",
           data: {
@@ -776,7 +784,7 @@
 
     async function setupSearch() {
       if (!speciesCache) {
-        const resp = await fetch("data/species.json");
+        const resp = await fetch("stats-api.php?q=species");
         const data = await resp.json();
         speciesCache = data.species;
       }
@@ -831,12 +839,15 @@
     // ── Species detail ──
 
     async function loadSpecies(taxonId) {
-      const resp = await fetch(`data/species/${taxonId}.json`);
+      const resp = await fetch(`stats-api.php?q=species&id=${taxonId}`);
       const sp = await resp.json();
 
       if (sp.error) return;
 
       // Hide overview, show detail
+      document.getElementById("summary-cards").style.display = "none";
+      document.querySelector(".search-box").style.display = "none";
+      document.querySelector(".search-box").previousElementSibling.style.display = "none";
       document.getElementById("overview-section").style.display = "none";
       const detail = document.getElementById("species-detail");
       detail.classList.add("active");
@@ -967,6 +978,9 @@
       document.getElementById("back-btn").addEventListener("click", () => {
         detail.classList.remove("active");
         detail.innerHTML = "";
+        document.getElementById("summary-cards").style.display = "";
+        document.querySelector(".search-box").style.display = "";
+        document.querySelector(".search-box").previousElementSibling.style.display = "";
         document.getElementById("overview-section").style.display = "";
         if (currentChart1) { currentChart1.destroy(); currentChart1 = null; }
         if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
@@ -1129,7 +1143,7 @@
         maxZoom: 18,
       }).addTo(currentSpeciesMap);
       setTimeout(() => currentSpeciesMap.invalidateSize(), 300);
-      fetch(`data/geo-heatmap-${taxonId}.json`)
+      fetch(`stats-api.php?q=geo&id=${taxonId}`)
         .then(r => r.json())
         .then(data => {
           if (data.points.length > 0) {
@@ -1149,11 +1163,27 @@
           }
         });
 
+      // Locality markers for this species
+      const spLocLayer = L.layerGroup().addTo(currentSpeciesMap);
+      fetch(`stats-api.php?q=localities&id=${taxonId}`)
+        .then(r => r.json())
+        .then(data => {
+          data.localities.forEach(loc => {
+            const r = Math.min(8, 3 + Math.log10(loc.obs) * 2);
+            L.circleMarker([loc.lat, loc.lng], {
+              radius: r, fillColor: "#2d6a4f", fillOpacity: 0.7,
+              color: "#fff", weight: 1,
+            }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs.toLocaleString("sv")} obs`)
+              .addTo(spLocLayer);
+          });
+        });
+
       // Scroll to top
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // ── Init ──
+    // ── Init – load search and overview in parallel ──
+    setupSearch();
     loadOverview();
   </script>
 </body>

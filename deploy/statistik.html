@@ -643,8 +643,8 @@
           }).addTo(overviewMap);
         });
 
-      // Load locality markers (shown at higher zoom levels)
-      const localityLayer = L.layerGroup();
+      // Load locality markers
+      const localityLayer = L.layerGroup().addTo(overviewMap);
       fetch("stats-api.php?q=localities")
         .then(r => r.json())
         .then(data => {
@@ -657,10 +657,6 @@
               .addTo(localityLayer);
           });
         });
-      overviewMap.on("zoomend", () => {
-        if (overviewMap.getZoom() >= 12) localityLayer.addTo(overviewMap);
-        else overviewMap.removeLayer(localityLayer);
-      });
 
       // Render year chart
       const ctx = document.getElementById("yearChart");
@@ -1168,7 +1164,7 @@
         });
 
       // Locality markers for this species
-      const spLocLayer = L.layerGroup();
+      const spLocLayer = L.layerGroup().addTo(currentSpeciesMap);
       fetch(`stats-api.php?q=localities&id=${taxonId}`)
         .then(r => r.json())
         .then(data => {
@@ -1181,10 +1177,6 @@
               .addTo(spLocLayer);
           });
         });
-      currentSpeciesMap.on("zoomend", () => {
-        if (currentSpeciesMap.getZoom() >= 12) spLocLayer.addTo(currentSpeciesMap);
-        else currentSpeciesMap.removeLayer(spLocLayer);
-      });
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: "smooth" });
