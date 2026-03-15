@@ -406,7 +406,6 @@ if ($q === 'week_context') {
 
     jsonOut([
         'year' => $year,
-        'total_years' => intval($totalYears),
         'year_firsts' => $yearFirsts,
         'phenology' => $phenology,
     ]);
