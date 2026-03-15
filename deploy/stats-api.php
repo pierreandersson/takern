@@ -1,6 +1,7 @@
 <?php
 /**
  * Statistics API – serves historical bird data from SQLite.
+ * Results are cached as JSON files and invalidated by cron-update.php.
  *
  * Endpoints (via ?q= parameter):
  *   ?q=overview          → overview stats
@@ -14,16 +15,29 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
 $DB_FILE = __DIR__ . '/takern_observations.db';
+$CACHE_DIR = __DIR__ . '/cache';
 
+$q = $_GET['q'] ?? '';
+$id = isset($_GET['id']) ? intval($_GET['id']) : null;
+
+// ── Cache layer ──
+if (!is_dir($CACHE_DIR)) mkdir($CACHE_DIR, 0755, true);
+
+$cacheKey = $id !== null ? "{$q}_{$id}" : $q;
+$cacheFile = "$CACHE_DIR/$cacheKey.json";
+
+if (file_exists($cacheFile)) {
+    readfile($cacheFile);
+    exit;
+}
+
+// No cache hit – query database
 if (!file_exists($DB_FILE)) {
     echo json_encode(['error' => 'Database not found']);
     exit;
 }
 
 $db = new SQLite3($DB_FILE, SQLITE3_OPEN_READONLY);
-
-$q = $_GET['q'] ?? '';
-$id = isset($_GET['id']) ? intval($_GET['id']) : null;
 
 function doyToStr($doy) {
     if ($doy === null) return null;
@@ -33,7 +47,10 @@ function doyToStr($doy) {
 }
 
 function jsonOut($data) {
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    global $cacheFile;
+    $json = json_encode($data, JSON_UNESCAPED_UNICODE);
+    file_put_contents($cacheFile, $json);
+    echo $json;
     exit;
 }
 
@@ -276,4 +293,4 @@ if ($q === 'geo') {
 }
 
 // ── Unknown endpoint ──
-jsonOut(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, or ?q=geo']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, or ?q=geo']);

@@ -392,4 +392,12 @@ logMsg("Download complete: $netNew new observations (total: $countAfter)");
 
 $db->close();
 
+// ── Clear stats-api cache so fresh data is served ──
+$cacheDir = __DIR__ . '/cache';
+if (is_dir($cacheDir)) {
+    $files = glob("$cacheDir/*.json");
+    foreach ($files as $f) unlink($f);
+    logMsg("Cleared " . count($files) . " cached files");
+}
+
 logMsg("=== Update complete: $netNew new observations ===");

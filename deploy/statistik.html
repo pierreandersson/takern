@@ -412,9 +412,26 @@
   </header>
 
   <div class="container">
-    <!-- Overview section -->
+    <!-- Summary cards (shown immediately with skeleton) -->
+    <div id="summary-cards">
+      <div class="summary">
+        <div class="summary-card"><div class="label">Observationer</div><div class="value" id="stat-obs">–</div><div class="detail" id="stat-dates">Laddar...</div></div>
+        <div class="summary-card"><div class="label">Arter</div><div class="value" id="stat-species">–</div><div class="detail">registrerade fågelarter</div></div>
+        <div class="summary-card"><div class="label">Observatörer</div><div class="value" id="stat-observers">–</div><div class="detail">unika rapportörer</div></div>
+        <div class="summary-card"><div class="label">Snitt per år</div><div class="value" id="stat-avg">–</div><div class="detail">observationer</div></div>
+      </div>
+    </div>
+
+    <!-- Search (shown immediately) -->
+    <div class="section-title">Sök art</div>
+    <div class="search-box">
+      <input type="text" id="species-search" placeholder="Skriv artnamn..." autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <!-- Overview section (filled progressively) -->
     <div id="overview-section">
-      <div class="loading" id="loading">Laddar statistik...</div>
+      <div class="loading" id="loading">Laddar diagram och kartor...</div>
     </div>
 
     <!-- Species detail (hidden until selected) -->
@@ -444,39 +461,15 @@
       const overviewResp = await fetch("stats-api.php?q=overview");
       const overview = await overviewResp.json();
 
+      // Fill in summary cards
+      document.getElementById("stat-obs").textContent = overview.total_observations.toLocaleString("sv");
+      document.getElementById("stat-dates").textContent = `${overview.date_range.from} – ${overview.date_range.to}`;
+      document.getElementById("stat-species").textContent = overview.total_species;
+      document.getElementById("stat-observers").textContent = overview.total_observers.toLocaleString("sv");
+      document.getElementById("stat-avg").textContent = Math.round(overview.total_observations / Object.keys(overview.observations_per_year).length).toLocaleString("sv");
+
       const section = document.getElementById("overview-section");
       let html = "";
-
-      // Summary cards
-      html += `<div class="summary">
-        <div class="summary-card">
-          <div class="label">Observationer</div>
-          <div class="value">${overview.total_observations.toLocaleString("sv")}</div>
-          <div class="detail">${overview.date_range.from} – ${overview.date_range.to}</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Arter</div>
-          <div class="value">${overview.total_species}</div>
-          <div class="detail">registrerade fågelarter</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Observatörer</div>
-          <div class="value">${overview.total_observers.toLocaleString("sv")}</div>
-          <div class="detail">unika rapportörer</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Snitt per år</div>
-          <div class="value">${Math.round(overview.total_observations / Object.keys(overview.observations_per_year).length).toLocaleString("sv")}</div>
-          <div class="detail">observationer</div>
-        </div>
-      </div>`;
-
-      // 1. Search (top priority interaction)
-      html += `<div class="section-title">Sök art</div>
-      <div class="search-box">
-        <input type="text" id="species-search" placeholder="Skriv artnamn..." autocomplete="off">
-        <div class="search-results" id="search-results"></div>
-      </div>`;
 
       // 2. Geo heatmap + localities
       html += `<div class="chart-section">
@@ -837,6 +830,9 @@
       if (sp.error) return;
 
       // Hide overview, show detail
+      document.getElementById("summary-cards").style.display = "none";
+      document.querySelector(".search-box").style.display = "none";
+      document.querySelector(".search-box").previousElementSibling.style.display = "none";
       document.getElementById("overview-section").style.display = "none";
       const detail = document.getElementById("species-detail");
       detail.classList.add("active");
@@ -967,6 +963,9 @@
       document.getElementById("back-btn").addEventListener("click", () => {
         detail.classList.remove("active");
         detail.innerHTML = "";
+        document.getElementById("summary-cards").style.display = "";
+        document.querySelector(".search-box").style.display = "";
+        document.querySelector(".search-box").previousElementSibling.style.display = "";
         document.getElementById("overview-section").style.display = "";
         if (currentChart1) { currentChart1.destroy(); currentChart1 = null; }
         if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
@@ -1153,7 +1152,8 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // ── Init ──
+    // ── Init – load search and overview in parallel ──
+    setupSearch();
     loadOverview();
   </script>
 </body>
