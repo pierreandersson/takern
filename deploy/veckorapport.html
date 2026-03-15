@@ -283,7 +283,7 @@
 
       const dateRange = `${formatDayShort(liveData.allDates[0])} – ${formatDayShort(liveData.allDates[liveData.allDates.length - 1])}`;
       document.getElementById("header-desc").innerHTML =
-        `${dateRange} · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> · Historik från <a href="statistik.html" style="color:#d8f3dc">20 års databas</a>`;
+        `${dateRange} · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> m.fl. · Historik från <a href="statistik.html" style="color:#d8f3dc">20 års databas</a>`;
 
       let html = "";
 
@@ -432,7 +432,7 @@
 
       html += `<footer>
         Fenologi baserad på senaste 5 åren (exkl. januariobservationer) ·
-        Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a> ·
+        Data från <a href="https://www.artportalen.se">Artportalen</a>, Ringmärkningscentralen m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a> ·
         Uppdaterad ${new Date().toLocaleString("sv-SE")}
       </footer>`;
 

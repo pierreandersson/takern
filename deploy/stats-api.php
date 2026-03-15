@@ -276,7 +276,7 @@ if ($q === 'species' && $id !== null) {
     // Recent observations (last 20 unique date+locality combos, prefer Artportalen data)
     $recent = [];
     $res = $db->query("SELECT event_start_date, start_time, locality,
-        individual_count, recorded_by, url
+        individual_count, recorded_by, url, dataset_name
         FROM observations WHERE taxon_id = $id
         ORDER BY event_start_date DESC, (CASE WHEN url IS NOT NULL THEN 0 ELSE 1 END), start_time DESC LIMIT 80");
     $seen = [];
@@ -285,6 +285,15 @@ if ($q === 'species' && $id !== null) {
         $key = $row['event_start_date'] . '|' . ($row['locality'] ?? '');
         if (isset($seen[$key])) continue;
         $seen[$key] = true;
+        // Determine short source label for non-Artportalen data
+        $source = null;
+        $ds = $row['dataset_name'] ?? '';
+        if ($ds && stripos($ds, 'Artportalen') === false) {
+            if (stripos($ds, 'Ring') !== false) $source = 'Ringmärkning';
+            elseif (stripos($ds, 'Bird Survey') !== false || stripos($ds, 'Standardrutt') !== false) $source = 'Fågelinventering';
+            elseif (stripos($ds, 'iNaturalist') !== false) $source = 'iNaturalist';
+            else $source = $ds;
+        }
         $recent[] = [
             'date' => $row['event_start_date'],
             'time' => $row['start_time'],
@@ -292,6 +301,7 @@ if ($q === 'species' && $id !== null) {
             'count' => $row['individual_count'] !== null ? intval($row['individual_count']) : null,
             'observer' => $row['recorded_by'],
             'url' => $row['url'],
+            'source' => $source,
         ];
         if (count($recent) >= 20) break;
     }

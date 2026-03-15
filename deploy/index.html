@@ -189,7 +189,7 @@
   <header>
     <div>
       <h1>Tåkern – Fågelobservationer</h1>
-      <p id="header-desc">Senaste observationerna inom 10 km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a></p>
+      <p id="header-desc">Senaste observationerna inom 10 km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a></p>
     </div>
     <nav>
       <a href="statistik.html">Historisk statistik</a>
@@ -217,7 +217,7 @@
       </div>
       <div class="status" id="status">Laddar...</div>
       <div class="obs-list" id="obs-list">
-        <div class="loading">Hämtar observationer från Artportalen...</div>
+        <div class="loading">Hämtar observationer...</div>
       </div>
     </div>
   </div>
@@ -613,7 +613,7 @@
         currentRadius = parseInt(btn.dataset.radius);
         drawRadiusCircle(currentRadius);
         document.getElementById("header-desc").innerHTML =
-          `Senaste observationerna inom ${currentRadius} km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a>`;
+          `Senaste observationerna inom ${currentRadius} km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a>`;
         document.getElementById("status").textContent = "Laddar...";
         document.getElementById("obs-list").innerHTML = '<div class="loading">Hämtar observationer...</div>';
         loadData();
