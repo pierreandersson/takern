@@ -202,21 +202,25 @@ Nu rensas cachen manuellt via cron-update.php eller clear_cache.sh.
 ### Fas 2: Förbättra befintliga sidor ✅ (klar 2026-03-15)
 - [x] Veckorapport: förra årets jämförelse (samma datumintervall, delta i summary cards)
 - [x] Veckorapport: vårens framsteg-mätare (vecka 8–22, % av flyttfåglar anlända)
+- [x] Veckorapport: "Håll utkik efter" – arter förväntade inom 21 dagar men ej rapporterade
 - [x] index.html: "Ovanlig art"-badge (sällsynt/ovanlig/fåtalig baserat på obs/år)
 - [x] index.html: rarity i notable-scoring (30–120 poäng)
-- [x] Fenologi: earliest from alla 20 år, avg from senaste 5
+- [x] Fenologi: earliest from alla 20 år (min dag-på-året, ej kronologiskt), avg from senaste 5
 - [x] Rarity-filter: exkluderar hybrider, morfer, artgrupper
 - [x] statistik.html: batch-endpoint för snabbare laddning (?q=init)
 - [x] statistik.html: senaste observationer på artsidor (med datakälla-etikett)
+- [x] statistik.html: permalänkar för artsidor (?art=sangsvan)
 - [x] Deploy: auto-clear + warm cache efter FTP-upload
 - [x] Säkerhet: .htaccess blockerar cron_secret.txt, nyckel roterad
 - [ ] statistik.html: trendpilar på artsidor (▲▼ senaste 5 åren)
+- [ ] index.html: tidsomfångs-väljare – knappar/steg: idag, +1, +2, +3, +4, +5, +6 dagar
 
 ### Fas 3: Nya visualiseringar
 - [ ] Artackumulering: årets artlista dag för dag vs tidigare år
 - [ ] Fenologikalender: Gantt-diagram med alla arters säsonger
 
 ### Fas 4: Nya sidor
+- [ ] Om-sida: bakgrund om projektet, datakällor, kontakt
 - [ ] Artguide: bläddra bland arter med filter och "chansen att se nu"
 - [ ] Lokalsidor: klickbara lokaler med artlista och bästa besökstid
 

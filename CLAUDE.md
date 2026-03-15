@@ -27,18 +27,29 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 
 ## Deploy-flöde
 1. Push till main med ändringar i deploy/ → GitHub Actions FTP-deploy
-2. Efter FTP: curl till cron-update.php?action=clear-cache (värmer automatiskt)
+2. Efter FTP: curl till cron-update.php?action=clear-cache (värmer automatiskt, ~1 min blockerar PHP-worker)
 3. Secrets: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH, CRON_SECRET
 
 ## Viktigt att veta
 - **SQLite på Websupport:** %G/%V (ISO-vecka) fungerar INTE. Beräkna datumintervall i PHP istället.
-- **En PHP-worker:** Parallella browser-requests köas. Batch-endpoint (?q=init) löser detta.
+- **En PHP-worker:** Parallella browser-requests köas. Batch-endpoint (?q=init) löser detta. Cache-värmning efter deploy blockerar sajten ~1 min.
 - **WebFetch har 15 min cache:** Använd ALDRIG WebFetch för att verifiera efter deploy. Använd Chrome.
+- **WebFetch tolkar data opålitligt:** Lita inte på WebFetch för exakta siffror från API-svar. Verifiera via eval/kod.
 - **Cache-clear värmer automatiskt:** Standardbeteende sedan 2026-03-15. Skippa med &nowarm.
-- **Fenologi:** Earliest = alla 20 år (inget januarifilter). Average = senaste 5 år (med januarifilter).
+- **Fenologi:** Earliest = min dag-på-året (ej kronologiskt äldsta datumet), med januarifilter. Average = senaste 5 år (med januarifilter).
 - **Recent observations:** Dedupliceras per datum+lokal, prioriterar URL-poster. Alla poster har source-etikett.
 - **Rarity-filter:** Exkluderar hybrider (` x `), osäkra (`/`), morfer (`morf`), artgrupper (ej mellanslag i scientific_name)
 - **Spring progress:** Filtrerar till genuina flyttfåglar (avg_first_doy 32-180, ±30/+60 dagars marginal)
+- **Permalänkar:** Artsidor i statistik.html nås via `?art=slug` (t.ex. `?art=sangsvan`). Slug: å/ä→a, ö→o, é→e, specialtecken→bindestreck.
+
+## Notable scoring (index.html)
+Ranking baseras på tre transparenta faktorer – rödlistestatus visas som badge men påverkar INTE ranking:
+1. **Fenologi:** Graderad bonus baserat på hur många dagar före historiskt snitt. Ovanligt tidig (före earliest) > Mycket tidig (30+ dagar) > Tidig (14+ dagar)
+2. **Nyanlända:** Arter med ≤20 obs hittills i år får bonus (80–240 poäng, fler obs = lägre bonus)
+3. **Sällsynthet:** Lokalt sällsynta arter vid Tåkern (<2 obs/år = 120p, <5 = 60p, <10 = 30p)
+
+## Veckorapport-sektioner
+Ordning: Sammanfattningskort → Karta → Håll utkik efter (arter förväntade inom 21 dagar men ej rapporterade) → Nya observationer för året → Aktivitet per dag → Alla arter
 
 ## Säkerhet
 - .htaccess blockerar takern_api_key.txt och cron_secret.txt
@@ -48,5 +59,6 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 ## Utvecklingsplan
 Se IDEAS.md för fullständig att-göra-lista. Nästa steg:
 - statistik.html: trendpilar på artsidor (▲▼ senaste 5 åren)
+- index.html: tidsomfångs-väljare (idag, +1...+6 dagar)
 - Fas 3: Artackumulering, Fenologikalender
-- Fas 4: Artguide, Lokalsidor
+- Fas 4: Om-sida, Artguide, Lokalsidor
