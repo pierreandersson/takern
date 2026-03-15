@@ -447,12 +447,6 @@
 
       let html = "";
 
-      // Map – top of page like other pages
-      html += `<div class="map-section">
-        <h2>Karta – veckans observationer</h2>
-        <div id="weekMap"></div>
-      </div>`;
-
       // Summary cards
       html += `<div class="summary">`;
       html += `<div class="summary-card">
@@ -479,6 +473,12 @@
         <div class="detail">${redlistedThisWeek.slice(0, 3).join(", ") || "–"}${redlistedThisWeek.length > 3 ? " ..." : ""}</div>
       </div>`;
       html += `</div>`;
+
+      // Map – after summary cards, like statistik.html
+      html += `<div class="map-section">
+        <h2>Karta – veckans observationer</h2>
+        <div id="weekMap"></div>
+      </div>`;
 
       // First of year section
       html += `<div class="section-title">Nya observationer för året från veckan som gått</div>`;
