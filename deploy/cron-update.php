@@ -405,11 +405,19 @@ logMsg("Download complete: $netNew new observations (total: $countAfter)");
 $db->close();
 
 // ── Clear stats-api cache so fresh data is served ──
+// Keep slow-to-generate caches (localities, geo) – they only change on data import
 $cacheDir = __DIR__ . '/cache';
 if (is_dir($cacheDir)) {
     $files = glob("$cacheDir/*.json");
-    foreach ($files as $f) unlink($f);
-    logMsg("Cleared " . count($files) . " cached files");
+    $cleared = 0;
+    $keep = ['localities.json', 'geo.json'];
+    foreach ($files as $f) {
+        if (!in_array(basename($f), $keep)) {
+            unlink($f);
+            $cleared++;
+        }
+    }
+    logMsg("Cleared $cleared cached files (kept " . count($keep) . " slow caches)");
 }
 
 logMsg("=== Update complete: $netNew new observations ===");
