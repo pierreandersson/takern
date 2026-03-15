@@ -561,9 +561,10 @@
         <div class="chart-container"><canvas id="yearChart"></canvas></div>
       </div>`;
 
-      // 7. New species per year
+      // 7. New species per year (skip first year – all species are "new")
       if (overview.new_species_per_year) {
-        const nsYears = Object.keys(overview.new_species_per_year).sort();
+        const allNsYears = Object.keys(overview.new_species_per_year).sort();
+        const nsYears = allNsYears.slice(1);
         html += `<div class="chart-section">
           <h2>Nya arter per år</h2>
           <div class="chart-container"><canvas id="newSpeciesChart"></canvas></div>
@@ -706,9 +707,9 @@
         });
       }
 
-      // Render new species per year chart
+      // Render new species per year chart (skip first year)
       if (overview.new_species_per_year) {
-        const nsYears = Object.keys(overview.new_species_per_year).sort();
+        const nsYears = Object.keys(overview.new_species_per_year).sort().slice(1);
         new Chart(document.getElementById("newSpeciesChart"), {
           type: "bar",
           data: {
