@@ -355,7 +355,8 @@
         const onlyLastYear = ly.species.filter(n => !thisWeekNames.has(n));
 
         if (onlyLastYear.length > 0) {
-          html += `<div class="section-title">Sågs vecka ${ly.week} ${ly.year} men ej i år <span class="badge badge-orange">${onlyLastYear.length}</span></div>`;
+          const lyRange = ly.date_range ? ly.date_range.split(" – ").map(d => formatDateSwedish(d)).join(" – ") : ly.year;
+          html += `<div class="section-title">Sågs ${lyRange} men ej i år <span class="badge badge-orange">${onlyLastYear.length}</span></div>`;
           html += `<div class="compare-list">${onlyLastYear.join(", ")}</div>`;
         }
       }
@@ -561,7 +562,7 @@
         // Fetch live data and historical context in parallel
         const [liveResp, contextResp] = await Promise.all([
           fetch(`api.php?radius=10&days=${DAYS_BACK}`),
-          fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`),
+          fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}&days=${DAYS_BACK}`),
         ]);
 
         const liveRaw = await liveResp.json();

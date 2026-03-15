@@ -454,24 +454,24 @@ if ($q === 'week_context') {
         }
     }
 
-    // Same week last year: species count, obs count, species list, first-of-year
-    // Calculate date range for same ISO week last year (avoids %G/%V SQLite compatibility issues)
+    // Same period last year: compare same date range (e.g. Mar 9–15) one year back
     $lastYear = $year - 1;
-    $isoWeek = isset($_GET['week']) ? intval($_GET['week']) : intval(date('W'));
-    $lyWeekStart = new DateTime();
-    $lyWeekStart->setISODate($lastYear, $isoWeek, 1); // Monday
-    $lyWeekEnd = clone $lyWeekStart;
-    $lyWeekEnd->modify('+6 days'); // Sunday
-    $lyStart = $lyWeekStart->format('Y-m-d');
-    $lyEnd = $lyWeekEnd->format('Y-m-d');
+    $daysBack = isset($_GET['days']) ? intval($_GET['days']) : 7;
+    $today = new DateTime();
+    $lyEnd = new DateTime();
+    $lyEnd->modify('-1 year');
+    $lyStart = clone $lyEnd;
+    $lyStart->modify("-{$daysBack} days");
+    $lyStartStr = $lyStart->format('Y-m-d');
+    $lyEndStr = $lyEnd->format('Y-m-d');
 
-    // All species observed during this week last year
+    // All species observed during same period last year
     $res = $db->query("SELECT taxon_id, vernacular_name,
         COUNT(*) AS obs_count
         FROM observations
         WHERE vernacular_name IS NOT NULL
-            AND event_start_date >= '$lyStart'
-            AND event_start_date <= '$lyEnd'
+            AND event_start_date >= '$lyStartStr'
+            AND event_start_date <= '$lyEndStr'
         GROUP BY taxon_id");
     $lySpecies = [];
     $lyObs = 0;
@@ -487,14 +487,14 @@ if ($q === 'week_context') {
         FROM observations
         WHERE SUBSTR(event_start_date,1,4) = '$lastYear' AND vernacular_name IS NOT NULL
         GROUP BY taxon_id
-        HAVING first_date >= '$lyStart' AND first_date <= '$lyEnd'
+        HAVING first_date >= '$lyStartStr' AND first_date <= '$lyEndStr'
     )");
     $row = $res->fetchArray(SQLITE3_ASSOC);
     $lyFirstOfYear = intval($row['cnt']);
 
     $lastYearWeek = [
         'year' => $lastYear,
-        'week' => $isoWeek,
+        'date_range' => $lyStartStr . ' – ' . $lyEndStr,
         'species_count' => count($lySpecies),
         'obs_count' => $lyObs,
         'species' => $lySpecies,
@@ -504,7 +504,8 @@ if ($q === 'week_context') {
     // Spring progress: how many of all spring migrants (Feb-Jun) have arrived? (week 8–22 only)
     $springProgress = null;
     $currentDoy = intval(date('z')) + 1; // current day of year
-    if ($isoWeek >= 8 && $isoWeek <= 22) {
+    $currentWeek = intval(date('W'));
+    if ($currentWeek >= 8 && $currentWeek <= 22) {
         // Count all spring migrants (avg arrival Feb-Jun) and how many have been seen this year
         $totalMigrants = 0;
         $arrivedCount = 0;
