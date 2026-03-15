@@ -21,12 +21,6 @@
     .compare.up { color: var(--accent); }
     .compare.down { color: var(--red); }
 
-    .compare-list {
-      font-size: 0.9rem;
-      color: var(--muted);
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
 
     .highlights {
       display: flex;
@@ -355,18 +349,28 @@
         <div id="weekMap"></div>
       </div>`;
 
-      // Year-over-year species comparison: what was seen last year but not this week?
-      if (ly && ly.species && ly.species.length > 0) {
-        const thisWeekNames = new Set(liveData.speciesList.map(s => s.name));
-        const onlyLastYear = ly.species.filter(n => !thisWeekNames.has(n));
-
-        if (onlyLastYear.length > 0) {
-          const lyRange = ly.date_range ? ly.date_range.split(" – ").map(d => formatDateSwedish(d)).join(" – ") : ly.year;
-          html += `<div class="section-title">Sågs ${lyRange} men ej i år <span class="badge badge-orange">${onlyLastYear.length}</span></div>`;
-          html += `<div class="highlight-card" style="border-left:4px solid var(--orange)">
-            <div class="highlight-content">
-              <div style="line-height:1.7">${onlyLastYear.join(", ")}</div>
-            </div>
+      // "Håll utkik efter" – species expected in the next 21 days but not yet reported this year
+      if (phenology && Object.keys(phenology).length > 0) {
+        const currentDoy = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+        const lookAhead = [];
+        for (const [tid, ph] of Object.entries(phenology)) {
+          if (ph.avg_first_doy < 32 || ph.avg_first_doy > 180) continue;
+          if (ph.years_seen < 3) continue;
+          if (yearFirsts[tid]) continue;
+          if (ph.avg_first_doy >= currentDoy && ph.avg_first_doy <= currentDoy + 21) {
+            lookAhead.push({ taxonId: tid, name: ph.name, avgDate: ph.avg_first_date, avgDoy: ph.avg_first_doy });
+          }
+        }
+        lookAhead.sort((a, b) => a.avgDoy - b.avgDoy);
+        if (lookAhead.length > 0) {
+          html += `<div class="section-title">Håll utkik efter <span class="badge">${lookAhead.length}</span></div>`;
+          html += `<div class="highlights">${lookAhead.map(s => `
+            <div class="highlight-card" style="border-left:4px solid var(--accent)">
+              <div class="highlight-content">
+                <div class="species"><a href="statistik.html?art=${toSlug(s.name)}" style="color:inherit">${s.name}</a></div>
+                <div class="context">Brukar komma runt ${s.avgDate} – inte sedd i år ännu</div>
+              </div>
+            </div>`).join("")}
           </div>`;
         }
       }
@@ -395,32 +399,6 @@
         html += `</div>`;
       } else {
         html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
-      }
-
-      // "Håll utkik efter" – species expected in the next 21 days but not yet reported this year
-      if (phenology && Object.keys(phenology).length > 0) {
-        const currentDoy = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-        const lookAhead = [];
-        for (const [tid, ph] of Object.entries(phenology)) {
-          if (ph.avg_first_doy < 32 || ph.avg_first_doy > 180) continue;
-          if (ph.years_seen < 3) continue;
-          if (yearFirsts[tid]) continue;
-          if (ph.avg_first_doy >= currentDoy && ph.avg_first_doy <= currentDoy + 21) {
-            lookAhead.push({ taxonId: tid, name: ph.name, avgDate: ph.avg_first_date, avgDoy: ph.avg_first_doy });
-          }
-        }
-        lookAhead.sort((a, b) => a.avgDoy - b.avgDoy);
-        if (lookAhead.length > 0) {
-          html += `<div class="section-title">Håll utkik efter <span class="badge">${lookAhead.length}</span></div>`;
-          html += `<div class="highlights">${lookAhead.map(s => `
-            <div class="highlight-card" style="border-left:4px solid var(--accent)">
-              <div class="highlight-content">
-                <div class="species"><a href="statistik.html?art=${toSlug(s.name)}" style="color:inherit">${s.name}</a></div>
-                <div class="context">Brukar komma runt ${s.avgDate} – inte sedd i år ännu</div>
-              </div>
-            </div>`).join("")}
-          </div>`;
-        }
       }
 
       // Chart
