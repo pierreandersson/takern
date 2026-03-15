@@ -273,13 +273,18 @@ if ($q === 'species' && $id !== null) {
         GROUP BY h ORDER BY h");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) $timeOfDay[intval($row['h'])] = intval($row['n']);
 
-    // Recent observations (last 20)
+    // Recent observations (last 20 unique date+locality combos, prefer Artportalen data)
     $recent = [];
     $res = $db->query("SELECT event_start_date, start_time, locality,
         individual_count, recorded_by, url
         FROM observations WHERE taxon_id = $id
-        ORDER BY event_start_date DESC, start_time DESC LIMIT 20");
+        ORDER BY event_start_date DESC, (CASE WHEN url IS NOT NULL THEN 0 ELSE 1 END), start_time DESC LIMIT 80");
+    $seen = [];
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        // Deduplicate by date+locality – keep the one with most data (URL/observer)
+        $key = $row['event_start_date'] . '|' . ($row['locality'] ?? '');
+        if (isset($seen[$key])) continue;
+        $seen[$key] = true;
         $recent[] = [
             'date' => $row['event_start_date'],
             'time' => $row['start_time'],
@@ -288,6 +293,7 @@ if ($q === 'species' && $id !== null) {
             'observer' => $row['recorded_by'],
             'url' => $row['url'],
         ];
+        if (count($recent) >= 20) break;
     }
 
     jsonOut([
