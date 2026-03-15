@@ -13,6 +13,39 @@
   <style>
     /* Page-specific styles for veckorapport */
 
+    .compare {
+      font-size: 0.75rem;
+      margin-top: 0.2rem;
+      color: var(--muted);
+    }
+    .compare.up { color: var(--accent); }
+    .compare.down { color: var(--red); }
+
+    .year-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .compare-col {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .compare-heading {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .compare-list {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    @media (max-width: 600px) {
+      .year-compare { grid-template-columns: 1fr; }
+    }
+
     .highlights {
       display: flex;
       flex-direction: column;
@@ -249,7 +282,7 @@
             historicalEarliest: phen?.earliest_date || null,
             earliestYear: phen?.earliest_year || null,
             yearsSeen: phen?.years_seen || null,
-            yearRange: phen?.year_range || null,
+            yearRange: phen?.avg_year_range || null,
             hasPhenology: !!phen,
           });
         }
@@ -263,7 +296,7 @@
 
     // ── Rendering ──
 
-    function render(liveData, highlights, records, rarity) {
+    function render(liveData, highlights, records, rarity, lastYearWeek, springProgress) {
       const container = document.getElementById("main");
 
       const dateRange = `${formatDayShort(liveData.allDates[0])} – ${formatDayShort(liveData.allDates[liveData.allDates.length - 1])}`;
@@ -272,22 +305,35 @@
 
       let html = "";
 
-      // Summary cards
+      // Summary cards with last-year comparison
+      const ly = lastYearWeek;
+      function delta(current, lastYear) {
+        if (!ly || lastYear == null) return "";
+        const diff = current - lastYear;
+        if (diff === 0) return `<div class="detail compare">Samma som ${ly.year}</div>`;
+        const arrow = diff > 0 ? "▲" : "▼";
+        const cls = diff > 0 ? "up" : "down";
+        return `<div class="detail compare ${cls}">${arrow} ${Math.abs(diff)} vs ${ly.year}</div>`;
+      }
+
       html += `<div class="summary">`;
       html += `<div class="summary-card">
         <div class="label">Observationer</div>
         <div class="value">${liveData.totalObs.toLocaleString("sv")}</div>
         <div class="detail">senaste ${DAYS_BACK} dagarna</div>
+        ${delta(liveData.totalObs, ly?.obs_count)}
       </div>`;
       html += `<div class="summary-card">
         <div class="label">Arter</div>
         <div class="value">${liveData.uniqueSpecies}</div>
         <div class="detail">unika arter</div>
+        ${delta(liveData.uniqueSpecies, ly?.species_count)}
       </div>`;
       html += `<div class="summary-card">
         <div class="label">Årets första</div>
         <div class="value">${highlights.firstOfYear.length}</div>
         <div class="detail">arter nya för säsongen</div>
+        ${delta(highlights.firstOfYear.length, ly?.first_of_year)}
       </div>`;
       const redlistedThisWeek = [...new Set(liveData.speciesList
         .filter(s => s.redlist && s.redlist !== "LC")
@@ -297,6 +343,22 @@
         <div class="value">${redlistedThisWeek.length}</div>
         <div class="detail">${redlistedThisWeek.slice(0, 3).join(", ") || "–"}${redlistedThisWeek.length > 3 ? " ..." : ""}</div>
       </div>`;
+
+      // Spring progress card (week 8–22 only)
+      if (springProgress && springProgress.pct != null) {
+        const earlyLate = springProgress.median_diff_days != null
+          ? (springProgress.median_diff_days < -2 ? `${Math.abs(springProgress.median_diff_days)} dagar tidig`
+            : springProgress.median_diff_days > 2 ? `${springProgress.median_diff_days} dagar sen`
+            : "i fas")
+          : "";
+        html += `<div class="summary-card">
+          <div class="label">Vårens framsteg</div>
+          <div class="value">${springProgress.pct}%</div>
+          <div class="detail">${springProgress.arrived} av ${springProgress.expected} väntade arter</div>
+          ${earlyLate ? `<div class="detail compare ${springProgress.median_diff_days < -2 ? "up" : springProgress.median_diff_days > 2 ? "down" : ""}">${earlyLate}</div>` : ""}
+        </div>`;
+      }
+
       html += `</div>`;
 
       // Map – after summary cards, like statistik.html
@@ -304,6 +366,32 @@
         <h2>Karta – veckans observationer</h2>
         <div id="weekMap"></div>
       </div>`;
+
+      // Year-over-year species comparison
+      if (ly && ly.species && ly.species.length > 0) {
+        const thisWeekNames = new Set(liveData.speciesList.map(s => s.name));
+        const lastYearNames = new Set(ly.species);
+        const onlyThisYear = liveData.speciesList.map(s => s.name).filter(n => !lastYearNames.has(n));
+        const onlyLastYear = ly.species.filter(n => !thisWeekNames.has(n));
+
+        if (onlyThisYear.length > 0 || onlyLastYear.length > 0) {
+          html += `<div class="section-title">Jämfört med vecka ${ly.week}, ${ly.year}</div>`;
+          html += `<div class="year-compare">`;
+          if (onlyThisYear.length > 0) {
+            html += `<div class="compare-col">
+              <div class="compare-heading">Nya i år <span class="badge badge-green">${onlyThisYear.length}</span></div>
+              <div class="compare-list">${onlyThisYear.join(", ")}</div>
+            </div>`;
+          }
+          if (onlyLastYear.length > 0) {
+            html += `<div class="compare-col">
+              <div class="compare-heading">Sågs ${ly.year} men ej i år <span class="badge badge-orange">${onlyLastYear.length}</span></div>
+              <div class="compare-list">${onlyLastYear.join(", ")}</div>
+            </div>`;
+          }
+          html += `</div>`;
+        }
+      }
 
       // First of year section
       html += `<div class="section-title">Nya observationer för året från veckan som gått</div>`;
@@ -529,7 +617,9 @@
         const liveData = processLiveData(records);
         const highlights = crossReference(liveData, context);
         const rarity = context.rarity || {};
-        render(liveData, highlights, records, rarity);
+        const lastYearWeek = context.last_year_week || null;
+        const springProgress = context.spring_progress || null;
+        render(liveData, highlights, records, rarity, lastYearWeek, springProgress);
       } catch (err) {
         document.getElementById("main").innerHTML =
           `<div class="error">Kunde inte hämta data: ${err.message}</div>`;

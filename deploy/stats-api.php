@@ -454,11 +454,96 @@ if ($q === 'week_context') {
         }
     }
 
+    // Same week last year: species count, obs count, species list, redlisted, first-of-year
+    $lastYear = $year - 1;
+    $isoWeek = isset($_GET['week']) ? intval($_GET['week']) : intval(date('W'));
+    $lastYearWeek = [];
+
+    // All species observed during this ISO week last year
+    $res = $db->query("SELECT DISTINCT taxon_id, vernacular_name, scientific_name,
+        COUNT(*) AS obs_count
+        FROM observations
+        WHERE vernacular_name IS NOT NULL
+            AND CAST(STRFTIME('%G', event_start_date) AS INTEGER) = $lastYear
+            AND CAST(STRFTIME('%V', event_start_date) AS INTEGER) = $isoWeek
+        GROUP BY taxon_id");
+    $lySpecies = [];
+    $lyObs = 0;
+    $lyRedlisted = 0;
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $lySpecies[] = $row['vernacular_name'];
+        $lyObs += intval($row['obs_count']);
+    }
+
+    // Count redlisted from last year's week (check against this year's redlist status via current data)
+    // Simpler: count species observed last year same week that had redlist observations
+    // We'll let the frontend handle redlist matching since it has the attribute data
+
+    // First-of-year count last year: species whose first obs last year fell in this week
+    $lyFirstOfYear = 0;
+    $res = $db->query("SELECT COUNT(*) AS cnt FROM (
+        SELECT taxon_id, MIN(event_start_date) AS first_date
+        FROM observations
+        WHERE SUBSTR(event_start_date,1,4) = '$lastYear' AND vernacular_name IS NOT NULL
+        GROUP BY taxon_id
+        HAVING CAST(STRFTIME('%V', first_date) AS INTEGER) = $isoWeek
+    )");
+    $row = $res->fetchArray(SQLITE3_ASSOC);
+    $lyFirstOfYear = intval($row['cnt']);
+
+    $lastYearWeek = [
+        'year' => $lastYear,
+        'week' => $isoWeek,
+        'species_count' => count($lySpecies),
+        'obs_count' => $lyObs,
+        'species' => $lySpecies,
+        'first_of_year' => $lyFirstOfYear,
+    ];
+
+    // Spring progress: how many expected migrants have arrived? (week 8–22 only)
+    $springProgress = null;
+    $currentDoy = intval(date('z')) + 1; // current day of year
+    if ($isoWeek >= 8 && $isoWeek <= 22) {
+        $expectedCount = 0;
+        $arrivedCount = 0;
+        foreach ($phenology as $tid => $ph) {
+            if ($ph['avg_first_doy'] <= $currentDoy + 7) { // expected by now (with 1 week margin)
+                $expectedCount++;
+                if (isset($yearFirsts[$tid])) {
+                    $arrivedCount++;
+                }
+            }
+        }
+        // Compare median arrival this year vs historical
+        $thisYearDoys = [];
+        foreach ($yearFirsts as $tid => $yf) {
+            if (isset($phenology[$tid]) && $phenology[$tid]['avg_first_doy'] >= 32) { // skip Jan species
+                $doy = intval(date('z', strtotime($yf['first_date']))) + 1;
+                $thisYearDoys[] = $doy - $phenology[$tid]['avg_first_doy'];
+            }
+        }
+        $medianDiff = null;
+        if (count($thisYearDoys) > 5) {
+            sort($thisYearDoys);
+            $mid = intval(count($thisYearDoys) / 2);
+            $medianDiff = $thisYearDoys[$mid];
+        }
+
+        $springProgress = [
+            'expected' => $expectedCount,
+            'arrived' => $arrivedCount,
+            'pct' => $expectedCount > 0 ? round(100 * $arrivedCount / $expectedCount) : null,
+            'median_diff_days' => $medianDiff, // negative = early, positive = late
+        ];
+    }
+
     jsonOut([
         'year' => $year,
         'year_firsts' => $yearFirsts,
         'phenology' => $phenology,
         'rarity' => $rarity,
+        'last_year_week' => $lastYearWeek,
+        'spring_progress' => $springProgress,
     ]);
 }
 
