@@ -2,3 +2,6 @@
 <Files "takern_api_key.txt">
     Require all denied
 </Files>
+<Files "cron_secret.txt">
+    Require all denied
+</Files>
