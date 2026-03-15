@@ -8,6 +8,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="theme-color" content="#2d6a4f">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
       --bg: #f8f7f4;
@@ -229,6 +230,26 @@
       margin-bottom: 2rem;
     }
 
+    /* Map */
+    .map-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .map-section h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 1rem 1.5rem 0;
+    }
+
+    #weekMap {
+      height: 400px;
+      width: 100%;
+    }
+
     /* Footer */
     footer {
       border-top: 1px solid var(--border);
@@ -255,6 +276,7 @@
       .summary { grid-template-columns: 1fr 1fr; }
       .summary-card .value { font-size: 1.5rem; }
       .chart-container { height: 220px; }
+      #weekMap { height: 300px; }
       .species-table .scientific { display: none; }
       .species-table .hist-col { display: none; }
     }
@@ -276,6 +298,7 @@
     <div class="loading" id="loading">Hämtar observationer...</div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const DAYS_BACK = 7;
 
@@ -414,7 +437,7 @@
 
     // ── Rendering ──
 
-    function render(liveData, highlights) {
+    function render(liveData, highlights, records) {
       const container = document.getElementById("main");
 
       const dateRange = `${formatDayShort(liveData.allDates[0])} – ${formatDayShort(liveData.allDates[liveData.allDates.length - 1])}`;
@@ -451,7 +474,7 @@
       html += `</div>`;
 
       // First of year section
-      html += `<div class="section-title">Årets första observationer</div>`;
+      html += `<div class="section-title">Nya observationer för året från veckan som gått</div>`;
       if (highlights.firstOfYear.length > 0) {
         html += `<div class="highlights">`;
         for (const sp of highlights.firstOfYear) {
@@ -475,6 +498,12 @@
       } else {
         html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
       }
+
+      // Map
+      html += `<div class="map-section">
+        <h2>Karta – veckans observationer</h2>
+        <div id="weekMap"></div>
+      </div>`;
 
       // Chart
       html += `<div class="chart-section">
@@ -521,6 +550,7 @@
 
       container.innerHTML = html;
       renderChart(liveData.dailyStats);
+      renderMap(records);
     }
 
     function renderChart(dailyStats) {
@@ -586,6 +616,51 @@
       });
     }
 
+    function renderMap(records) {
+      const mapEl = document.getElementById("weekMap");
+      if (!mapEl) return;
+
+      const map = L.map("weekMap").setView([58.35, 14.81], 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map);
+
+      // Aggregate observations per location (lat/lng rounded to ~100m)
+      const grid = {};
+      for (const obs of records) {
+        const lat = obs.location?.decimalLatitude;
+        const lng = obs.location?.decimalLongitude;
+        if (!lat || !lng) continue;
+        // Round to ~100m grid for clustering
+        const key = `${(Math.round(lat * 1000) / 1000).toFixed(3)},${(Math.round(lng * 1000) / 1000).toFixed(3)}`;
+        if (!grid[key]) grid[key] = { lat, lng, count: 0, species: new Set() };
+        grid[key].count++;
+        const name = obs.taxon?.vernacularName || obs.taxon?.scientificName;
+        if (name) grid[key].species.add(name);
+      }
+
+      // Draw circles – size and color based on density
+      const counts = Object.values(grid).map(g => g.count);
+      const maxCount = Math.max(...counts, 1);
+
+      for (const cell of Object.values(grid)) {
+        const intensity = cell.count / maxCount;
+        const radius = 5 + intensity * 15;
+        const color = intensity > 0.6 ? "#b91c1c" : intensity > 0.3 ? "#b45309" : "#2d6a4f";
+
+        L.circleMarker([cell.lat, cell.lng], {
+          radius,
+          color,
+          fillColor: color,
+          fillOpacity: 0.5 + intensity * 0.3,
+          weight: 1,
+        }).bindPopup(
+          `<strong>${cell.count} observationer</strong><br>${cell.species.size} arter<br><em>${[...cell.species].slice(0, 5).join(", ")}${cell.species.size > 5 ? " ..." : ""}</em>`
+        ).addTo(map);
+      }
+    }
+
     // ── Init ──
 
     async function init() {
@@ -615,7 +690,7 @@
 
         const liveData = processLiveData(records);
         const highlights = crossReference(liveData, context);
-        render(liveData, highlights);
+        render(liveData, highlights, records);
       } catch (err) {
         document.getElementById("main").innerHTML =
           `<div class="error">Kunde inte hämta data: ${err.message}</div>`;
