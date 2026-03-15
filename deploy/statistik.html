@@ -721,7 +721,7 @@
 
       // Update URL
       if (!skipPush) {
-        const slug = toSlug(sp.swedish_name);
+        const slug = toSlug(sp.name);
         history.pushState({ taxonId }, "", `?art=${slug}`);
       }
 
