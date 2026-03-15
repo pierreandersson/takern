@@ -375,11 +375,8 @@
 
       const firstOfYear = [];
 
-      const weekEnd = liveData.allDates[liveData.allDates.length - 1];
-      // Look back 14 days for "first of year" to capture recent arrivals
-      const recentCutoff = new Date(weekEnd);
-      recentCutoff.setDate(recentCutoff.getDate() - 14);
-      const recentCutoffStr = recentCutoff.toISOString().slice(0, 10);
+      // Use the same date range as shown in the header
+      const weekStart = liveData.allDates[0];
 
       for (const sp of liveData.speciesList) {
         const tid = sp.taxonId;
@@ -389,8 +386,8 @@
         const phen = dbPhenology[tid]; // DB phenology (5 yrs, excl. January)
         const firstDateThisYear = yearData?.first_date;
 
-        // Species whose first obs this year is recent (within last 14 days)
-        const isRecentFirst = !firstDateThisYear || firstDateThisYear >= recentCutoffStr;
+        // Species whose first obs this year falls within this week's date range
+        const isRecentFirst = !firstDateThisYear || firstDateThisYear >= weekStart;
         // Exclude obvious year-round residents: if in DB and first_date is January, skip
         const isJanuaryResident = firstDateThisYear && firstDateThisYear.slice(5, 7) === "01";
 
