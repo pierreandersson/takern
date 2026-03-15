@@ -400,7 +400,7 @@ if ($q === 'week_context') {
             'earliest_date' => doyToStr($minDoy),
             'earliest_year' => strval($earliestYear),
             'years_seen' => count($data['years']),
-            'year_range' => "$minYear–$maxYear",
+            'year_range' => $minYear . '–' . $maxYear,
         ];
     }
 
