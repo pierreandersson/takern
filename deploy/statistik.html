@@ -300,6 +300,17 @@
     let currentChart4 = null;
     let currentSpeciesMap = null;
 
+    function toSlug(name) {
+      return name.toLowerCase()
+        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function findSpeciesBySlug(slug) {
+      if (!speciesCache) return null;
+      return speciesCache.find(s => toSlug(s.name) === slug);
+    }
+
     function weekToDate(week) {
       const d = new Date(2024, 0, 1);
       d.setDate(d.getDate() + week * 7);
@@ -677,13 +688,42 @@
       });
     }
 
+    function showOverview() {
+      const detail = document.getElementById("species-detail");
+      detail.classList.remove("active");
+      detail.innerHTML = "";
+      document.getElementById("summary-cards").style.display = "";
+      document.querySelector(".search-box").style.display = "";
+      document.querySelector(".search-box").previousElementSibling.style.display = "";
+      document.getElementById("overview-section").style.display = "";
+      if (currentChart1) { currentChart1.destroy(); currentChart1 = null; }
+      if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
+      if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
+      if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
+      if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
+    }
+
+    window.addEventListener("popstate", (e) => {
+      if (e.state && e.state.taxonId) {
+        loadSpecies(e.state.taxonId, true);
+      } else {
+        showOverview();
+      }
+    });
+
     // ── Species detail ──
 
-    async function loadSpecies(taxonId) {
+    async function loadSpecies(taxonId, skipPush) {
       const resp = await fetch(`stats-api.php?q=species&id=${taxonId}`);
       const sp = await resp.json();
 
       if (sp.error) return;
+
+      // Update URL
+      if (!skipPush) {
+        const slug = toSlug(sp.swedish_name);
+        history.pushState({ taxonId }, "", `?art=${slug}`);
+      }
 
       // Hide overview, show detail
       document.getElementById("summary-cards").style.display = "none";
@@ -838,16 +878,8 @@
 
       // Back button
       document.getElementById("back-btn").addEventListener("click", () => {
-        detail.classList.remove("active");
-        detail.innerHTML = "";
-        document.getElementById("summary-cards").style.display = "";
-        document.querySelector(".search-box").style.display = "";
-        document.querySelector(".search-box").previousElementSibling.style.display = "";
-        document.getElementById("overview-section").style.display = "";
-        if (currentChart1) { currentChart1.destroy(); currentChart1 = null; }
-        if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
-        if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
-        if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
+        showOverview();
+        history.pushState({}, "", "statistik.html");
       });
 
       // Render season curve
@@ -1039,6 +1071,14 @@
         console.error("Init failed, falling back to individual requests", err);
         setupSearch();
         loadOverview();
+      }
+
+      // Deep-link: load species from ?art= parameter
+      const params = new URLSearchParams(window.location.search);
+      const artSlug = params.get("art");
+      if (artSlug && speciesCache) {
+        const match = findSpeciesBySlug(artSlug);
+        if (match) loadSpecies(match.taxon_id, true);
       }
     }
     init();
