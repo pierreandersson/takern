@@ -387,11 +387,14 @@
       const phenology = context.phenology || {};
       const currentYear = String(context.year || new Date().getFullYear());
 
-      const firstOfYear = [];  // Species first seen this year during this week
+      const firstOfYear = [];  // Species with recent first-of-year arrival
       const earlyArrivals = []; // Species arriving earlier than historical average
 
-      const weekStart = liveData.allDates[0];
       const weekEnd = liveData.allDates[liveData.allDates.length - 1];
+      // Look back 21 days for "first of year" arrivals (covers species arriving just before this week)
+      const recentCutoff = new Date(weekEnd);
+      recentCutoff.setDate(recentCutoff.getDate() - 21);
+      const recentCutoffStr = recentCutoff.toISOString().slice(0, 10);
 
       for (const sp of liveData.speciesList) {
         const tid = sp.taxonId;
@@ -400,13 +403,16 @@
         const yearData = yearFirsts[tid];
         const phenData = phenology[tid];
 
-        // Check if this is first of the year
-        // Either: not in DB for this year at all, OR first_date in DB falls within this week
-        const isFirstOfYear = !yearData || (yearData.first_date >= weekStart && yearData.first_date <= weekEnd);
+        // "Årets första": species whose first obs this year is recent (last 21 days)
+        // and that are seasonal (not year-round residents with avg_first_doy in January)
+        const isSeasonalSpecies = !phenData || phenData.avg_first_doy > 45;
+        const firstDateThisYear = yearData?.first_date;
+        const isRecentFirstArrival = !firstDateThisYear || firstDateThisYear >= recentCutoffStr;
 
-        if (isFirstOfYear) {
+        if (isRecentFirstArrival && isSeasonalSpecies) {
           firstOfYear.push({
             ...sp,
+            firstDate: firstDateThisYear || sp.firstSeen,
             historicalAvgFirst: phenData?.avg_first_date || null,
             historicalAvgDoy: phenData?.avg_first_doy || null,
             historicalEarliest: phenData?.earliest_date || null,
@@ -416,8 +422,8 @@
 
         // Check if early arrival (current DOY is at least 7 days before historical average)
         if (phenData && phenData.avg_first_doy > 30) { // Skip year-round species
-          const currentDoy = dayOfYear(sp.firstSeen);
-          const daysEarly = phenData.avg_first_doy - currentDoy;
+          const obsDoy = dayOfYear(firstDateThisYear || sp.firstSeen);
+          const daysEarly = phenData.avg_first_doy - obsDoy;
           if (daysEarly >= 7) {
             earlyArrivals.push({
               ...sp,
@@ -426,7 +432,7 @@
               historicalEarliest: phenData.earliest_date,
               historicalEarliestDoy: phenData.earliest_doy,
               yearsSeen: phenData.years_seen,
-              isNewRecord: currentDoy < phenData.earliest_doy,
+              isNewRecord: obsDoy < phenData.earliest_doy,
             });
           }
         }
@@ -489,7 +495,7 @@
             <div class="highlight-icon">&#11088;</div>
             <div class="highlight-content">
               <div class="species">${sp.name}${countStr} <span class="badge badge-purple">Årets första</span></div>
-              <div class="context">${formatDateNice(sp.firstSeen)} · ${sp.scientific}${context ? ` · ${context}` : ""}</div>
+              <div class="context">Först sedd ${formatDateNice(sp.firstDate)} · ${sp.scientific}${context ? ` · ${context}` : ""}</div>
             </div>
           </div>`;
         }
