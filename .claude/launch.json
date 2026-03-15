@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "takern-api",
+      "runtimeExecutable": "/Users/pierreandersson/Claude Code/takern-birds/venv/bin/python",
+      "runtimeArgs": ["api.py", "--port", "5001"],
+      "port": 5001
+    }
+  ]
+}
