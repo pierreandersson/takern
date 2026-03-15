@@ -469,14 +469,14 @@
     }
 
     // ── Artportalen link helper ──
-    function apLink(occurrenceId, text) {
-      if (!occurrenceId) return text;
+    function apLink(occurrenceId) {
+      if (!occurrenceId) return null;
       // occurrenceId format: "urn:lsid:artportalen.se:sighting:XXXXXXX"
       const match = occurrenceId.match(/sighting:(\d+)/i);
       if (match) {
-        return `<a href="https://www.artportalen.se/Sighting/${match[1]}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline dotted">${text}</a>`;
+        return `<a href="https://www.artportalen.se/Sighting/${match[1]}" target="_blank" rel="noopener" style="color:var(--accent)">Obs på Artportalen</a>`;
       }
-      return text;
+      return null;
     }
 
     // ── Rendering ──
@@ -526,12 +526,13 @@
           if (sp.yearsSeen) contextParts.push(`${sp.yearsSeen} års data`);
           const context = contextParts.join(" · ");
 
-          const nameLinked = apLink(sp.firstOccurrenceId, sp.name);
+          const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
+          const apObs = apLink(sp.firstOccurrenceId);
 
           html += `<div class="highlight-card first-of-year">
             <div class="highlight-content">
-              <div class="species">${nameLinked}${countStr} <span class="badge badge-purple">Årets första</span></div>
-              <div class="context">Först sedd ${formatDateNice(sp.firstDate)} · ${sp.scientific}${context ? ` · ${context}` : ""}</div>
+              <div class="species">${speciesLink}${countStr} <span class="badge badge-purple">Årets första</span></div>
+              <div class="context">Först sedd ${formatDateNice(sp.firstDate)} · ${sp.scientific}${context ? ` · ${context}` : ""}${apObs ? ` · ${apObs}` : ""}</div>
             </div>
           </div>`;
         }
@@ -551,12 +552,13 @@
           if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före snitt (${sp.typicalDate.replace(/^0/,"").replace("-","/")})`);
           if (sp.earliestDate) contextParts.push(`Tidigast: ${sp.earliestDate.replace(/^0/,"").replace("-","/")}`);
 
-          const nameLinked = apLink(sp.firstOccurrenceId, sp.name);
+          const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
+          const apObs = apLink(sp.firstOccurrenceId);
 
           html += `<div class="highlight-card early-arrival">
             <div class="highlight-content">
-              <div class="species">${nameLinked} <span class="badge badge-orange">Tidig obs</span></div>
-              <div class="context">${contextParts.join(" · ")}</div>
+              <div class="species">${speciesLink} <span class="badge badge-orange">Tidig obs</span></div>
+              <div class="context">${contextParts.join(" · ")}${apObs ? ` · ${apObs}` : ""}</div>
             </div>
           </div>`;
         }
