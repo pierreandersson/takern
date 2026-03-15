@@ -47,9 +47,10 @@ try {
 $db = new SQLite3($DB_FILE, SQLITE3_OPEN_READONLY);
 
 function doyToStr($doy) {
-    if ($doy === null) return null;
+    if ($doy === null || $doy < 1 || $doy > 366) return null;
     $months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
-    $date = DateTime::createFromFormat('z Y', ($doy - 1) . ' 2024');
+    $date = DateTime::createFromFormat('z Y', str_pad($doy - 1, 3, '0', STR_PAD_LEFT) . ' 2024');
+    if (!$date) return null;
     return $date->format('j') . ' ' . $months[intval($date->format('n')) - 1];
 }
 
