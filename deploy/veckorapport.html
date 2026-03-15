@@ -9,122 +9,10 @@
   <meta name="theme-color" content="#2d6a4f">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --bg: #f8f7f4;
-      --card: #ffffff;
-      --text: #1a1a1a;
-      --muted: #6b7280;
-      --accent: #2d6a4f;
-      --accent-light: #d8f3dc;
-      --red: #b91c1c;
-      --red-light: #fee2e2;
-      --orange: #b45309;
-      --orange-light: #fef3c7;
-      --purple: #7c3aed;
-      --purple-light: #ede9fe;
-      --blue: #1d4ed8;
-      --blue-light: #dbeafe;
-      --border: #e5e7eb;
-    }
+    /* Page-specific styles for veckorapport */
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-
-    header {
-      background: var(--accent);
-      color: white;
-      padding: 1.5rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    header h1 { font-size: 1.5rem; font-weight: 700; }
-    header p { opacity: 0.85; font-size: 0.9rem; }
-    header a { color: #d8f3dc; }
-
-    nav { display: flex; gap: 1.5rem; font-size: 0.9rem; }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 1.5rem 1rem;
-    }
-
-    /* Summary cards */
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .summary-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.25rem;
-    }
-
-    .summary-card .label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .summary-card .value {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-top: 0.25rem;
-    }
-
-    .summary-card .detail {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 0.15rem;
-    }
-
-    /* Section headings */
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    /* Chart section */
-    .chart-section {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .chart-section h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
-
-    .chart-container {
-      position: relative;
-      height: 280px;
-    }
-
-    /* Highlight cards */
     .highlights {
       display: flex;
       flex-direction: column;
@@ -165,19 +53,9 @@
     }
 
     .badge {
-      display: inline-block;
-      padding: 0.1rem 0.45rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 600;
       margin-left: 0.4rem;
       vertical-align: middle;
     }
-
-    .badge-purple { background: var(--purple-light); color: var(--purple); }
-    .badge-orange { background: var(--orange-light); color: var(--orange); }
-    .badge-red { background: var(--red-light); color: var(--red); }
-    .badge-blue { background: var(--blue-light); color: var(--blue); }
 
     /* Species table */
     .species-table {
@@ -222,7 +100,6 @@
 
     .day-dot.active { background: var(--accent); }
 
-    /* No highlights placeholder */
     .no-highlights {
       color: var(--muted);
       font-size: 0.9rem;
@@ -230,52 +107,12 @@
       margin-bottom: 2rem;
     }
 
-    /* Map */
-    .map-section {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-bottom: 2rem;
-    }
-
-    .map-section h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      padding: 1rem 1.5rem 0;
-    }
-
     #weekMap {
       height: 450px;
       width: 100%;
     }
 
-    /* Footer */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 1rem 0;
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 3rem;
-      color: var(--muted);
-    }
-
-    .error {
-      background: var(--red-light);
-      color: var(--red);
-      padding: 1rem;
-      border-radius: 8px;
-    }
-
     @media (max-width: 600px) {
-      .summary { grid-template-columns: 1fr 1fr; }
-      .summary-card .value { font-size: 1.5rem; }
-      .chart-container { height: 220px; }
       #weekMap { height: 300px; }
       .species-table .scientific { display: none; }
       .species-table .hist-col { display: none; }
@@ -300,6 +137,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="utils.js"></script>
   <script>
     const DAYS_BACK = 7;
 
@@ -308,18 +146,6 @@
     function formatDayShort(dateStr) {
       const d = new Date(dateStr);
       return d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
-    }
-
-    function formatDateNice(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
-    }
-
-    function redlistBadge(cat) {
-      if (!cat || cat === "LC") return "";
-      const colors = { CR: "red", EN: "red", VU: "orange", NT: "orange" };
-      return `<span class="badge badge-${colors[cat] || "blue"}">${cat}</span>`;
     }
 
     // ── Data processing ──
@@ -486,7 +312,7 @@
         html += `<div class="highlights">`;
         for (const sp of highlights.firstOfYear) {
           let contextParts = [];
-          contextParts.push(`Först sedd ${formatDateNice(sp.firstDate)}`);
+          contextParts.push(`Först sedd ${formatDateSwedish(sp.firstDate)}`);
           if (sp.historicalTypical) contextParts.push(`Normalt först ${sp.historicalTypical}`);
           if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
           const context = contextParts.join(" · ");
@@ -527,7 +353,7 @@
       for (const sp of liveData.speciesList) {
         let statusBadges = "";
         if (firstOfYearNames.has(sp.name)) statusBadges += `<span class="badge badge-purple">Årets 1:a</span> `;
-        const rlBadge = redlistBadge(sp.redlist);
+        const rlBadge = redlistBadgeHtml(sp.redlist);
 
         const dots = liveData.allDates.map(d =>
           `<div class="day-dot${sp.daysSeen.includes(d) ? " active" : ""}" title="${formatDayShort(d)}"></div>`
@@ -621,11 +447,7 @@
       const mapEl = document.getElementById("weekMap");
       if (!mapEl) return;
 
-      const map = L.map("weekMap").setView([58.35, 14.82], 11);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
-      }).addTo(map);
+      const map = initMap("weekMap");
 
       // Aggregate heatmap points by rounded coordinates
       const grid = {};
@@ -641,20 +463,11 @@
       const points = Object.values(grid);
       if (points.length === 0) return;
 
-      // Heatmap layer – log scale, same style as statistik.html
-      const logPoints = points.map(p => [p.lat, p.lng, Math.log(p.count + 1)]);
-      const vals = logPoints.map(p => p[2]).sort((a, b) => a - b);
-      const n = points.length;
-      const r = n < 10 ? 40 : n < 30 ? 34 : n < 80 ? 28 : n < 200 ? 24 : 18;
-      const bl = Math.round(r * 0.55);
-      const p50 = vals[Math.floor(vals.length * 0.5)] || 1;
+      // Heatmap layer
+      const heatLayer = createHeatLayer(points);
+      if (heatLayer) heatLayer.addTo(map);
 
-      L.heatLayer(logPoints, {
-        radius: r, blur: bl, maxZoom: 17, minOpacity: 0.25, max: p50,
-        gradient: { 0.05: "#2166ac", 0.2: "#67a9cf", 0.4: "#d1e5f0", 0.6: "#fddbc7", 0.8: "#ef8a62", 1: "#b2182b" },
-      }).addTo(map);
-
-      // Locality markers – shown when zoomed in (>= 15), like statistik.html
+      // Locality markers
       const localities = {};
       for (const obs of records) {
         const loc = obs.location?.locality;
@@ -667,20 +480,7 @@
         if (sp) localities[loc].species.add(sp);
       }
 
-      const localityLayer = L.layerGroup();
-      for (const loc of Object.values(localities)) {
-        const cr = Math.min(8, 3 + Math.log10(loc.obs) * 2);
-        L.circleMarker([loc.lat, loc.lng], {
-          radius: cr, fillColor: "#2d6a4f", fillOpacity: 0.7,
-          color: "#fff", weight: 1,
-        }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs} obs · ${loc.species.size} arter`)
-          .addTo(localityLayer);
-      }
-      if (map.getZoom() >= 15) localityLayer.addTo(map);
-      map.on("zoomend", () => {
-        if (map.getZoom() >= 15) localityLayer.addTo(map);
-        else map.removeLayer(localityLayer);
-      });
+      addLocalityMarkers(map, Object.values(localities));
     }
 
     // ── Init ──

@@ -11,62 +11,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --bg: #f8f7f4;
-      --card: #ffffff;
-      --text: #1a1a1a;
-      --muted: #6b7280;
-      --accent: #2d6a4f;
-      --accent-light: #d8f3dc;
-      --red: #b91c1c;
-      --red-light: #fee2e2;
-      --orange: #b45309;
-      --orange-light: #fef3c7;
-      --border: #e5e7eb;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-
-    header {
-      background: var(--accent);
-      color: white;
-      padding: 1.5rem 2rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    header p {
-      opacity: 0.85;
-      font-size: 0.9rem;
-    }
-
     .layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
       height: calc(100vh - 80px);
-    }
-
-    @media (max-width: 900px) {
-      .layout {
-        grid-template-columns: 1fr;
-        height: auto;
-      }
-      #map { height: 50vh; }
     }
 
     #map {
@@ -166,19 +116,6 @@
       flex-wrap: wrap;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 0.1rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .badge-red { background: var(--red-light); color: var(--red); }
-    .badge-orange { background: var(--orange-light); color: var(--orange); }
-    .badge-green { background: var(--accent-light); color: var(--accent); }
-    .badge-blue { background: #dbeafe; color: #1d4ed8; }
-
     .group-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -239,30 +176,24 @@
       border-left: none;
     }
 
-    .loading {
-      text-align: center;
-      padding: 3rem;
-      color: var(--muted);
-    }
-
-    .error {
-      background: var(--red-light);
-      color: var(--red);
-      padding: 1rem;
-      border-radius: 8px;
-      margin: 1rem;
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      #map { height: 50vh; }
     }
   </style>
 </head>
 <body>
   <header>
-    <div style="flex:1">
+    <div>
       <h1>Tåkern – Fågelobservationer</h1>
-      <p id="header-desc">Senaste observationerna inom 10 km från Tåkern · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> via <a href="https://www.artdatabanken.se" style="color:#d8f3dc">SLU Artdatabanken</a></p>
+      <p id="header-desc">Senaste observationerna inom 10 km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a></p>
     </div>
-    <nav style="display:flex;gap:1.5rem;font-size:0.9rem">
-      <a href="statistik.html" style="color:#d8f3dc;text-decoration:none">Historisk statistik</a>
-      <a href="veckorapport.html" style="color:#d8f3dc;text-decoration:none">Veckorapport</a>
+    <nav>
+      <a href="statistik.html">Historisk statistik</a>
+      <a href="veckorapport.html">Veckorapport</a>
     </nav>
   </header>
 
@@ -324,12 +255,6 @@
     // ── Phenology ──
     let phenologyData = {};
 
-    function mmddToDoy(mmdd) {
-      const [m, d] = mmdd.split("-").map(Number);
-      const date = new Date(2024, m - 1, d);
-      return Math.floor((date - new Date(2024, 0, 1)) / 86400000) + 1;
-    }
-
     function obsDoy(obs) {
       const d = obs.event?.startDate;
       if (!d) return null;
@@ -338,17 +263,18 @@
     }
 
     function phenologyBonus(obs) {
-      const sci = obs.taxon?.scientificName;
-      const ph = phenologyData[sci];
-      if (!ph) return { score: 0, label: null };
+      const tid = String(obs.taxon?.id || "");
+      const ph = phenologyData[tid];
+      if (!ph || !ph.avg_first_doy) return { score: 0, label: null };
       const doy = obsDoy(obs);
       if (!doy) return { score: 0, label: null };
-      const earliest = mmddToDoy(ph.earliest);
-      const typical = mmddToDoy(ph.typical);
+      const typical = ph.avg_first_doy;
+      const earliest = ph.earliest_doy || typical - 10;
       // Only relevant during spring arrival period
       if (doy > typical + 10) return { score: 0, label: null };
       if (doy < earliest) return { score: 500, label: "Ovanligt tidig obs" };
       if (doy <= typical + 10) return { score: 200, label: "Tidig obs" };
+      return { score: 0, label: null };
     }
 
     // ── Notable scoring ──
@@ -394,20 +320,12 @@
       return `<span class="badge badge-blue">${ph.label}</span>`;
     }
 
-    function formatMmDd(mmdd) {
-      const [m, d] = mmdd.split("-").map(Number);
-      const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
-      return `${d} ${months[m - 1]}`;
-    }
-
-    function phenologyInfo(sci) {
-      const ph = phenologyData[sci];
+    function phenologyInfo(obs) {
+      const tid = String(obs.taxon?.id || "");
+      const ph = phenologyData[tid];
       if (!ph) return "";
-      const typical = formatMmDd(ph.typical);
-      const prevYear = String(new Date().getFullYear() - 1);
-      const rawLastYear = ph.raw_data?.[prevYear];
-      let info = `Upprepade rapporter vanligen omkring ${typical}`;
-      if (rawLastYear) info += ` · Första obs förra året: ${formatMmDd(rawLastYear)}`;
+      let info = `Normalt först ${ph.avg_first_date}`;
+      if (ph.earliest_date) info += ` · Tidigast ${ph.earliest_date}${ph.earliest_year ? ` (${ph.earliest_year})` : ""}`;
       return `<div class="obs-meta" style="margin-top:0.3rem;color:#1d4ed8">&#x1f4c5; ${info}</div>`;
     }
 
@@ -572,7 +490,7 @@
                 <div class="obs-species">${name} ${badge}</div>
                 <div class="obs-scientific">${sci}</div>
                 <div class="obs-meta">${latestDate}${totalCount ? ` · totalt ${totalCount} ex` : ""}</div>
-                ${pheno.label ? phenologyInfo(sci) : ""}
+                ${pheno.label ? phenologyInfo(rep) : ""}
               </div>
               <div class="group-toggle">${obsCount} obs &#x25B6;</div>
             </div>
@@ -640,8 +558,9 @@
         // Fetch phenology data (once, then cached in variable)
         if (!Object.keys(phenologyData).length) {
           try {
-            const phResp = await fetch("phenology.json");
-            phenologyData = await phResp.json();
+            const phResp = await fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`);
+            const ctx = await phResp.json();
+            phenologyData = ctx.phenology || {};
           } catch (e) { /* phenology is optional */ }
         }
         const resp = await fetch(`api.php?radius=${currentRadius}`);
@@ -674,7 +593,7 @@
         currentRadius = parseInt(btn.dataset.radius);
         drawRadiusCircle(currentRadius);
         document.getElementById("header-desc").innerHTML =
-          `Senaste observationerna inom ${currentRadius} km från Tåkern · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> via <a href="https://www.artdatabanken.se" style="color:#d8f3dc">SLU Artdatabanken</a>`;
+          `Senaste observationerna inom ${currentRadius} km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a>`;
         document.getElementById("status").textContent = "Laddar...";
         document.getElementById("obs-list").innerHTML = '<div class="loading">Hämtar observationer...</div>';
         loadData();

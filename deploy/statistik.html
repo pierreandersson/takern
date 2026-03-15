@@ -11,117 +11,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <link rel="stylesheet" href="style.css">
   <style>
-    :root {
-      --bg: #f8f7f4;
-      --card: #ffffff;
-      --text: #1a1a1a;
-      --muted: #6b7280;
-      --accent: #2d6a4f;
-      --accent-light: #d8f3dc;
-      --red: #b91c1c;
-      --red-light: #fee2e2;
-      --orange: #b45309;
-      --orange-light: #fef3c7;
-      --border: #e5e7eb;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-
-    header {
-      background: var(--accent);
-      color: white;
-      padding: 1.5rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    header h1 { font-size: 1.5rem; font-weight: 700; }
-    header p { opacity: 0.85; font-size: 0.9rem; }
-    header a { color: #d8f3dc; }
-
-    nav {
-      display: flex;
-      gap: 1.5rem;
-      font-size: 0.9rem;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 1.5rem 1rem;
-    }
-
-    /* Summary cards */
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .summary-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.25rem;
-    }
-
-    .summary-card .label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .summary-card .value {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-top: 0.25rem;
-    }
-
-    .summary-card .detail {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 0.15rem;
-    }
-
-    /* Chart sections */
-    .chart-section {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .chart-section h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
-
-    .chart-container {
-      position: relative;
-      height: 280px;
-    }
-
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
-
     /* Search */
     .search-box {
       position: relative;
@@ -282,23 +173,6 @@
     .top-item .sci { font-style: italic; color: var(--muted); font-size: 0.85rem; margin-left: 0.5rem; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .top-item .obs-count { color: var(--muted); font-size: 0.9rem; margin-left: 1rem; white-space: nowrap; flex-shrink: 0; }
 
-    /* Localities list */
-    .locality-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-
-    .locality-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.4rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.9rem;
-    }
-
-    .locality-item:last-child { border-bottom: none; }
-
     /* Record counts */
     .record-list {
       display: flex;
@@ -372,31 +246,7 @@
       color: transparent;
     }
 
-    .geo-heatmap {
-      height: 450px;
-      border-radius: 10px;
-      margin-bottom: 2rem;
-      border: 1px solid var(--border);
-    }
-
-    .loading {
-      text-align: center;
-      padding: 3rem;
-      color: var(--muted);
-    }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 1rem 0;
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-align: center;
-    }
-
     @media (max-width: 600px) {
-      .summary { grid-template-columns: 1fr 1fr; }
-      .summary-card .value { font-size: 1.5rem; }
-      .chart-container { height: 220px; }
       .species-stats { grid-template-columns: 1fr 1fr; }
     }
   </style>
@@ -440,6 +290,7 @@
     <div class="species-detail" id="species-detail"></div>
   </div>
 
+  <script src="utils.js"></script>
   <script>
     // ── State ──
     let speciesCache = null;
@@ -448,8 +299,6 @@
     let currentChart3 = null;
     let currentChart4 = null;
     let currentSpeciesMap = null;
-
-    const MONTHS_SV = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
 
     function weekToDate(week) {
       const d = new Date(2024, 0, 1);
@@ -628,11 +477,7 @@
       section.innerHTML = html;
 
       // Init overview geo heatmap
-      const overviewMap = L.map("overviewMap").setView([58.35, 14.82], 11);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
-      }).addTo(overviewMap);
+      const overviewMap = initMap("overviewMap");
       fetch("stats-api.php?q=geo")
         .then(r => r.json())
         .then(data => {
@@ -641,29 +486,16 @@
           const p50 = vals[Math.floor(vals.length * 0.5)];
           L.heatLayer(logPoints, {
             radius: 22, blur: 12, maxZoom: 17, minOpacity: 0.15, max: p50,
-            gradient: { 0.05: "#2166ac", 0.2: "#67a9cf", 0.4: "#d1e5f0", 0.6: "#fddbc7", 0.8: "#ef8a62", 1: "#b2182b" },
+            gradient: HEATMAP_GRADIENT,
           }).addTo(overviewMap);
         });
 
-      // Load locality markers (shown at zoom >= 13)
-      const localityLayer = L.layerGroup();
+      // Load locality markers (shown at zoom >= 15)
       fetch("stats-api.php?q=localities")
         .then(r => r.json())
         .then(data => {
-          data.localities.forEach(loc => {
-            const r = Math.min(8, 3 + Math.log10(loc.obs) * 2);
-            L.circleMarker([loc.lat, loc.lng], {
-              radius: r, fillColor: "#2d6a4f", fillOpacity: 0.7,
-              color: "#fff", weight: 1,
-            }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs.toLocaleString("sv")} obs · ${loc.species} arter`)
-              .addTo(localityLayer);
-          });
-          if (overviewMap.getZoom() >= 15) localityLayer.addTo(overviewMap);
+          addLocalityMarkers(overviewMap, data.localities);
         });
-      overviewMap.on("zoomend", () => {
-        if (overviewMap.getZoom() >= 15) localityLayer.addTo(overviewMap);
-        else overviewMap.removeLayer(localityLayer);
-      });
 
       // Render year chart
       const ctx = document.getElementById("yearChart");
@@ -1144,51 +976,24 @@
       }
 
       // Init species geo heatmap
-      currentSpeciesMap = L.map("speciesMap").setView([58.35, 14.82], 11);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
-      }).addTo(currentSpeciesMap);
+      currentSpeciesMap = initMap("speciesMap");
       setTimeout(() => currentSpeciesMap.invalidateSize(), 300);
       fetch(`stats-api.php?q=geo&id=${taxonId}`)
         .then(r => r.json())
         .then(data => {
           if (data.points.length > 0) {
-            const logPts = data.points.map(p => [p[0], p[1], Math.log(p[2] + 1)]);
-            const vals = logPts.map(p => p[2]).sort((a, b) => a - b);
-            const n = data.points.length;
-            // Adapt radius to data density: few points need much larger radius at zoom 11
-            const r = n < 10 ? 40 : n < 30 ? 34 : n < 80 ? 28 : n < 200 ? 24 : 18;
-            const bl = Math.round(r * 0.55);
-            // Use p50 as max so top half of data shows warm/hot colors
-            const p50 = vals[Math.floor(vals.length * 0.5)] || 1;
-            L.heatLayer(logPts, {
-              radius: r, blur: bl, maxZoom: 17, minOpacity: 0.25, max: p50,
-              gradient: { 0.05: "#2166ac", 0.2: "#67a9cf", 0.4: "#d1e5f0", 0.6: "#fddbc7", 0.8: "#ef8a62", 1: "#b2182b" },
-            }).addTo(currentSpeciesMap);
+            const layer = createHeatLayer(data.points);
+            if (layer) layer.addTo(currentSpeciesMap);
             setTimeout(() => currentSpeciesMap.invalidateSize(), 100);
           }
         });
 
       // Locality markers for this species
-      const spLocLayer = L.layerGroup();
       fetch(`stats-api.php?q=localities&id=${taxonId}`)
         .then(r => r.json())
         .then(data => {
-          data.localities.forEach(loc => {
-            const r = Math.min(8, 3 + Math.log10(loc.obs) * 2);
-            L.circleMarker([loc.lat, loc.lng], {
-              radius: r, fillColor: "#2d6a4f", fillOpacity: 0.7,
-              color: "#fff", weight: 1,
-            }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs.toLocaleString("sv")} obs`)
-              .addTo(spLocLayer);
-          });
-          if (currentSpeciesMap.getZoom() >= 15) spLocLayer.addTo(currentSpeciesMap);
+          addLocalityMarkers(currentSpeciesMap, data.localities);
         });
-      currentSpeciesMap.on("zoomend", () => {
-        if (currentSpeciesMap.getZoom() >= 15) spLocLayer.addTo(currentSpeciesMap);
-        else currentSpeciesMap.removeLayer(spLocLayer);
-      });
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: "smooth" });

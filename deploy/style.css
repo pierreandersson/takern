@@ -1,0 +1,201 @@
+/* Tåkern Fågelobs – Shared styles */
+
+:root {
+  --bg: #f8f7f4;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #2d6a4f;
+  --accent-light: #d8f3dc;
+  --red: #b91c1c;
+  --red-light: #fee2e2;
+  --orange: #b45309;
+  --orange-light: #fef3c7;
+  --purple: #7c3aed;
+  --purple-light: #ede9fe;
+  --blue: #1d4ed8;
+  --blue-light: #dbeafe;
+  --border: #e5e7eb;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+header {
+  background: var(--accent);
+  color: white;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+header h1 { font-size: 1.5rem; font-weight: 700; }
+header p { opacity: 0.85; font-size: 0.9rem; }
+header a { color: #d8f3dc; }
+
+nav { display: flex; gap: 1.5rem; font-size: 0.9rem; }
+nav a { color: #d8f3dc; text-decoration: none; }
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* Summary cards */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.summary-card .label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.summary-card .value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.summary-card .detail {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+/* Chart sections */
+.chart-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chart-section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.chart-container {
+  position: relative;
+  height: 280px;
+}
+
+/* Section headings */
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-red { background: var(--red-light); color: var(--red); }
+.badge-orange { background: var(--orange-light); color: var(--orange); }
+.badge-green { background: var(--accent-light); color: var(--accent); }
+.badge-blue { background: var(--blue-light); color: var(--blue); }
+.badge-purple { background: var(--purple-light); color: var(--purple); }
+
+/* Geo heatmap */
+.geo-heatmap {
+  height: 450px;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border);
+}
+
+/* Map section (card-wrapped) */
+.map-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.map-section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 1rem 1.5rem 0;
+}
+
+/* Locality list */
+.locality-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.locality-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.locality-item:last-child { border-bottom: none; }
+
+/* Loading & error */
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--muted);
+}
+
+.error {
+  background: var(--red-light);
+  color: var(--red);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1rem 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .summary { grid-template-columns: 1fr 1fr; }
+  .summary-card .value { font-size: 1.5rem; }
+  .chart-container { height: 220px; }
+}
