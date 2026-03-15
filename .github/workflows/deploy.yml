@@ -29,3 +29,7 @@ jobs:
             **/cron_secret.txt
             **/takern_observations.db
             **/cron-update.log
+
+      - name: Clear and warm cache
+        run: |
+          curl -s -f "https://pierrea.se/takern/cron-update.php?key=${{ secrets.CRON_SECRET }}&action=clear-cache"
