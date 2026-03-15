@@ -458,20 +458,19 @@
       if (highlights.firstOfYear.length > 0) {
         html += `<div class="highlights">`;
         for (const sp of highlights.firstOfYear) {
-          const countStr = sp.maxCount > 1 ? ` · ${sp.maxCount} ex` : "";
           let contextParts = [];
+          contextParts.push(`Först sedd ${formatDateNice(sp.firstDate)}`);
           if (sp.historicalTypical) contextParts.push(`Normalt först ${sp.historicalTypical}`);
           if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
-          if (sp.yearsSeen) contextParts.push(`${sp.yearsSeen} års data`);
           const context = contextParts.join(" · ");
 
           const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
-          const firstObsLink = sp.firstUrl ? `<a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Första obs</a>` : "";
+          const firstObsLink = sp.firstUrl ? ` · <a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Visa obs</a>` : "";
 
           html += `<div class="highlight-card first-of-year">
             <div class="highlight-content">
-              <div class="species">${speciesLink}${countStr} <span class="badge badge-purple">Årets första</span></div>
-              <div class="context">Först sedd ${formatDateNice(sp.firstDate)} · ${sp.scientific}${context ? ` · ${context}` : ""}${firstObsLink ? ` · ${firstObsLink}` : ""}</div>
+              <div class="species">${speciesLink} <span class="badge badge-purple">Årets första</span></div>
+              <div class="context">${context}${firstObsLink}</div>
             </div>
           </div>`;
         }
