@@ -278,7 +278,13 @@
 
     // ── Rendering ──
 
-    function render(liveData, highlights, records, rarity, lastYearWeek, springProgress) {
+    function toSlug(name) {
+      return name.toLowerCase()
+        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function render(liveData, highlights, records, rarity, lastYearWeek, springProgress, phenology, yearFirsts) {
       const container = document.getElementById("main");
 
       const dateRange = `${formatDayShort(liveData.allDates[0])} – ${formatDayShort(liveData.allDates[liveData.allDates.length - 1])}`;
@@ -372,7 +378,7 @@
           if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
           const context = contextParts.join(" · ");
 
-          const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
+          const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${toSlug(sp.name)}" style="color:inherit">${sp.name}</a>` : sp.name;
           const firstObsLink = sp.firstUrl ? ` · <a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Visa obs</a>` : "";
 
           html += `<div class="highlight-card first-of-year">
@@ -385,6 +391,28 @@
         html += `</div>`;
       } else {
         html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
+      }
+
+      // "Håll utkik efter" – species expected in the next 21 days but not yet reported this year
+      if (phenology && Object.keys(phenology).length > 0) {
+        const currentDoy = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+        const lookAhead = [];
+        for (const [tid, ph] of Object.entries(phenology)) {
+          if (ph.avg_first_doy < 32 || ph.avg_first_doy > 180) continue;
+          if (ph.years_seen < 3) continue;
+          if (yearFirsts[tid]) continue;
+          if (ph.avg_first_doy >= currentDoy && ph.avg_first_doy <= currentDoy + 21) {
+            lookAhead.push({ taxonId: tid, name: ph.name, avgDate: ph.avg_first_date, avgDoy: ph.avg_first_doy });
+          }
+        }
+        lookAhead.sort((a, b) => a.avgDoy - b.avgDoy);
+        if (lookAhead.length > 0) {
+          html += `<div class="section-title">Håll utkik efter <span class="badge">${lookAhead.length}</span></div>`;
+          html += `<p class="no-highlights" style="margin-top:-0.5rem">Arter som brukar dyka upp de närmaste tre veckorna men som inte rapporterats i år ännu.</p>`;
+          html += `<div class="compare-list">${lookAhead.map(s =>
+            `<a href="statistik.html?art=${toSlug(s.name)}" style="color:inherit;text-decoration:underline dotted">${s.name}</a> <span style="color:var(--muted);font-size:0.85rem">(${s.avgDate})</span>`
+          ).join(", ")}</div>`;
+        }
       }
 
       // Chart
@@ -587,7 +615,9 @@
         const rarity = context.rarity || {};
         const lastYearWeek = context.last_year_week || null;
         const springProgress = context.spring_progress || null;
-        render(liveData, highlights, records, rarity, lastYearWeek, springProgress);
+        const phenology = context.phenology || {};
+        const yearFirsts = context.year_firsts || {};
+        render(liveData, highlights, records, rarity, lastYearWeek, springProgress, phenology, yearFirsts);
       } catch (err) {
         document.getElementById("main").innerHTML =
           `<div class="error">Kunde inte hämta data: ${err.message}</div>`;

@@ -447,6 +447,7 @@ if ($q === 'week_context') {
         $earliestYear = $earliestDateRaw ? substr($earliestDateRaw, 0, 4) : null;
 
         $phenology[$tid] = [
+            'name' => $data['name'],
             'avg_first_doy' => $avgDoy,
             'avg_first_date' => doyToStr($avgDoy),
             'earliest_doy' => $earliestDoy,
