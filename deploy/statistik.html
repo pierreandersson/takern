@@ -643,6 +643,25 @@
           }).addTo(overviewMap);
         });
 
+      // Load locality markers (shown at higher zoom levels)
+      const localityLayer = L.layerGroup();
+      fetch("stats-api.php?q=localities")
+        .then(r => r.json())
+        .then(data => {
+          data.localities.forEach(loc => {
+            const r = Math.min(8, 3 + Math.log10(loc.obs) * 2);
+            L.circleMarker([loc.lat, loc.lng], {
+              radius: r, fillColor: "#2d6a4f", fillOpacity: 0.7,
+              color: "#fff", weight: 1,
+            }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs.toLocaleString("sv")} obs · ${loc.species} arter`)
+              .addTo(localityLayer);
+          });
+        });
+      overviewMap.on("zoomend", () => {
+        if (overviewMap.getZoom() >= 12) localityLayer.addTo(overviewMap);
+        else overviewMap.removeLayer(localityLayer);
+      });
+
       // Render year chart
       const ctx = document.getElementById("yearChart");
       new Chart(ctx, {
@@ -1147,6 +1166,25 @@
             setTimeout(() => currentSpeciesMap.invalidateSize(), 100);
           }
         });
+
+      // Locality markers for this species
+      const spLocLayer = L.layerGroup();
+      fetch(`stats-api.php?q=localities&id=${taxonId}`)
+        .then(r => r.json())
+        .then(data => {
+          data.localities.forEach(loc => {
+            const r = Math.min(8, 3 + Math.log10(loc.obs) * 2);
+            L.circleMarker([loc.lat, loc.lng], {
+              radius: r, fillColor: "#2d6a4f", fillOpacity: 0.7,
+              color: "#fff", weight: 1,
+            }).bindPopup(`<strong>${loc.name}</strong><br>${loc.obs.toLocaleString("sv")} obs`)
+              .addTo(spLocLayer);
+          });
+        });
+      currentSpeciesMap.on("zoomend", () => {
+        if (currentSpeciesMap.getZoom() >= 12) spLocLayer.addTo(currentSpeciesMap);
+        else currentSpeciesMap.removeLayer(spLocLayer);
+      });
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: "smooth" });

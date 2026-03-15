@@ -292,5 +292,28 @@ if ($q === 'geo') {
     jsonOut(['points' => $points]);
 }
 
+// ── Localities ──
+if ($q === 'localities') {
+    $localities = [];
+    $sql = "SELECT locality, ROUND(AVG(latitude),5) lat, ROUND(AVG(longitude),5) lng,
+        COUNT(*) obs_count, COUNT(DISTINCT taxon_id) species_count
+        FROM observations
+        WHERE locality IS NOT NULL AND locality != '' AND latitude IS NOT NULL";
+    if ($id) $sql .= " AND taxon_id = $id";
+    $sql .= " GROUP BY locality HAVING obs_count >= 5 ORDER BY obs_count DESC LIMIT 100";
+
+    $res = $db->query($sql);
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $localities[] = [
+            'name' => $row['locality'],
+            'lat' => floatval($row['lat']),
+            'lng' => floatval($row['lng']),
+            'obs' => intval($row['obs_count']),
+            'species' => intval($row['species_count']),
+        ];
+    }
+    jsonOut(['localities' => $localities]);
+}
+
 // ── Unknown endpoint ──
-echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, or ?q=geo']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, or ?q=localities']);
