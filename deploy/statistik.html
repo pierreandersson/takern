@@ -743,13 +743,12 @@
             ${sp.recent.map(o => {
               const date = formatDateSwedish(o.date);
               const time = o.time && o.time !== "00:00" ? ` ${o.time}` : "";
-              const count = o.count ? `<strong>${o.count} ex</strong> · ` : "";
               const loc = o.locality || "";
               const obs = o.observer ? `<span style="color:var(--muted)">${o.observer}</span>` : "";
               const link = o.url ? `<a href="${o.url}" target="_blank" rel="noopener" style="color:var(--accent);margin-left:0.3rem">↗</a>` : "";
               const src = o.source ? `<span style="font-size:0.75rem;color:var(--muted);background:var(--border);padding:0.1rem 0.4rem;border-radius:3px;margin-left:0.3rem">${o.source}</span>` : "";
               return `<div style="font-size:0.9rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
-                ${count}${loc}${loc && obs ? " · " : ""}${obs}${src}
+                ${loc}${loc && obs ? " · " : ""}${obs}${src}
                 <span style="color:var(--muted);float:right">${date}${time}${link}</span>
               </div>`;
             }).join("")}

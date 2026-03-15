@@ -284,20 +284,17 @@ if ($q === 'species' && $id !== null) {
         $key = $row['event_start_date'] . '|' . ($row['locality'] ?? '');
         if (isset($seen[$key])) continue;
         $seen[$key] = true;
-        // Determine short source label for non-Artportalen data
-        $source = null;
+        // Determine short source label
         $ds = $row['dataset_name'] ?? '';
-        if ($ds && stripos($ds, 'Artportalen') === false) {
-            if (stripos($ds, 'Ring') !== false) $source = 'Ringmärkning';
-            elseif (stripos($ds, 'Bird Survey') !== false || stripos($ds, 'Standardrutt') !== false) $source = 'Fågelinventering';
-            elseif (stripos($ds, 'iNaturalist') !== false) $source = 'iNaturalist';
-            else $source = $ds;
-        }
+        if (stripos($ds, 'Ring') !== false) $source = 'Ringmärkning';
+        elseif (stripos($ds, 'Bird Survey') !== false || stripos($ds, 'Standardrutt') !== false) $source = 'Fågelinventering';
+        elseif (stripos($ds, 'iNaturalist') !== false) $source = 'iNaturalist';
+        elseif (stripos($ds, 'Artportalen') !== false) $source = 'Artportalen';
+        else $source = $ds ?: 'Okänd';
         $recent[] = [
             'date' => $row['event_start_date'],
             'time' => $row['start_time'],
             'locality' => $row['locality'],
-            'count' => $row['individual_count'] !== null ? intval($row['individual_count']) : null,
             'observer' => $row['recorded_by'],
             'url' => $row['url'],
             'source' => $source,
