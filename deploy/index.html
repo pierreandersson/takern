@@ -273,8 +273,11 @@
       const earliest = ph.earliest_doy || typical - 10;
       // Only relevant during spring arrival period
       if (doy > typical + 10) return { score: 0, label: null };
-      if (doy < earliest) return { score: 500, label: "Ovanligt tidig obs" };
-      if (doy <= typical + 10) return { score: 200, label: "Tidig obs" };
+      const daysEarly = typical - doy;
+      if (doy <= earliest) return { score: 300 + Math.min(daysEarly * 5, 500), label: "Ovanligt tidig obs" };
+      if (daysEarly >= 30) return { score: 300 + daysEarly * 3, label: "Mycket tidig obs" };
+      if (daysEarly >= 14) return { score: 200 + daysEarly * 2, label: "Tidig obs" };
+      if (daysEarly >= 0) return { score: 100 + daysEarly * 2, label: "Tidig obs" };
       return { score: 0, label: null };
     }
 
