@@ -255,6 +255,7 @@
     // ── Phenology & rarity ──
     let phenologyData = {};
     let rarityData = {};
+    let yearFirstsData = {};
 
     function obsDoy(obs) {
       const d = obs.event?.startDate;
@@ -286,19 +287,17 @@
     function notableScore(obs) {
       let score = 0;
 
-      // Redlisted species dominate the ranking
-      const rlCat = obs.taxon?.attributes?.redlistCategory || "";
-      if (rlCat === "CR") score += 500;
-      else if (rlCat === "EN") score += 300;
-      else if (rlCat === "VU") score += 150;
-      else if (rlCat === "NT") score += 80;
-      else if (obs.taxon?.attributes?.isRedlisted) score += 100;
-
       // Phenology bonus for early arrivals
       score += phenologyBonus(obs).score;
 
-      // Rare species
+      // "Nyanlända" – species with very few obs so far this year
       const tid = String(obs.taxon?.id || "");
+      const yf = yearFirstsData[tid];
+      if (yf && yf.obs_count <= 20) {
+        score += 80 + (20 - yf.obs_count) * 8; // 80–240 bonus
+      }
+
+      // Rare species
       const rar = rarityData[tid];
       if (rar) {
         if (rar.avg_per_year < 2) score += 120;
@@ -584,6 +583,7 @@
             const ctx = await phResp.json();
             phenologyData = ctx.phenology || {};
             rarityData = ctx.rarity || {};
+            yearFirstsData = ctx.year_firsts || {};
           } catch (e) { /* phenology & rarity are optional */ }
         }
         const resp = await fetch(`api.php?radius=${currentRadius}`);
