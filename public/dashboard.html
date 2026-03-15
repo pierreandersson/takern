@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tåkern – Dashboard</title>
+  <title>Tåkern – Veckorapport</title>
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="theme-color" content="#2d6a4f">
@@ -20,6 +20,10 @@
       --red-light: #fee2e2;
       --orange: #b45309;
       --orange-light: #fef3c7;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --blue: #1d4ed8;
+      --blue-light: #dbeafe;
       --border: #e5e7eb;
     }
 
@@ -46,6 +50,8 @@
     header h1 { font-size: 1.5rem; font-weight: 700; }
     header p { opacity: 0.85; font-size: 0.9rem; }
     header a { color: #d8f3dc; }
+
+    nav { display: flex; gap: 1.5rem; font-size: 0.9rem; }
 
     .container {
       max-width: 1100px;
@@ -87,6 +93,16 @@
       margin-top: 0.15rem;
     }
 
+    /* Section headings */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     /* Chart section */
     .chart-section {
       background: var(--card);
@@ -107,37 +123,74 @@
       height: 280px;
     }
 
-    /* Section headings */
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
+    /* Highlight cards */
+    .highlights {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 0.5rem;
-    }
-
-    /* Week comparison banner */
-    .week-comparison {
-      background: var(--accent-light);
-      border: 1px solid #b7e4c7;
-      border-radius: 10px;
-      padding: 1rem 1.25rem;
       margin-bottom: 2rem;
-      font-size: 0.9rem;
     }
 
-    .week-comparison strong { color: var(--accent); }
+    .highlight-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
 
-    /* Trend table */
-    .trend-table {
+    .highlight-card.first-of-year {
+      border-left: 4px solid var(--purple);
+    }
+
+    .highlight-card.early-arrival {
+      border-left: 4px solid var(--orange);
+    }
+
+    .highlight-card.notable {
+      border-left: 4px solid var(--red);
+    }
+
+    .highlight-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    .highlight-content { flex: 1; }
+    .highlight-content .species { font-weight: 600; }
+    .highlight-content .context {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .badge-purple { background: var(--purple-light); color: var(--purple); }
+    .badge-orange { background: var(--orange-light); color: var(--orange); }
+    .badge-red { background: var(--red-light); color: var(--red); }
+    .badge-blue { background: var(--blue-light); color: var(--blue); }
+
+    /* Species table */
+    .species-table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
       margin-bottom: 2rem;
     }
 
-    .trend-table th {
+    .species-table th {
       text-align: left;
       font-size: 0.8rem;
       color: var(--muted);
@@ -147,30 +200,16 @@
       border-bottom: 2px solid var(--border);
     }
 
-    .trend-table td {
+    .species-table td {
       padding: 0.6rem 0.75rem;
       border-bottom: 1px solid var(--border);
       font-size: 0.9rem;
       vertical-align: middle;
     }
 
-    .trend-table tr:last-child td { border-bottom: none; }
-
-    .trend-table .species-name { font-weight: 600; }
-    .trend-table .scientific { font-style: italic; color: var(--muted); font-size: 0.8rem; }
-
-    .trend-icon {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-
-    .trend-new { color: #7c3aed; }
-    .trend-up { color: var(--accent); }
-    .trend-stable { color: var(--muted); }
-    .trend-down { color: var(--red); }
+    .species-table tr:last-child td { border-bottom: none; }
+    .species-table .species-name { font-weight: 600; }
+    .species-table .scientific { font-style: italic; color: var(--muted); font-size: 0.8rem; }
 
     .days-dots {
       display: flex;
@@ -186,40 +225,12 @@
 
     .day-dot.active { background: var(--accent); }
 
-    .badge {
-      display: inline-block;
-      padding: 0.1rem 0.45rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      margin-left: 0.4rem;
-      vertical-align: middle;
-    }
-
-    .badge-red { background: var(--red-light); color: var(--red); }
-    .badge-orange { background: var(--orange-light); color: var(--orange); }
-
-    /* Highlights */
-    .highlights {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .highlight-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--red);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-    }
-
-    .highlight-card .species { font-weight: 600; }
-    .highlight-card .meta {
-      font-size: 0.8rem;
+    /* No highlights placeholder */
+    .no-highlights {
       color: var(--muted);
-      margin-top: 0.2rem;
+      font-size: 0.9rem;
+      font-style: italic;
+      margin-bottom: 2rem;
     }
 
     /* Footer */
@@ -248,89 +259,68 @@
       .summary { grid-template-columns: 1fr 1fr; }
       .summary-card .value { font-size: 1.5rem; }
       .chart-container { height: 220px; }
-      .trend-table .scientific { display: none; }
+      .species-table .scientific { display: none; }
+      .species-table .hist-col { display: none; }
     }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1>Tåkern – Dashboard</h1>
+      <h1>Tåkern – Veckorapport</h1>
       <p id="header-desc">Laddar...</p>
     </div>
-    <nav style="display:flex;gap:1.5rem;font-size:0.9rem">
-      <a href="/">Senaste obs</a>
-      <a href="/statistik.html">Historik</a>
+    <nav>
+      <a href="index.html">Senaste obs</a>
+      <a href="statistik.html">Historisk statistik</a>
     </nav>
   </header>
 
   <div class="container" id="main">
-    <div class="loading" id="loading">Hämtar observationer från Artportalen...</div>
+    <div class="loading" id="loading">Hämtar observationer...</div>
   </div>
 
   <script>
     const DAYS_BACK = 7;
-    const STORAGE_KEY = "takern-dashboard-history";
 
     // ── Helpers ──
-
-    function getISOWeek(date) {
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
-    }
 
     function formatDayShort(dateStr) {
       const d = new Date(dateStr);
       return d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
     }
 
-    function formatDayLabel(dateStr) {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "numeric" }).replace(/\./g, "");
-    }
-
-    function formatDateShort(dateStr) {
+    function formatDateNice(dateStr) {
       if (!dateStr) return "";
       const d = new Date(dateStr);
-      const datePart = d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
-      const timePart = d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
-      return timePart !== "00:00" ? `${datePart} ${timePart}` : datePart;
+      return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
     }
 
-    function notableScore(obs) {
-      let score = 0;
-      const rlCat = obs.taxon?.attributes?.redlistCategory || "";
-      if (rlCat === "CR") score += 500;
-      else if (rlCat === "EN") score += 300;
-      else if (rlCat === "VU") score += 150;
-      else if (rlCat === "NT") score += 80;
-      else if (obs.taxon?.attributes?.isRedlisted) score += 100;
-      const count = parseInt(obs.occurrence?.individualCount) || 0;
-      if (count >= 500) score += 50;
-      else if (count >= 100) score += 30;
-      else if (count >= 50) score += 20;
-      else if (count >= 20) score += 10;
-      if (obs.occurrence?.occurrenceRemarks) score += 5;
-      return score;
+    function dayOfYear(dateStr) {
+      const d = new Date(dateStr);
+      const start = new Date(d.getFullYear(), 0, 0);
+      return Math.floor((d - start) / 86400000);
+    }
+
+    function doyToDateStr(doy) {
+      // Convert day-of-year to readable date (approximate, using 2024 as reference)
+      const d = new Date(2024, 0, doy);
+      const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+      return `${d.getDate()} ${months[d.getMonth()]}`;
     }
 
     function redlistBadge(cat) {
       if (!cat || cat === "LC") return "";
       const colors = { CR: "red", EN: "red", VU: "orange", NT: "orange" };
-      const labels = { CR: "CR", EN: "EN", VU: "VU", NT: "NT" };
-      return `<span class="badge badge-${colors[cat] || "green"}">${labels[cat] || cat}</span>`;
+      return `<span class="badge badge-${colors[cat] || "blue"}">${cat}</span>`;
     }
 
     // ── Data processing ──
 
-    function processData(records) {
-      // Group by date
-      const byDate = {};
-      const allDates = [];
+    function processLiveData(records) {
       const now = new Date();
+      const allDates = [];
+      const byDate = {};
 
       for (let i = DAYS_BACK; i >= 0; i--) {
         const d = new Date(now);
@@ -342,12 +332,10 @@
 
       for (const obs of records) {
         const dateKey = (obs.event?.startDate || "").slice(0, 10);
-        if (byDate[dateKey]) {
-          byDate[dateKey].push(obs);
-        }
+        if (byDate[dateKey]) byDate[dateKey].push(obs);
       }
 
-      // Per-day stats
+      // Daily stats
       const dailyStats = allDates.map(date => {
         const dayObs = byDate[date];
         const species = new Set(dayObs.map(o => o.taxon?.vernacularName));
@@ -358,186 +346,181 @@
       const speciesMap = {};
       for (const obs of records) {
         const name = obs.taxon?.vernacularName || obs.taxon?.scientificName;
+        const taxonId = obs.taxon?.taxonId;
         if (!name) continue;
         if (!speciesMap[name]) {
           speciesMap[name] = {
             name,
+            taxonId: taxonId ? String(taxonId) : null,
             scientific: obs.taxon?.scientificName || "",
             redlist: obs.taxon?.attributes?.redlistCategory || "",
             totalCount: 0,
+            maxCount: 0,
             daysSeen: new Set(),
-            firstHalfCount: 0,
-            secondHalfCount: 0,
+            dates: [],
           };
         }
         const sp = speciesMap[name];
         const count = parseInt(obs.occurrence?.individualCount) || 1;
         sp.totalCount += count;
+        if (count > sp.maxCount) sp.maxCount = count;
         const dateKey = (obs.event?.startDate || "").slice(0, 10);
         sp.daysSeen.add(dateKey);
-
-        // Split: first half = older days, second half = recent days
-        const dateIndex = allDates.indexOf(dateKey);
-        const midpoint = Math.floor(allDates.length / 2);
-        if (dateIndex >= 0 && dateIndex < midpoint) {
-          sp.firstHalfCount += count;
-        } else if (dateIndex >= midpoint) {
-          sp.secondHalfCount += count;
-        }
+        sp.dates.push(dateKey);
       }
 
-      // Trend calculation
-      const speciesList = Object.values(speciesMap).map(sp => {
-        let trend, trendOrder;
-        const onlySecondHalf = sp.firstHalfCount === 0 && sp.secondHalfCount > 0;
+      const speciesList = Object.values(speciesMap).map(sp => ({
+        ...sp,
+        daysSeen: [...sp.daysSeen].sort(),
+        firstSeen: [...sp.daysSeen].sort()[0],
+      }));
+      speciesList.sort((a, b) => b.totalCount - a.totalCount);
 
-        if (onlySecondHalf) {
-          trend = "new";
-          trendOrder = 0;
-        } else if (sp.firstHalfCount === 0 && sp.secondHalfCount === 0) {
-          trend = "stable";
-          trendOrder = 2;
-        } else {
-          const ratio = sp.secondHalfCount / Math.max(sp.firstHalfCount, 1);
-          if (ratio > 1.5) { trend = "up"; trendOrder = 1; }
-          else if (ratio < 0.5) { trend = "down"; trendOrder = 3; }
-          else { trend = "stable"; trendOrder = 2; }
-        }
-
-        const redlistOrder = { CR: 0, EN: 1, VU: 2, NT: 3 }[sp.redlist] ?? 4;
-
-        return { ...sp, trend, trendOrder, redlistOrder, daysSeen: [...sp.daysSeen] };
-      });
-
-      // Sort: trend group → redlist → total count
-      speciesList.sort((a, b) =>
-        a.trendOrder - b.trendOrder ||
-        a.redlistOrder - b.redlistOrder ||
-        b.totalCount - a.totalCount
-      );
-
-      // Top notable observations
-      const topNotable = [...records]
-        .map(o => ({ ...o, _score: notableScore(o) }))
-        .filter(o => o._score >= 80)
-        .sort((a, b) => b._score - a._score)
-        .slice(0, 5);
-
-      // Summary
       const totalObs = records.length;
       const uniqueSpecies = new Set(records.map(o => o.taxon?.vernacularName)).size;
-      const redlistedSpecies = [...new Set(records
-        .filter(o => {
-          const cat = o.taxon?.attributes?.redlistCategory;
-          return cat && cat !== "LC";
-        })
-        .map(o => o.taxon?.vernacularName))];
-      const busiestDay = dailyStats.reduce((best, d) => d.obs > best.obs ? d : best, dailyStats[0]);
 
-      return { dailyStats, speciesList, topNotable, totalObs, uniqueSpecies, redlistedSpecies, busiestDay, allDates };
+      return { dailyStats, speciesList, totalObs, uniqueSpecies, allDates };
     }
 
-    // ── localStorage ──
+    function crossReference(liveData, context) {
+      const yearFirsts = context.year_firsts || {};
+      const phenology = context.phenology || {};
+      const currentYear = String(context.year || new Date().getFullYear());
 
-    function saveHistory(data) {
-      const weekKey = getISOWeek(new Date());
-      let history = {};
-      try { history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch {}
+      const firstOfYear = [];  // Species first seen this year during this week
+      const earlyArrivals = []; // Species arriving earlier than historical average
 
-      const speciesSummary = {};
-      for (const sp of data.speciesList) {
-        speciesSummary[sp.name] = { count: sp.totalCount, days: sp.daysSeen.length };
+      const weekStart = liveData.allDates[0];
+      const weekEnd = liveData.allDates[liveData.allDates.length - 1];
+
+      for (const sp of liveData.speciesList) {
+        const tid = sp.taxonId;
+        if (!tid) continue;
+
+        const yearData = yearFirsts[tid];
+        const phenData = phenology[tid];
+
+        // Check if this is first of the year
+        // Either: not in DB for this year at all, OR first_date in DB falls within this week
+        const isFirstOfYear = !yearData || (yearData.first_date >= weekStart && yearData.first_date <= weekEnd);
+
+        if (isFirstOfYear) {
+          firstOfYear.push({
+            ...sp,
+            historicalAvgFirst: phenData?.avg_first_date || null,
+            historicalAvgDoy: phenData?.avg_first_doy || null,
+            historicalEarliest: phenData?.earliest_date || null,
+            yearsSeen: phenData?.years_seen || null,
+          });
+        }
+
+        // Check if early arrival (current DOY is at least 7 days before historical average)
+        if (phenData && phenData.avg_first_doy > 30) { // Skip year-round species
+          const currentDoy = dayOfYear(sp.firstSeen);
+          const daysEarly = phenData.avg_first_doy - currentDoy;
+          if (daysEarly >= 7) {
+            earlyArrivals.push({
+              ...sp,
+              daysEarly,
+              historicalAvgFirst: phenData.avg_first_date,
+              historicalEarliest: phenData.earliest_date,
+              historicalEarliestDoy: phenData.earliest_doy,
+              yearsSeen: phenData.years_seen,
+              isNewRecord: currentDoy < phenData.earliest_doy,
+            });
+          }
+        }
       }
 
-      history[weekKey] = {
-        date: new Date().toISOString().slice(0, 10),
-        totalObs: data.totalObs,
-        uniqueSpecies: data.uniqueSpecies,
-        species: speciesSummary,
-      };
+      // Sort early arrivals by days early (most noteworthy first)
+      earlyArrivals.sort((a, b) => b.daysEarly - a.daysEarly);
 
-      // Keep max 52 weeks
-      const keys = Object.keys(history).sort();
-      while (keys.length > 52) {
-        delete history[keys.shift()];
-      }
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-      return history;
-    }
-
-    function getWeekComparison(history) {
-      const weeks = Object.keys(history).sort();
-      if (weeks.length < 2) return null;
-
-      const current = history[weeks[weeks.length - 1]];
-      const previous = history[weeks[weeks.length - 2]];
-
-      const currentSpecies = new Set(Object.keys(current.species));
-      const previousSpecies = new Set(Object.keys(previous.species));
-      const newSpecies = [...currentSpecies].filter(s => !previousSpecies.has(s));
-      const goneSpecies = [...previousSpecies].filter(s => !currentSpecies.has(s));
-
-      return {
-        prevWeek: weeks[weeks.length - 2],
-        obsDiff: current.totalObs - previous.totalObs,
-        speciesDiff: current.uniqueSpecies - previous.uniqueSpecies,
-        newSpecies,
-        goneSpecies,
-      };
+      return { firstOfYear, earlyArrivals };
     }
 
     // ── Rendering ──
 
-    function render(data, history) {
+    function render(liveData, highlights) {
       const container = document.getElementById("main");
 
-      // Header
+      const dateRange = `${formatDayShort(liveData.allDates[0])} – ${formatDayShort(liveData.allDates[liveData.allDates.length - 1])}`;
       document.getElementById("header-desc").innerHTML =
-        `Fågelobservationer senaste ${DAYS_BACK} dagarna · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> via <a href="https://www.artdatabanken.se" style="color:#d8f3dc">SLU Artdatabanken</a>`;
+        `${dateRange} · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> · Historik från <a href="statistik.html" style="color:#d8f3dc">20 års databas</a>`;
 
       let html = "";
-
-      // Week comparison (if history exists)
-      const comparison = getWeekComparison(history);
-      if (comparison) {
-        const obsTrend = comparison.obsDiff >= 0 ? `+${comparison.obsDiff}` : comparison.obsDiff;
-        const spTrend = comparison.speciesDiff >= 0 ? `+${comparison.speciesDiff}` : comparison.speciesDiff;
-        html += `<div class="week-comparison">`;
-        html += `<strong>Jämfört med ${comparison.prevWeek}:</strong> `;
-        html += `${obsTrend} observationer, ${spTrend} arter`;
-        if (comparison.newSpecies.length > 0) {
-          html += `<br>Nya arter: <strong>${comparison.newSpecies.join(", ")}</strong>`;
-        }
-        if (comparison.goneSpecies.length > 0) {
-          html += `<br>Ej sedda denna vecka: ${comparison.goneSpecies.join(", ")}`;
-        }
-        html += `</div>`;
-      }
 
       // Summary cards
       html += `<div class="summary">`;
       html += `<div class="summary-card">
         <div class="label">Observationer</div>
-        <div class="value">${data.totalObs}</div>
+        <div class="value">${liveData.totalObs.toLocaleString("sv")}</div>
         <div class="detail">senaste ${DAYS_BACK} dagarna</div>
       </div>`;
       html += `<div class="summary-card">
         <div class="label">Arter</div>
-        <div class="value">${data.uniqueSpecies}</div>
+        <div class="value">${liveData.uniqueSpecies}</div>
         <div class="detail">unika arter</div>
       </div>`;
       html += `<div class="summary-card">
-        <div class="label">Rödlistade</div>
-        <div class="value">${data.redlistedSpecies.length}</div>
-        <div class="detail">${data.redlistedSpecies.slice(0, 3).join(", ") || "–"}${data.redlistedSpecies.length > 3 ? " ..." : ""}</div>
+        <div class="label">Årets första</div>
+        <div class="value">${highlights.firstOfYear.length}</div>
+        <div class="detail">arter nya för året</div>
       </div>`;
       html += `<div class="summary-card">
-        <div class="label">Mest aktiva dag</div>
-        <div class="value">${data.busiestDay.obs}</div>
-        <div class="detail">${formatDayShort(data.busiestDay.date)}</div>
+        <div class="label">Tidiga ankomster</div>
+        <div class="value">${highlights.earlyArrivals.length}</div>
+        <div class="detail">tidigare än normalt</div>
       </div>`;
       html += `</div>`;
+
+      // First of year section
+      html += `<div class="section-title">Årets första observationer</div>`;
+      if (highlights.firstOfYear.length > 0) {
+        html += `<div class="highlights">`;
+        for (const sp of highlights.firstOfYear) {
+          const countStr = sp.maxCount > 1 ? ` · ${sp.maxCount} ex` : "";
+          let contextParts = [];
+          if (sp.historicalAvgFirst) contextParts.push(`Normalt först ${sp.historicalAvgFirst}`);
+          if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}`);
+          if (sp.yearsSeen) contextParts.push(`Sedd ${sp.yearsSeen} av 20 år`);
+          const context = contextParts.join(" · ");
+
+          html += `<div class="highlight-card first-of-year">
+            <div class="highlight-icon">&#11088;</div>
+            <div class="highlight-content">
+              <div class="species">${sp.name}${countStr} <span class="badge badge-purple">Årets första</span></div>
+              <div class="context">${formatDateNice(sp.firstSeen)} · ${sp.scientific}${context ? ` · ${context}` : ""}</div>
+            </div>
+          </div>`;
+        }
+        html += `</div>`;
+      } else {
+        html += `<p class="no-highlights">Inga nya arter för året denna vecka.</p>`;
+      }
+
+      // Early arrivals section
+      html += `<div class="section-title">Tidiga ankomster</div>`;
+      if (highlights.earlyArrivals.length > 0) {
+        html += `<div class="highlights">`;
+        for (const sp of highlights.earlyArrivals) {
+          const recordStr = sp.isNewRecord ? ` <span class="badge badge-red">Nytt rekord!</span>` : "";
+          let contextParts = [];
+          contextParts.push(`${sp.daysEarly} dagar tidigare än normalt`);
+          if (sp.historicalAvgFirst) contextParts.push(`Snitt: ${sp.historicalAvgFirst}`);
+          if (sp.historicalEarliest) contextParts.push(`Tidigast: ${sp.historicalEarliest}`);
+
+          html += `<div class="highlight-card early-arrival">
+            <div class="highlight-icon">&#9200;</div>
+            <div class="highlight-content">
+              <div class="species">${sp.name}${recordStr}</div>
+              <div class="context">${contextParts.join(" · ")}</div>
+            </div>
+          </div>`;
+        }
+        html += `</div>`;
+      } else {
+        html += `<p class="no-highlights">Inga ovanligt tidiga ankomster denna vecka.</p>`;
+      }
 
       // Chart
       html += `<div class="chart-section">
@@ -545,53 +528,34 @@
         <div class="chart-container"><canvas id="dailyChart"></canvas></div>
       </div>`;
 
-      // Highlights
-      if (data.topNotable.length > 0) {
-        html += `<div class="section-title">Höjdpunkter</div>`;
-        html += `<div class="highlights">`;
-        for (const obs of data.topNotable) {
-          const name = obs.taxon?.vernacularName || obs.taxon?.scientificName || "Okänd";
-          const count = obs.occurrence?.individualCount;
-          const cat = obs.taxon?.attributes?.redlistCategory;
-          const loc = obs.location?.locality || "";
-          const date = formatDateShort(obs.event?.startDate);
-          const remarks = obs.occurrence?.occurrenceRemarks || "";
-          html += `<div class="highlight-card">
-            <div class="species">${name}${count ? ` · ${count} ex` : ""} ${redlistBadge(cat)}</div>
-            <div class="meta">${date}${loc ? ` · ${loc}` : ""}${remarks ? ` · <em>${remarks}</em>` : ""}</div>
-          </div>`;
-        }
-        html += `</div>`;
-      }
-
-      // Trend table
-      const trendIcons = {
-        new: '<span class="trend-icon trend-new">★ Ny</span>',
-        up: '<span class="trend-icon trend-up">↑ Ökande</span>',
-        stable: '<span class="trend-icon trend-stable">→ Stabil</span>',
-        down: '<span class="trend-icon trend-down">↓ Minskande</span>',
-      };
-
-      html += `<div class="section-title">Arter – trender denna vecka</div>`;
-      html += `<table class="trend-table">
+      // Full species table
+      html += `<div class="section-title">Alla arter denna vecka (${liveData.speciesList.length})</div>`;
+      html += `<table class="species-table">
         <thead><tr>
           <th>Art</th>
           <th>Antal</th>
           <th>Dagar</th>
-          <th>Trend</th>
+          <th class="hist-col">Status</th>
         </tr></thead><tbody>`;
 
-      for (const sp of data.speciesList) {
-        const badge = redlistBadge(sp.redlist);
-        const dots = data.allDates.map(d =>
+      const firstOfYearNames = new Set(highlights.firstOfYear.map(s => s.name));
+      const earlyNames = new Set(highlights.earlyArrivals.map(s => s.name));
+
+      for (const sp of liveData.speciesList) {
+        let statusBadges = "";
+        if (firstOfYearNames.has(sp.name)) statusBadges += `<span class="badge badge-purple">Årets 1:a</span> `;
+        if (earlyNames.has(sp.name)) statusBadges += `<span class="badge badge-orange">Tidig</span> `;
+        const rlBadge = redlistBadge(sp.redlist);
+
+        const dots = liveData.allDates.map(d =>
           `<div class="day-dot${sp.daysSeen.includes(d) ? " active" : ""}" title="${formatDayShort(d)}"></div>`
         ).join("");
 
         html += `<tr>
-          <td><span class="species-name">${sp.name}</span>${badge}<br><span class="scientific">${sp.scientific}</span></td>
+          <td><span class="species-name">${sp.name}</span>${rlBadge}<br><span class="scientific">${sp.scientific}</span></td>
           <td>${sp.totalCount}</td>
           <td><div class="days-dots">${dots}</div></td>
-          <td>${trendIcons[sp.trend]}</td>
+          <td class="hist-col">${statusBadges || "–"}</td>
         </tr>`;
       }
 
@@ -599,13 +563,13 @@
 
       // Footer
       html += `<footer>
-        Historik sparas lokalt i din webbläsare · Senast uppdaterad ${new Date().toLocaleString("sv-SE")}
+        Historisk jämförelse baserad på 20 års data (2006–2026) ·
+        Data från <a href="https://www.artportalen.se">Artportalen</a> via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a> ·
+        Uppdaterad ${new Date().toLocaleString("sv-SE")}
       </footer>`;
 
       container.innerHTML = html;
-
-      // Draw chart
-      renderChart(data.dailyStats);
+      renderChart(liveData.dailyStats);
     }
 
     function renderChart(dailyStats) {
@@ -650,9 +614,7 @@
           responsive: true,
           maintainAspectRatio: false,
           interaction: { mode: "index", intersect: false },
-          plugins: {
-            legend: { position: "top" },
-          },
+          plugins: { legend: { position: "top" } },
           scales: {
             y: {
               type: "linear",
@@ -677,19 +639,32 @@
 
     async function init() {
       try {
-        const resp = await fetch(`/api/observations?radius=10&days=${DAYS_BACK}`);
-        const raw = await resp.json();
+        // Fetch live data and historical context in parallel
+        const [liveResp, contextResp] = await Promise.all([
+          fetch(`api.php?radius=10&days=${DAYS_BACK}`),
+          fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`),
+        ]);
 
-        if (raw.error) {
+        const liveRaw = await liveResp.json();
+        let context = {};
+        try { context = await contextResp.json(); } catch (e) { console.warn("Could not load historical context:", e); }
+
+        if (liveRaw.error) {
           document.getElementById("main").innerHTML =
-            `<div class="error"><strong>API-fel:</strong> ${raw.error}<br>${raw.detail || ""}</div>`;
+            `<div class="error"><strong>API-fel:</strong> ${liveRaw.error}<br>${liveRaw.detail || ""}</div>`;
           return;
         }
 
-        const records = raw.records || [];
-        const data = processData(records);
-        const history = saveHistory(data);
-        render(data, history);
+        const records = liveRaw.records || [];
+        if (records.length === 0) {
+          document.getElementById("main").innerHTML =
+            `<div class="loading">Inga observationer hittades de senaste ${DAYS_BACK} dagarna.</div>`;
+          return;
+        }
+
+        const liveData = processLiveData(records);
+        const highlights = crossReference(liveData, context);
+        render(liveData, highlights);
       } catch (err) {
         document.getElementById("main").innerHTML =
           `<div class="error">Kunde inte hämta data: ${err.message}</div>`;

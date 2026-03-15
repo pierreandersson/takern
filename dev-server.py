@@ -15,7 +15,7 @@ class DevHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         # Proxy PHP API calls to live server
-        if self.path.startswith("/stats-api.php") or self.path.startswith("/api-proxy.php"):
+        if self.path.startswith("/stats-api.php") or self.path.startswith("/api-proxy.php") or self.path.startswith("/api.php"):
             url = LIVE_API + self.path
             try:
                 req = urllib.request.Request(url)

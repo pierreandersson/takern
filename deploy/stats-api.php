@@ -23,7 +23,9 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : null;
 // ── Cache layer ──
 if (!is_dir($CACHE_DIR)) mkdir($CACHE_DIR, 0755, true);
 
-$cacheKey = $id !== null ? "{$q}_{$id}" : $q;
+$cacheKey = $q;
+if ($id !== null) $cacheKey .= "_$id";
+if (isset($_GET['year'])) $cacheKey .= "_y" . intval($_GET['year']);
 $cacheFile = "$CACHE_DIR/$cacheKey.json";
 
 if (file_exists($cacheFile)) {
@@ -332,8 +334,70 @@ if ($q === 'localities') {
     jsonOut(['localities' => $localities]);
 }
 
+// ── Week context (for weekly report) ──
+if ($q === 'week_context') {
+    $year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
+
+    // First observation per species this year
+    $yearFirsts = [];
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name,
+        MIN(event_start_date) first_date, COUNT(*) obs_count
+        FROM observations
+        WHERE SUBSTR(event_start_date,1,4) = :year AND vernacular_name IS NOT NULL
+        GROUP BY taxon_id");
+    $stmt->bindValue(':year', strval($year), SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $yearFirsts[strval($row['taxon_id'])] = [
+            'name' => $row['vernacular_name'],
+            'scientific' => $row['scientific_name'],
+            'first_date' => $row['first_date'],
+            'obs_count' => intval($row['obs_count']),
+        ];
+    }
+
+    // Historical phenology: average first day-of-year per species
+    $phenology = [];
+    $res = $db->query("SELECT taxon_id, vernacular_name,
+        CAST(ROUND(AVG(first_doy)) AS INTEGER) avg_first_doy,
+        MIN(first_doy) earliest_doy,
+        MAX(first_doy) latest_first_doy,
+        COUNT(*) years_seen
+        FROM (
+            SELECT taxon_id, vernacular_name,
+                CAST(STRFTIME('%j', MIN(event_start_date)) AS INTEGER) first_doy
+            FROM observations
+            WHERE event_start_date IS NOT NULL AND vernacular_name IS NOT NULL
+            GROUP BY taxon_id, SUBSTR(event_start_date,1,4)
+        )
+        GROUP BY taxon_id
+        HAVING years_seen >= 3");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $avgDoy = intval($row['avg_first_doy']);
+        $earliestDoy = intval($row['earliest_doy']);
+        $phenology[strval($row['taxon_id'])] = [
+            'avg_first_doy' => $avgDoy,
+            'avg_first_date' => doyToStr($avgDoy),
+            'earliest_doy' => $earliestDoy,
+            'earliest_date' => doyToStr($earliestDoy),
+            'latest_first_doy' => intval($row['latest_first_doy']),
+            'years_seen' => intval($row['years_seen']),
+        ];
+    }
+
+    // Total years in database (for context)
+    $totalYears = $db->querySingle("SELECT COUNT(DISTINCT SUBSTR(event_start_date,1,4)) FROM observations");
+
+    jsonOut([
+        'year' => $year,
+        'total_years' => intval($totalYears),
+        'year_firsts' => $yearFirsts,
+        'phenology' => $phenology,
+    ]);
+}
+
 // ── Unknown endpoint ──
-echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, or ?q=localities']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, or ?q=week_context']);
 
 } catch (Throwable $e) {
     http_response_code(500);

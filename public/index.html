@@ -256,13 +256,13 @@
 </head>
 <body>
   <header>
-    <div>
-      <h1><a href="/statistik.html" style="color: inherit; text-decoration: none;">Tåkern – Fågelobservationer</a></h1>
+    <div style="flex:1">
+      <h1>Tåkern – Fågelobservationer</h1>
       <p id="header-desc">Senaste observationerna inom 10 km från Tåkern · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> via <a href="https://www.artdatabanken.se" style="color:#d8f3dc">SLU Artdatabanken</a></p>
     </div>
     <nav style="display:flex;gap:1.5rem;font-size:0.9rem">
-      <a href="/dashboard.html" style="color:#d8f3dc">Dashboard</a>
-      <a href="/statistik.html" style="color:#d8f3dc">Historik</a>
+      <a href="statistik.html" style="color:#d8f3dc;text-decoration:none">Historisk statistik</a>
+      <a href="dashboard.html" style="color:#d8f3dc;text-decoration:none">Veckorapport</a>
     </nav>
   </header>
 
@@ -640,11 +640,11 @@
         // Fetch phenology data (once, then cached in variable)
         if (!Object.keys(phenologyData).length) {
           try {
-            const phResp = await fetch("/api/phenology");
+            const phResp = await fetch("phenology.json");
             phenologyData = await phResp.json();
           } catch (e) { /* phenology is optional */ }
         }
-        const resp = await fetch(`/api/observations?radius=${currentRadius}`);
+        const resp = await fetch(`api.php?radius=${currentRadius}`);
         const data = await resp.json();
 
         if (data.error) {
