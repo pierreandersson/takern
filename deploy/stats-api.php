@@ -273,7 +273,7 @@ if ($q === 'species' && $id !== null) {
         GROUP BY h ORDER BY h");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) $timeOfDay[intval($row['h'])] = intval($row['n']);
 
-    // Recent observations (last 20 unique date+locality combos, prefer Artportalen data)
+    // Recent observations (last 20 unique date+locality combos)
     $recent = [];
     $res = $db->query("SELECT event_start_date, start_time, locality,
         individual_count, recorded_by, url, dataset_name
@@ -281,7 +281,6 @@ if ($q === 'species' && $id !== null) {
         ORDER BY event_start_date DESC, (CASE WHEN url IS NOT NULL THEN 0 ELSE 1 END), start_time DESC LIMIT 80");
     $seen = [];
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        // Deduplicate by date+locality – keep the one with most data (URL/observer)
         $key = $row['event_start_date'] . '|' . ($row['locality'] ?? '');
         if (isset($seen[$key])) continue;
         $seen[$key] = true;
