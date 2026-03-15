@@ -252,8 +252,9 @@
       return parseInt(obs.occurrence?.individualCount) || 0;
     }
 
-    // ── Phenology ──
+    // ── Phenology & rarity ──
     let phenologyData = {};
+    let rarityData = {};
 
     function obsDoy(obs) {
       const d = obs.event?.startDate;
@@ -293,6 +294,15 @@
       // Phenology bonus for early arrivals
       score += phenologyBonus(obs).score;
 
+      // Rare species
+      const tid = String(obs.taxon?.id || "");
+      const rar = rarityData[tid];
+      if (rar) {
+        if (rar.avg_per_year < 2) score += 120;
+        else if (rar.avg_per_year < 5) score += 60;
+        else score += 30;
+      }
+
       // High count – secondary factor
       const count = getCount(obs);
       if (count >= 500) score += 15;
@@ -318,6 +328,15 @@
       const ph = phenologyBonus(obs);
       if (!ph.label) return "";
       return `<span class="badge badge-blue">${ph.label}</span>`;
+    }
+
+    function rarityBadge(obs) {
+      const tid = String(obs.taxon?.id || "");
+      const r = rarityData[tid];
+      if (!r) return "";
+      if (r.avg_per_year < 2) return `<span class="badge badge-orange">Sällsynt · ${r.avg_per_year} obs/år</span>`;
+      if (r.avg_per_year < 5) return `<span class="badge badge-green">Ovanlig · ${r.avg_per_year} obs/år</span>`;
+      return `<span class="badge badge-green">Fåtalig · ${r.avg_per_year} obs/år</span>`;
     }
 
     function phenologyInfo(obs) {
@@ -357,7 +376,7 @@
         const loc = obs.location?.locality || "";
         const observer = obs.occurrence?.recordedBy || "";
         const remarks = obs.occurrence?.occurrenceRemarks || "";
-        const badge = redlistBadge(obs) + phenologyBadge(obs);
+        const badge = redlistBadge(obs) + phenologyBadge(obs) + rarityBadge(obs);
         const score = notableScore(obs);
         const highlight = score >= 80 ? " highlight" : "";
 
@@ -457,7 +476,7 @@
         const rep = obs[0];
         const name = rep.taxon?.vernacularName || sci;
         const pheno = phenologyBonus(rep);
-        const badge = redlistBadge(rep) + phenologyBadge(rep);
+        const badge = redlistBadge(rep) + phenologyBadge(rep) + rarityBadge(rep);
         const score = Math.max(...obs.map(notableScore));
         const highlight = score >= 80 ? " highlight" : "";
         const totalCount = obs.reduce((s, o) => s + getCount(o), 0);
@@ -561,7 +580,8 @@
             const phResp = await fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`);
             const ctx = await phResp.json();
             phenologyData = ctx.phenology || {};
-          } catch (e) { /* phenology is optional */ }
+            rarityData = ctx.rarity || {};
+          } catch (e) { /* phenology & rarity are optional */ }
         }
         const resp = await fetch(`api.php?radius=${currentRadius}`);
         const data = await resp.json();

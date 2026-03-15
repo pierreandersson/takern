@@ -426,10 +426,34 @@ if ($q === 'week_context') {
         ];
     }
 
+    // Rarity: average observations per year across all years
+    $rarity = [];
+    $res = $db->query("SELECT taxon_id,
+        COUNT(*) AS total_obs,
+        COUNT(DISTINCT SUBSTR(event_start_date,1,4)) AS years_present
+        FROM observations
+        WHERE vernacular_name IS NOT NULL AND event_start_date IS NOT NULL
+        GROUP BY taxon_id");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $tid = strval($row['taxon_id']);
+        $yearsPresent = intval($row['years_present']);
+        $totalObs = intval($row['total_obs']);
+        $avgPerYear = $yearsPresent > 0 ? round($totalObs / $yearsPresent, 1) : 0;
+        // Only include species that are genuinely rare (avg < 10 obs/year)
+        if ($avgPerYear < 10) {
+            $rarity[$tid] = [
+                'avg_per_year' => $avgPerYear,
+                'total_obs' => $totalObs,
+                'years_present' => $yearsPresent,
+            ];
+        }
+    }
+
     jsonOut([
         'year' => $year,
         'year_firsts' => $yearFirsts,
         'phenology' => $phenology,
+        'rarity' => $rarity,
     ]);
 }
 

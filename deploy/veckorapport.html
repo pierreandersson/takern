@@ -263,7 +263,7 @@
 
     // ── Rendering ──
 
-    function render(liveData, highlights, records) {
+    function render(liveData, highlights, records, rarity) {
       const container = document.getElementById("main");
 
       const dateRange = `${formatDayShort(liveData.allDates[0])} – ${formatDayShort(liveData.allDates[liveData.allDates.length - 1])}`;
@@ -352,6 +352,12 @@
       for (const sp of liveData.speciesList) {
         let statusBadges = "";
         if (firstOfYearNames.has(sp.name)) statusBadges += `<span class="badge badge-purple">Årets 1:a</span> `;
+        const r = rarity[sp.taxonId];
+        if (r) {
+          if (r.avg_per_year < 2) statusBadges += `<span class="badge badge-orange">Sällsynt · ${r.avg_per_year} obs/år</span> `;
+          else if (r.avg_per_year < 5) statusBadges += `<span class="badge badge-green">Ovanlig · ${r.avg_per_year} obs/år</span> `;
+          else statusBadges += `<span class="badge badge-green">Fåtalig · ${r.avg_per_year} obs/år</span> `;
+        }
         const rlBadge = redlistBadgeHtml(sp.redlist);
 
         const dots = liveData.allDates.map(d =>
@@ -522,7 +528,8 @@
 
         const liveData = processLiveData(records);
         const highlights = crossReference(liveData, context);
-        render(liveData, highlights, records);
+        const rarity = context.rarity || {};
+        render(liveData, highlights, records, rarity);
       } catch (err) {
         document.getElementById("main").innerHTML =
           `<div class="error">Kunde inte hämta data: ${err.message}</div>`;
