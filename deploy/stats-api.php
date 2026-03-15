@@ -300,7 +300,7 @@ if ($q === 'localities') {
         FROM observations
         WHERE locality IS NOT NULL AND locality != '' AND latitude IS NOT NULL";
     if ($id) $sql .= " AND taxon_id = $id";
-    $sql .= " GROUP BY locality HAVING obs_count >= 5 ORDER BY obs_count DESC LIMIT 100";
+    $sql .= " GROUP BY locality HAVING obs_count >= 5 ORDER BY obs_count DESC LIMIT 500";
 
     $res = $db->query($sql);
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
