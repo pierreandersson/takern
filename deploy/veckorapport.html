@@ -362,7 +362,7 @@
       }
 
       // First of year section
-      html += `<div class="section-title">Nya observationer för året från veckan som gått</div>`;
+      html += `<div class="section-title">Nya observationer för året från veckan som gått <span class="badge badge-purple">${highlights.firstOfYear.length}</span></div>`;
       if (highlights.firstOfYear.length > 0) {
         html += `<div class="highlights">`;
         for (const sp of highlights.firstOfYear) {
