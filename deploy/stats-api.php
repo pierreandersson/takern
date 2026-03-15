@@ -516,12 +516,17 @@ if ($q === 'week_context') {
             }
         }
         // Compare median arrival this year vs historical
+        // Only include genuine migrants: avg arrival Feb-Jun (doy 32-180)
+        // and this year's first obs within ±30 days of expected (filters out overwintering residents)
         $thisYearDoys = [];
         foreach ($yearFirsts as $tid => $yf) {
-            if (isset($phenology[$tid]) && $phenology[$tid]['avg_first_doy'] >= 32) { // skip Jan species
-                $doy = intval(date('z', strtotime($yf['first_date']))) + 1;
-                $thisYearDoys[] = $doy - $phenology[$tid]['avg_first_doy'];
-            }
+            if (!isset($phenology[$tid])) continue;
+            $avgDoy = $phenology[$tid]['avg_first_doy'];
+            if ($avgDoy < 32 || $avgDoy > 180) continue; // not a spring migrant
+            $obsDoy = intval(date('z', strtotime($yf['first_date']))) + 1;
+            $diff = $obsDoy - $avgDoy;
+            if ($diff < -30 || $diff > 60) continue; // likely resident seen in winter, skip
+            $thisYearDoys[] = $diff;
         }
         $medianDiff = null;
         if (count($thisYearDoys) > 5) {
