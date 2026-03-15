@@ -427,12 +427,17 @@ if ($q === 'week_context') {
     }
 
     // Rarity: average observations per year across all years
+    // Exclude hybrids (x), uncertain IDs (/), morphs, and group-level names (no space in scientific name)
     $rarity = [];
     $res = $db->query("SELECT taxon_id,
         COUNT(*) AS total_obs,
         COUNT(DISTINCT SUBSTR(event_start_date,1,4)) AS years_present
         FROM observations
         WHERE vernacular_name IS NOT NULL AND event_start_date IS NOT NULL
+            AND vernacular_name NOT LIKE '% x %'
+            AND vernacular_name NOT LIKE '%/%'
+            AND vernacular_name NOT LIKE '%, % morf'
+            AND scientific_name LIKE '% %'
         GROUP BY taxon_id");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
         $tid = strval($row['taxon_id']);
