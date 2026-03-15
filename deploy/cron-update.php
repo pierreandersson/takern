@@ -414,27 +414,33 @@ logMsg("Download complete: $netNew new observations (total: $countAfter)");
 $db->close();
 
 // ── Clear stats-api cache so fresh data is served ──
-// Keep slow-to-generate caches (localities, geo) – they only change on data import
 $cacheDir = __DIR__ . '/cache';
+$warmEndpoints = ['overview', 'species', 'week_context&year=' . date('Y') . '&days=7'];
+
+// Mondays: also clear and re-warm the slow geo/localities caches
+$isWeeklyRefresh = (date('N') == 1); // 1 = Monday
+
 if (is_dir($cacheDir)) {
     $files = glob("$cacheDir/*.json");
     $cleared = 0;
-    $keep = ['localities.json', 'geo.json'];
+    $slowCaches = ['localities.json', 'geo.json'];
     foreach ($files as $f) {
-        if (!in_array(basename($f), $keep)) {
-            unlink($f);
-            $cleared++;
-        }
+        if (!$isWeeklyRefresh && in_array(basename($f), $slowCaches)) continue;
+        unlink($f);
+        $cleared++;
     }
-    logMsg("Cleared $cleared cached files (kept " . count($keep) . " slow caches)");
+    logMsg("Cleared $cleared cached files" . ($isWeeklyRefresh ? " (weekly full refresh)" : ""));
+}
+
+if ($isWeeklyRefresh) {
+    $warmEndpoints = array_merge($warmEndpoints, ['geo', 'localities']);
 }
 
 // ── Pre-warm caches so first visitor doesn't wait ──
 $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
-$warmEndpoints = ['overview', 'species', 'week_context&year=' . date('Y') . '&days=7'];
 foreach ($warmEndpoints as $ep) {
     $url = "$baseUrl/stats-api.php?q=$ep";
-    @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 60]]));
+    @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 120]]));
 }
 logMsg("Pre-warmed " . count($warmEndpoints) . " cache endpoints");
 
