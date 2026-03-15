@@ -474,7 +474,7 @@
       // occurrenceId format: "urn:lsid:artportalen.se:sighting:XXXXXXX"
       const match = occurrenceId.match(/sighting:(\d+)/i);
       if (match) {
-        return `<a href="https://www.artportalen.se/Sighting/${match[1]}" target="_blank" rel="noopener" style="color:var(--accent)">Obs på Artportalen</a>`;
+        return `<a href="https://www.artportalen.se/Sighting/${match[1]}" target="_blank" rel="noopener" style="color:var(--accent)">Senaste obs</a>`;
       }
       return null;
     }
