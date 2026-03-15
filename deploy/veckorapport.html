@@ -447,6 +447,12 @@
 
       let html = "";
 
+      // Map – top of page like other pages
+      html += `<div class="map-section">
+        <h2>Karta – veckans observationer</h2>
+        <div id="weekMap"></div>
+      </div>`;
+
       // Summary cards
       html += `<div class="summary">`;
       html += `<div class="summary-card">
@@ -499,12 +505,6 @@
       } else {
         html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
       }
-
-      // Map
-      html += `<div class="map-section">
-        <h2>Karta – veckans observationer</h2>
-        <div id="weekMap"></div>
-      </div>`;
 
       // Chart
       html += `<div class="chart-section">
