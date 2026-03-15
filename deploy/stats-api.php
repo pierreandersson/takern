@@ -289,8 +289,9 @@ if ($q === 'species' && $id !== null) {
         if (stripos($ds, 'Ring') !== false) $source = 'Ringmärkning';
         elseif (stripos($ds, 'Bird Survey') !== false || stripos($ds, 'Standardrutt') !== false) $source = 'Fågelinventering';
         elseif (stripos($ds, 'iNaturalist') !== false) $source = 'iNaturalist';
+        elseif ($row['url'] && stripos($row['url'], 'artportalen') !== false) $source = 'Artportalen';
         elseif (stripos($ds, 'Artportalen') !== false) $source = 'Artportalen';
-        else $source = $ds ?: 'Okänd';
+        else $source = $ds ?: ($row['url'] ? 'Artportalen' : 'Okänd');
         $recent[] = [
             'date' => $row['event_start_date'],
             'time' => $row['start_time'],
