@@ -419,19 +419,28 @@ if ($q === 'week_context') {
         $phenRecent[$tid]['years'][$row['obs_year']] = intval($row['first_doy']);
     }
 
-    // 2) All years: for earliest-ever observation (no January filter – show true earliest)
+    // 2) All years: earliest observation by day-of-year (exclude January to avoid overwintering noise)
+    // Subquery finds the min doy per species, outer query gets the year of that observation
     $phenAllTime = [];
-    $res = $db->query("SELECT taxon_id,
-        MIN(event_start_date) AS earliest_date,
-        CAST(STRFTIME('%j', MIN(event_start_date)) AS INTEGER) AS earliest_doy
-        FROM observations
-        WHERE event_start_date IS NOT NULL AND vernacular_name IS NOT NULL
-        GROUP BY taxon_id");
+    $res = $db->query("SELECT e.taxon_id, e.earliest_doy,
+        SUBSTR(o.event_start_date, 1, 4) AS earliest_year
+        FROM (
+            SELECT taxon_id,
+                MIN(CAST(STRFTIME('%j', event_start_date) AS INTEGER)) AS earliest_doy
+            FROM observations
+            WHERE event_start_date IS NOT NULL AND vernacular_name IS NOT NULL
+                AND CAST(SUBSTR(event_start_date,6,2) AS INTEGER) >= 2
+            GROUP BY taxon_id
+        ) e
+        JOIN observations o ON o.taxon_id = e.taxon_id
+            AND CAST(STRFTIME('%j', o.event_start_date) AS INTEGER) = e.earliest_doy
+            AND CAST(SUBSTR(o.event_start_date,6,2) AS INTEGER) >= 2
+        GROUP BY e.taxon_id");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
         $tid = strval($row['taxon_id']);
         $phenAllTime[$tid] = [
             'earliest_doy' => intval($row['earliest_doy']),
-            'earliest_date_raw' => $row['earliest_date'],
+            'earliest_year' => $row['earliest_year'],
         ];
     }
 
@@ -441,10 +450,9 @@ if ($q === 'week_context') {
         $doys = array_values($data['years']);
         $avgDoy = intval(round(array_sum($doys) / count($doys)));
 
-        // Earliest from all-time data
+        // Earliest from all-time data (by day-of-year, not chronological)
         $earliestDoy = isset($phenAllTime[$tid]) ? $phenAllTime[$tid]['earliest_doy'] : min($doys);
-        $earliestDateRaw = isset($phenAllTime[$tid]) ? $phenAllTime[$tid]['earliest_date_raw'] : null;
-        $earliestYear = $earliestDateRaw ? substr($earliestDateRaw, 0, 4) : null;
+        $earliestYear = isset($phenAllTime[$tid]) ? $phenAllTime[$tid]['earliest_year'] : null;
 
         $phenology[$tid] = [
             'name' => $data['name'],
