@@ -311,7 +311,10 @@
     async function loadOverview() {
       const overviewResp = await fetch("stats-api.php?q=overview");
       const overview = await overviewResp.json();
+      loadOverviewFromData(overview);
+    }
 
+    function loadOverviewFromData(overview, geoData, localitiesData) {
       // Fill in summary cards
       document.getElementById("stat-obs").textContent = overview.total_observations.toLocaleString("sv");
       document.getElementById("stat-dates").textContent = `${overview.date_range.from} – ${overview.date_range.to}`;
@@ -478,24 +481,23 @@
 
       // Init overview geo heatmap
       const overviewMap = initMap("overviewMap");
-      fetch("stats-api.php?q=geo")
-        .then(r => r.json())
-        .then(data => {
-          const logPoints = data.points.map(p => [p[0], p[1], Math.log(p[2] + 1)]);
-          const vals = logPoints.map(p => p[2]).sort((a, b) => a - b);
-          const p50 = vals[Math.floor(vals.length * 0.5)];
-          L.heatLayer(logPoints, {
-            radius: 22, blur: 12, maxZoom: 17, minOpacity: 0.15, max: p50,
-            gradient: HEATMAP_GRADIENT,
-          }).addTo(overviewMap);
-        });
+
+      function applyGeo(data) {
+        const logPoints = data.points.map(p => [p[0], p[1], Math.log(p[2] + 1)]);
+        const vals = logPoints.map(p => p[2]).sort((a, b) => a - b);
+        const p50 = vals[Math.floor(vals.length * 0.5)];
+        L.heatLayer(logPoints, {
+          radius: 22, blur: 12, maxZoom: 17, minOpacity: 0.15, max: p50,
+          gradient: HEATMAP_GRADIENT,
+        }).addTo(overviewMap);
+      }
+
+      if (geoData) applyGeo(geoData);
+      else fetch("stats-api.php?q=geo").then(r => r.json()).then(applyGeo);
 
       // Load locality markers (shown at zoom >= 15)
-      fetch("stats-api.php?q=localities")
-        .then(r => r.json())
-        .then(data => {
-          addLocalityMarkers(overviewMap, data.localities);
-        });
+      if (localitiesData) addLocalityMarkers(overviewMap, localitiesData.localities);
+      else fetch("stats-api.php?q=localities").then(r => r.json()).then(d => addLocalityMarkers(overviewMap, d.localities));
 
       // Render year chart
       const ctx = document.getElementById("yearChart");
@@ -999,9 +1001,26 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // ── Init – load search and overview in parallel ──
-    setupSearch();
-    loadOverview();
+    // ── Init – single batch request for all data ──
+    async function init() {
+      try {
+        const resp = await fetch("stats-api.php?q=init");
+        const data = await resp.json();
+
+        if (data.overview) {
+          loadOverviewFromData(data.overview, data.geo, data.localities);
+        }
+        if (data.species) {
+          speciesCache = data.species.species;
+        }
+        setupSearch();
+      } catch (err) {
+        console.error("Init failed, falling back to individual requests", err);
+        setupSearch();
+        loadOverview();
+      }
+    }
+    init();
   </script>
 </body>
 </html>

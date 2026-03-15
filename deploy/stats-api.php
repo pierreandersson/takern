@@ -553,8 +553,28 @@ if ($q === 'week_context') {
     ]);
 }
 
+// ── Batch endpoint for statistik.html initial load ──
+// Reads from cache files directly – avoids separate HTTP requests
+if ($q === 'init') {
+    $parts = ['overview', 'geo', 'localities', 'species'];
+    $result = [];
+    $allCached = true;
+    foreach ($parts as $part) {
+        $partCache = "$CACHE_DIR/$part.json";
+        if (file_exists($partCache)) {
+            $result[$part] = json_decode(file_get_contents($partCache), true);
+        } else {
+            $allCached = false;
+        }
+    }
+    if ($allCached) {
+        jsonOut($result);
+    }
+    // If not all cached, fall through – client will use individual endpoints as fallback
+}
+
 // ── Unknown endpoint ──
-echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, or ?q=week_context']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=week_context, or ?q=init']);
 
 } catch (Throwable $e) {
     http_response_code(500);

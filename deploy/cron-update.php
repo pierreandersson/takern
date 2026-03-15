@@ -345,7 +345,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'clear-cache') {
         $files = glob("$cacheDir/*.json");
         foreach ($files as $f) { unlink($f); $cleared++; }
     }
-    echo json_encode(['ok' => true, 'cleared' => $cleared]);
+    $warm = isset($_GET['warm']);
+    $warmed = 0;
+    if ($warm) {
+        $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+        foreach (['overview', 'species', 'geo', 'localities', 'week_context&year=' . date('Y') . '&days=7'] as $ep) {
+            @file_get_contents("$baseUrl/stats-api.php?q=$ep", false, stream_context_create(['http' => ['timeout' => 120]]));
+            $warmed++;
+        }
+    }
+    echo json_encode(['ok' => true, 'cleared' => $cleared, 'warmed' => $warmed]);
     exit;
 }
 
@@ -419,5 +428,14 @@ if (is_dir($cacheDir)) {
     }
     logMsg("Cleared $cleared cached files (kept " . count($keep) . " slow caches)");
 }
+
+// ── Pre-warm caches so first visitor doesn't wait ──
+$baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+$warmEndpoints = ['overview', 'species', 'week_context&year=' . date('Y') . '&days=7'];
+foreach ($warmEndpoints as $ep) {
+    $url = "$baseUrl/stats-api.php?q=$ep";
+    @file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 60]]));
+}
+logMsg("Pre-warmed " . count($warmEndpoints) . " cache endpoints");
 
 logMsg("=== Update complete: $netNew new observations ===");
