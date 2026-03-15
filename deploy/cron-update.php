@@ -337,6 +337,18 @@ if (isset($_GET['key'])) {
     }
 }
 
+// ── Manual cache clear ──
+if (isset($_GET['action']) && $_GET['action'] === 'clear-cache') {
+    $cacheDir = __DIR__ . '/cache';
+    $cleared = 0;
+    if (is_dir($cacheDir)) {
+        $files = glob("$cacheDir/*.json");
+        foreach ($files as $f) { unlink($f); $cleared++; }
+    }
+    echo json_encode(['ok' => true, 'cleared' => $cleared]);
+    exit;
+}
+
 logMsg("=== Update started ===");
 
 // Load API key
