@@ -345,7 +345,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'clear-cache') {
         $files = glob("$cacheDir/*.json");
         foreach ($files as $f) { unlink($f); $cleared++; }
     }
-    $warm = isset($_GET['warm']);
+    $warm = !isset($_GET['nowarm']);
     $warmed = 0;
     if ($warm) {
         $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
