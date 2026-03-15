@@ -735,6 +735,27 @@
         </div>
       </div>`;
 
+      // Recent observations
+      if (sp.recent && sp.recent.length > 0) {
+        html += `<div class="chart-section">
+          <h2>Senaste observationer</h2>
+          <div style="display:flex;flex-direction:column;gap:0.4rem">
+            ${sp.recent.map(o => {
+              const date = formatDateSwedish(o.date);
+              const time = o.time && o.time !== "00:00" ? ` ${o.time}` : "";
+              const count = o.count ? `<strong>${o.count} ex</strong> · ` : "";
+              const loc = o.locality || "";
+              const obs = o.observer ? `<span style="color:var(--muted)">${o.observer}</span>` : "";
+              const link = o.url ? `<a href="${o.url}" target="_blank" rel="noopener" style="color:var(--accent);margin-left:0.3rem">↗</a>` : "";
+              return `<div style="font-size:0.9rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
+                ${count}${loc}${loc && obs ? " · " : ""}${obs}
+                <span style="color:var(--muted);float:right">${date}${time}${link}</span>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }
+
       // 1. Geo heatmap – VAR
       html += `<div class="chart-section">
         <h2>Geografisk spridning</h2>

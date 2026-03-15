@@ -273,6 +273,23 @@ if ($q === 'species' && $id !== null) {
         GROUP BY h ORDER BY h");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) $timeOfDay[intval($row['h'])] = intval($row['n']);
 
+    // Recent observations (last 20)
+    $recent = [];
+    $res = $db->query("SELECT event_start_date, start_time, locality,
+        individual_count, recorded_by, url
+        FROM observations WHERE taxon_id = $id
+        ORDER BY event_start_date DESC, start_time DESC LIMIT 20");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $recent[] = [
+            'date' => $row['event_start_date'],
+            'time' => $row['start_time'],
+            'locality' => $row['locality'],
+            'count' => $row['individual_count'] !== null ? intval($row['individual_count']) : null,
+            'observer' => $row['recorded_by'],
+            'url' => $row['url'],
+        ];
+    }
+
     jsonOut([
         'taxon_id' => $id,
         'name' => $info['vernacular_name'],
@@ -290,6 +307,7 @@ if ($q === 'species' && $id !== null) {
         'max_counts_per_year' => $maxCounts,
         'top_localities' => $topLocalities,
         'time_of_day' => $timeOfDay,
+        'recent' => $recent,
     ]);
 }
 
