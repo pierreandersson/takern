@@ -427,6 +427,7 @@
           firstOfYear.push({
             ...sp,
             firstDate: firstDateThisYear || sp.firstSeen,
+            firstUrl: yearData?.first_url || null,
             historicalTypical: histTypical ? histTypical.replace(/^0/, "").replace("-", "/") : null,
             historicalEarliest: histEarliest ? histEarliest.replace(/^0/, "").replace("-", "/") : null,
             yearsSeen: phenData?.years_found || null,
@@ -450,6 +451,7 @@
                 earlyArrivals.push({
                   ...sp,
                   firstDate: arrivalDate,
+                  firstUrl: yearData?.first_url || null,
                   daysEarly: daysBeforeTypical,
                   typicalDate: phenData.typical,
                   earliestDate: phenData.earliest,
@@ -527,12 +529,12 @@
           const context = contextParts.join(" · ");
 
           const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
-          const apObs = apLink(sp.firstOccurrenceId);
+          const firstObsLink = sp.firstUrl ? `<a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Första obs</a>` : "";
 
           html += `<div class="highlight-card first-of-year">
             <div class="highlight-content">
               <div class="species">${speciesLink}${countStr} <span class="badge badge-purple">Årets första</span></div>
-              <div class="context">Först sedd ${formatDateNice(sp.firstDate)} · ${sp.scientific}${context ? ` · ${context}` : ""}${apObs ? ` · ${apObs}` : ""}</div>
+              <div class="context">Först sedd ${formatDateNice(sp.firstDate)} · ${sp.scientific}${context ? ` · ${context}` : ""}${firstObsLink ? ` · ${firstObsLink}` : ""}</div>
             </div>
           </div>`;
         }
@@ -553,12 +555,12 @@
           if (sp.earliestDate) contextParts.push(`Tidigast: ${sp.earliestDate.replace(/^0/,"").replace("-","/")}`);
 
           const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
-          const apObs = apLink(sp.firstOccurrenceId);
+          const firstObsLink = sp.firstUrl ? `<a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Första obs</a>` : "";
 
           html += `<div class="highlight-card early-arrival">
             <div class="highlight-content">
               <div class="species">${speciesLink} <span class="badge badge-orange">Tidig obs</span></div>
-              <div class="context">${contextParts.join(" · ")}${apObs ? ` · ${apObs}` : ""}</div>
+              <div class="context">${contextParts.join(" · ")}${firstObsLink ? ` · ${firstObsLink}` : ""}</div>
             </div>
           </div>`;
         }

@@ -338,21 +338,32 @@ if ($q === 'localities') {
 if ($q === 'week_context') {
     $year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
 
-    // First observation per species this year
+    // First observation per species this year (with URL to first obs)
     $yearFirsts = [];
-    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name,
-        MIN(event_start_date) first_date, COUNT(*) obs_count
-        FROM observations
-        WHERE SUBSTR(event_start_date,1,4) = :year AND vernacular_name IS NOT NULL
-        GROUP BY taxon_id");
+    $stmt = $db->prepare("SELECT f.taxon_id, f.vernacular_name, f.scientific_name,
+        f.first_date, f.obs_count, o.url AS first_url
+        FROM (
+            SELECT taxon_id, vernacular_name, scientific_name,
+                MIN(event_start_date) first_date, COUNT(*) obs_count
+            FROM observations
+            WHERE SUBSTR(event_start_date,1,4) = :year AND vernacular_name IS NOT NULL
+            GROUP BY taxon_id
+        ) f
+        LEFT JOIN observations o ON o.taxon_id = f.taxon_id
+            AND o.event_start_date = f.first_date
+            AND SUBSTR(o.event_start_date,1,4) = :year2");
     $stmt->bindValue(':year', strval($year), SQLITE3_TEXT);
+    $stmt->bindValue(':year2', strval($year), SQLITE3_TEXT);
     $res = $stmt->execute();
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        $yearFirsts[strval($row['taxon_id'])] = [
+        $tid = strval($row['taxon_id']);
+        if (isset($yearFirsts[$tid])) continue; // skip duplicates from JOIN
+        $yearFirsts[$tid] = [
             'name' => $row['vernacular_name'],
             'scientific' => $row['scientific_name'],
             'first_date' => $row['first_date'],
             'obs_count' => intval($row['obs_count']),
+            'first_url' => $row['first_url'],
         ];
     }
 
