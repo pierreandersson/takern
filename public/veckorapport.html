@@ -431,12 +431,20 @@
         if (isRecentFirst && !isJanuaryResident) {
           const histTypical = phenData?.typical;
           const histEarliest = phenData?.earliest;
+          // Find year of earliest observation
+          let earliestYear = null;
+          if (phenData?.data) {
+            for (const [yr, dt] of Object.entries(phenData.data)) {
+              if (dt === phenData.earliest) { earliestYear = yr; break; }
+            }
+          }
           firstOfYear.push({
             ...sp,
             firstDate: firstDateThisYear || sp.firstSeen,
             firstUrl: yearData?.first_url || null,
             historicalTypical: mmddToSwedish(histTypical),
             historicalEarliest: mmddToSwedish(histEarliest),
+            earliestYear,
             yearsSeen: phenData?.years_found || null,
             hasPhenology: !!phenData,
           });
@@ -455,6 +463,13 @@
             if (obsDoy <= typicalDoy + 10) {
               const daysBeforeTypical = typicalDoy - obsDoy;
               if (daysBeforeTypical >= 5) {
+                // Find year of earliest observation
+                let earliestYear = null;
+                if (phenData.data) {
+                  for (const [yr, dt] of Object.entries(phenData.data)) {
+                    if (dt === phenData.earliest) { earliestYear = yr; break; }
+                  }
+                }
                 earlyArrivals.push({
                   ...sp,
                   firstDate: arrivalDate,
@@ -462,6 +477,7 @@
                   daysEarly: daysBeforeTypical,
                   typicalDate: phenData.typical,
                   earliestDate: phenData.earliest,
+                  earliestYear,
                   yearsSeen: phenData.years_found,
                 });
               }
@@ -531,7 +547,7 @@
           const countStr = sp.maxCount > 1 ? ` · ${sp.maxCount} ex` : "";
           let contextParts = [];
           if (sp.historicalTypical) contextParts.push(`Normalt först ${sp.historicalTypical}`);
-          if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}`);
+          if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
           if (sp.yearsSeen) contextParts.push(`${sp.yearsSeen} års data`);
           const context = contextParts.join(" · ");
 
@@ -559,7 +575,7 @@
           let contextParts = [];
           contextParts.push(`Först sedd ${formatDateNice(sp.firstDate)}`);
           if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före snitt (${mmddToSwedish(sp.typicalDate)})`);
-          if (sp.earliestDate) contextParts.push(`Tidigast: ${mmddToSwedish(sp.earliestDate)}`);
+          if (sp.earliestDate) contextParts.push(`Tidigast: ${mmddToSwedish(sp.earliestDate)}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
 
           const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
           const firstObsLink = sp.firstUrl ? `<a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Första obs</a>` : "";
