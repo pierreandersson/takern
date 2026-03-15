@@ -435,8 +435,11 @@
         }
 
         // ── Tidiga ankomster (uses phenology.json – same logic as index.html) ──
-        if (phenData) {
-          const obsDoy = dayOfYear(firstDateThisYear || sp.firstSeen);
+        // Only consider species whose first obs this year is RECENT (last 14 days)
+        // A snatterand seen in January is a wintering bird, not an early spring arrival
+        if (phenData && isRecentFirst && !isJanuaryResident) {
+          const arrivalDate = firstDateThisYear || sp.firstSeen;
+          const obsDoy = dayOfYear(arrivalDate);
           const earliestDoy = mmddToDoy(phenData.earliest);
           const typicalDoy = mmddToDoy(phenData.typical);
           if (obsDoy !== null && typicalDoy !== null) {
@@ -447,6 +450,7 @@
               if (isNewRecord || daysBeforeTypical >= 5) {
                 earlyArrivals.push({
                   ...sp,
+                  firstDate: arrivalDate,
                   daysEarly: daysBeforeTypical,
                   isNewRecord,
                   typicalDate: phenData.typical,
@@ -547,8 +551,8 @@
         for (const sp of highlights.earlyArrivals) {
           const recordBadge = sp.isNewRecord ? ` <span class="badge badge-red">Nytt rekord!</span>` : "";
           let contextParts = [];
-          if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före normalt`);
-          if (sp.typicalDate) contextParts.push(`Snitt: ${sp.typicalDate.replace(/^0/,"").replace("-","/")}`);
+          contextParts.push(`Först sedd ${formatDateNice(sp.firstDate)}`);
+          if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före snitt (${sp.typicalDate.replace(/^0/,"").replace("-","/")})`);
           if (sp.earliestDate) contextParts.push(`Tidigast: ${sp.earliestDate.replace(/^0/,"").replace("-","/")}`);
 
           const nameLinked = apLink(sp.firstOccurrenceId, sp.name);
