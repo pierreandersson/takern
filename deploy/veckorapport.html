@@ -246,7 +246,7 @@
     }
 
     #weekMap {
-      height: 400px;
+      height: 450px;
       width: 100%;
     }
 
@@ -299,6 +299,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script>
     const DAYS_BACK = 7;
 
@@ -620,45 +621,39 @@
       const mapEl = document.getElementById("weekMap");
       if (!mapEl) return;
 
-      const map = L.map("weekMap").setView([58.35, 14.81], 12);
+      const map = L.map("weekMap").setView([58.35, 14.82], 11);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; OpenStreetMap contributors',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 18,
       }).addTo(map);
 
-      // Aggregate observations per location (lat/lng rounded to ~100m)
+      // Collect heatmap points [lat, lng, intensity]
+      // Aggregate by rounded coordinates so multiple obs at same spot stack
       const grid = {};
       for (const obs of records) {
         const lat = obs.location?.decimalLatitude;
         const lng = obs.location?.decimalLongitude;
         if (!lat || !lng) continue;
-        // Round to ~100m grid for clustering
         const key = `${(Math.round(lat * 1000) / 1000).toFixed(3)},${(Math.round(lng * 1000) / 1000).toFixed(3)}`;
-        if (!grid[key]) grid[key] = { lat, lng, count: 0, species: new Set() };
+        if (!grid[key]) grid[key] = { lat, lng, count: 0 };
         grid[key].count++;
-        const name = obs.taxon?.vernacularName || obs.taxon?.scientificName;
-        if (name) grid[key].species.add(name);
       }
 
-      // Draw circles – size and color based on density
-      const counts = Object.values(grid).map(g => g.count);
-      const maxCount = Math.max(...counts, 1);
+      const points = Object.values(grid);
+      if (points.length === 0) return;
 
-      for (const cell of Object.values(grid)) {
-        const intensity = cell.count / maxCount;
-        const radius = 5 + intensity * 15;
-        const color = intensity > 0.6 ? "#b91c1c" : intensity > 0.3 ? "#b45309" : "#2d6a4f";
+      // Use log scale like statistik.html for better visual distribution
+      const logPoints = points.map(p => [p.lat, p.lng, Math.log(p.count + 1)]);
+      const vals = logPoints.map(p => p[2]).sort((a, b) => a - b);
+      const n = points.length;
+      const r = n < 10 ? 40 : n < 30 ? 34 : n < 80 ? 28 : n < 200 ? 24 : 18;
+      const bl = Math.round(r * 0.55);
+      const p50 = vals[Math.floor(vals.length * 0.5)] || 1;
 
-        L.circleMarker([cell.lat, cell.lng], {
-          radius,
-          color,
-          fillColor: color,
-          fillOpacity: 0.5 + intensity * 0.3,
-          weight: 1,
-        }).bindPopup(
-          `<strong>${cell.count} observationer</strong><br>${cell.species.size} arter<br><em>${[...cell.species].slice(0, 5).join(", ")}${cell.species.size > 5 ? " ..." : ""}</em>`
-        ).addTo(map);
-      }
+      L.heatLayer(logPoints, {
+        radius: r, blur: bl, maxZoom: 17, minOpacity: 0.25, max: p50,
+        gradient: { 0.05: "#2166ac", 0.2: "#67a9cf", 0.4: "#d1e5f0", 0.6: "#fddbc7", 0.8: "#ef8a62", 1: "#b2182b" },
+      }).addTo(map);
     }
 
     // ── Init ──
