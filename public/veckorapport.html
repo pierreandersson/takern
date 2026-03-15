@@ -346,7 +346,7 @@
       const speciesMap = {};
       for (const obs of records) {
         const name = obs.taxon?.vernacularName || obs.taxon?.scientificName;
-        const taxonId = obs.taxon?.taxonId;
+        const taxonId = obs.taxon?.id;
         if (!name) continue;
         if (!speciesMap[name]) {
           speciesMap[name] = {
