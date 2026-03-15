@@ -780,7 +780,7 @@
         html += `<div class="chart-section">
           <h2>Senaste observationer</h2>
           <div style="display:flex;flex-direction:column;gap:0.4rem">
-            ${sp.recent.map(o => {
+            ${sp.recent.slice(0, 5).map(o => {
               const date = formatDateSwedish(o.date);
               const time = o.time && o.time !== "00:00" ? ` ${o.time}` : "";
               const loc = o.locality || "";
