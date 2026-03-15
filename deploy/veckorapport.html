@@ -367,28 +367,18 @@
         <div id="weekMap"></div>
       </div>`;
 
-      // Year-over-year species comparison
+      // Year-over-year species comparison: what was seen last year but not this week?
       if (ly && ly.species && ly.species.length > 0) {
         const thisWeekNames = new Set(liveData.speciesList.map(s => s.name));
-        const lastYearNames = new Set(ly.species);
-        const onlyThisYear = liveData.speciesList.map(s => s.name).filter(n => !lastYearNames.has(n));
         const onlyLastYear = ly.species.filter(n => !thisWeekNames.has(n));
 
-        if (onlyThisYear.length > 0 || onlyLastYear.length > 0) {
+        if (onlyLastYear.length > 0) {
           html += `<div class="section-title">Jämfört med vecka ${ly.week}, ${ly.year}</div>`;
           html += `<div class="year-compare">`;
-          if (onlyThisYear.length > 0) {
-            html += `<div class="compare-col">
-              <div class="compare-heading">Nya i år <span class="badge badge-green">${onlyThisYear.length}</span></div>
-              <div class="compare-list">${onlyThisYear.join(", ")}</div>
-            </div>`;
-          }
-          if (onlyLastYear.length > 0) {
-            html += `<div class="compare-col">
-              <div class="compare-heading">Sågs ${ly.year} men ej i år <span class="badge badge-orange">${onlyLastYear.length}</span></div>
-              <div class="compare-list">${onlyLastYear.join(", ")}</div>
-            </div>`;
-          }
+          html += `<div class="compare-col">
+            <div class="compare-heading">Sågs denna vecka ${ly.year} men ej i år <span class="badge badge-orange">${onlyLastYear.length}</span></div>
+            <div class="compare-list">${onlyLastYear.join(", ")}</div>
+          </div>`;
           html += `</div>`;
         }
       }
