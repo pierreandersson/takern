@@ -302,6 +302,13 @@
       return Math.floor((d - start) / 86400000);
     }
 
+    function mmddToSwedish(mmdd) {
+      if (!mmdd) return null;
+      const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+      const [m, d] = mmdd.split("-").map(Number);
+      return `${d} ${months[m - 1]}`;
+    }
+
     function mmddToDoy(mmdd) {
       if (!mmdd) return null;
       const [m, d] = mmdd.split("-").map(Number);
@@ -428,8 +435,8 @@
             ...sp,
             firstDate: firstDateThisYear || sp.firstSeen,
             firstUrl: yearData?.first_url || null,
-            historicalTypical: histTypical ? histTypical.replace(/^0/, "").replace("-", "/") : null,
-            historicalEarliest: histEarliest ? histEarliest.replace(/^0/, "").replace("-", "/") : null,
+            historicalTypical: mmddToSwedish(histTypical),
+            historicalEarliest: mmddToSwedish(histEarliest),
             yearsSeen: phenData?.years_found || null,
             hasPhenology: !!phenData,
           });
@@ -551,8 +558,8 @@
         for (const sp of highlights.earlyArrivals) {
           let contextParts = [];
           contextParts.push(`Först sedd ${formatDateNice(sp.firstDate)}`);
-          if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före snitt (${sp.typicalDate.replace(/^0/,"").replace("-","/")})`);
-          if (sp.earliestDate) contextParts.push(`Tidigast: ${sp.earliestDate.replace(/^0/,"").replace("-","/")}`);
+          if (sp.daysEarly > 0) contextParts.push(`${sp.daysEarly} dagar före snitt (${mmddToSwedish(sp.typicalDate)})`);
+          if (sp.earliestDate) contextParts.push(`Tidigast: ${mmddToSwedish(sp.earliestDate)}`);
 
           const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${sp.taxonId}" style="color:inherit">${sp.name}</a>` : sp.name;
           const firstObsLink = sp.firstUrl ? `<a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Första obs</a>` : "";
