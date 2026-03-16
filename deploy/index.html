@@ -31,7 +31,7 @@
     .controls {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
       flex-wrap: wrap;
       align-items: center;
     }
@@ -51,6 +51,42 @@
       background: var(--accent);
       color: white;
       border-color: var(--accent);
+    }
+
+    .controls-days button {
+      padding: 0.4rem 0.7rem;
+    }
+    .controls-days button.active {
+      background: var(--red);
+      border-color: var(--red);
+    }
+    .controls-days button:hover { border-color: var(--red); }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .status-row .status {
+      margin-bottom: 0;
+    }
+
+    #reload-btn {
+      padding: 0.4rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    #reload-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
     }
 
     .status {
@@ -189,7 +225,7 @@
   <header>
     <div>
       <h1>Tåkern – Fågelobservationer</h1>
-      <p id="header-desc">Senaste observationerna inom 10 km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a></p>
+      <p id="header-desc">Senaste observationerna vid Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a></p>
     </div>
     <nav>
       <a href="statistik.html">Historisk statistik</a>
@@ -203,19 +239,21 @@
       <div class="controls">
         <button class="active" data-sort="recent">Senaste</button>
         <button data-sort="notable">Mest noterbara</button>
-        <button data-sort="count">Högst antal</button>
         <button data-sort="species">Art A–Ö</button>
       </div>
-      <div class="controls" id="radius-controls">
-        <span style="font-size:0.85rem;color:var(--muted)">Radie:</span>
-        <button data-radius="8">8 km</button>
-        <button class="active" data-radius="10">10 km</button>
-        <button data-radius="12">12 km</button>
-        <button data-radius="15">15 km</button>
-        <span style="border-left:1px solid var(--border);height:1.5rem;margin:0 0.25rem"></span>
-        <button id="reload-btn" title="Hämta ny data">&#x21bb;</button>
+      <div class="controls controls-days">
+        <button data-days="0">Idag</button>
+        <button class="active" data-days="1">+1</button>
+        <button data-days="2">+2</button>
+        <button data-days="3">+3</button>
+        <button data-days="4">+4</button>
+        <button data-days="5">+5</button>
+        <button data-days="6">+6</button>
       </div>
-      <div class="status" id="status">Laddar...</div>
+      <div class="status-row">
+        <div class="status" id="status">Laddar...</div>
+        <button id="reload-btn">&#x21bb; Uppdatera</button>
+      </div>
       <div class="obs-list" id="obs-list">
         <div class="loading">Hämtar observationer...</div>
       </div>
@@ -231,22 +269,8 @@
       maxZoom: 18,
     }).addTo(map);
 
-    let radiusCircle = null;
-    let currentRadius = 10;
     const markers = L.layerGroup().addTo(map);
-
-    function drawRadiusCircle(km) {
-      if (radiusCircle) map.removeLayer(radiusCircle);
-      radiusCircle = L.circle([58.35, 14.81], {
-        radius: km * 1000,
-        color: "#2d6a4f",
-        fillColor: "#d8f3dc",
-        fillOpacity: 0.1,
-        weight: 1.5,
-        dashArray: "6 4",
-      }).addTo(map);
-    }
-    drawRadiusCircle(currentRadius);
+    let currentDays = 1;
 
     function getCount(obs) {
       return parseInt(obs.occurrence?.individualCount) || 0;
@@ -429,8 +453,15 @@
       });
     }
 
-    // ── Grouped rendering for "Mest noterbara" ──
-    function renderGrouped(observations) {
+    function obsUrl(obs) {
+      const id = obs.occurrence?.occurrenceId || "";
+      const match = id.match(/:sighting:(\d+)$/);
+      if (match) return `https://www.artportalen.se/sighting/${match[1]}`;
+      return null;
+    }
+
+    // ── Grouped rendering (used by "Mest noterbara" and "Art A–Ö") ──
+    function renderGrouped(observations, groupSort) {
       const list = document.getElementById("obs-list");
       markers.clearLayers();
 
@@ -447,15 +478,15 @@
         groups.get(key).push(obs);
       });
 
-      // Sort groups by max notable score, then by total count
-      const sortedGroups = [...groups.entries()].sort((a, b) => {
+      // Sort groups
+      const sortedGroups = [...groups.entries()].sort(groupSort || ((a, b) => {
         const scoreA = Math.max(...a[1].map(notableScore));
         const scoreB = Math.max(...b[1].map(notableScore));
         if (scoreB !== scoreA) return scoreB - scoreA;
         const countA = a[1].reduce((s, o) => s + getCount(o), 0);
         const countB = b[1].reduce((s, o) => s + getCount(o), 0);
         return countB - countA;
-      });
+      }));
 
       // Add all markers
       observations.forEach((obs, i) => {
@@ -495,9 +526,12 @@
           const remarks = o.occurrence?.occurrenceRemarks || "";
           const lat = o.location?.decimalLatitude;
           const lng = o.location?.decimalLongitude;
+          const url = obsUrl(o);
+          const linkStart = url ? `<a href="${url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" onclick="event.stopPropagation()">` : "";
+          const linkEnd = url ? "</a>" : "";
           return `<div class="obs-card" data-lat="${lat}" data-lng="${lng}">
             <div class="obs-header">
-              <div class="obs-meta" style="margin:0">${date ? `<span>${date}</span>` : ""}${loc ? `<span>${loc}</span>` : ""}${observer ? `<span>${observer}</span>` : ""}</div>
+              <div class="obs-meta" style="margin:0">${date ? `<span>${date}</span>` : ""}${loc ? `<span>${loc}</span>` : ""}${observer ? `<span>${observer}</span>` : ""}${url ? `<span>${linkStart}&#x1f517;${linkEnd}</span>` : ""}</div>
               ${count ? `<div class="obs-count">${count} ex</div>` : ""}
             </div>
             ${remarks ? `<div class="obs-meta" style="font-style:italic">Kommentar: ${remarks}</div>` : ""}
@@ -551,13 +585,16 @@
     const sorters = {
       notable: (a, b) => notableScore(b) - notableScore(a),
       recent: (a, b) => new Date(b.event?.startDate || 0) - new Date(a.event?.startDate || 0),
-      count: (a, b) => getCount(b) - getCount(a),
       species: (a, b) => (a.taxon?.vernacularName || "").localeCompare(b.taxon?.vernacularName || "", "sv"),
     };
 
     function applySort() {
       if (currentSort === "notable") {
         renderGrouped(allObs);
+      } else if (currentSort === "species") {
+        renderGrouped(allObs, (a, b) =>
+          (a[1][0].taxon?.vernacularName || "").localeCompare(b[1][0].taxon?.vernacularName || "", "sv")
+        );
       } else {
         const sorted = [...allObs].sort(sorters[currentSort]);
         renderList(sorted);
@@ -586,7 +623,7 @@
             yearFirstsData = ctx.year_firsts || {};
           } catch (e) { /* phenology & rarity are optional */ }
         }
-        const resp = await fetch(`api.php?radius=${currentRadius}`);
+        const resp = await fetch(`api.php?days=${currentDays}`);
         const data = await resp.json();
 
         if (data.error) {
@@ -599,7 +636,7 @@
         allObs = data.records || data || [];
         const uniqueSpecies = new Set(allObs.map(o => o.taxon?.scientificName)).size;
         document.getElementById("status").textContent =
-          `${allObs.length} observationer från idag och igår · ${uniqueSpecies} arter`;
+          `${formatDateRange(currentDays)} · ${allObs.length} observationer · ${uniqueSpecies} arter`;
 
         applySort();
       } catch (err) {
@@ -608,16 +645,30 @@
       }
     }
 
-    // ── Radius selector ──
-    document.querySelectorAll("#radius-controls button").forEach(btn => {
+    // ── Date range formatting ──
+    function formatDateRange(daysBack) {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - daysBack);
+      const opts = { day: "numeric", month: "long" };
+      if (daysBack === 0) {
+        return `Visar: ${end.toLocaleDateString("sv-SE", opts)} ${end.getFullYear()}`;
+      }
+      const sameMonth = start.getMonth() === end.getMonth();
+      const startStr = sameMonth
+        ? start.getDate()
+        : start.toLocaleDateString("sv-SE", opts);
+      const endStr = end.toLocaleDateString("sv-SE", opts);
+      return `Visar: ${startStr}\u2013${endStr} ${end.getFullYear()}`;
+    }
+
+    // ── Days selector ──
+    document.querySelectorAll(".controls-days button[data-days]").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll("#radius-controls button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".controls-days button[data-days]").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        currentRadius = parseInt(btn.dataset.radius);
-        drawRadiusCircle(currentRadius);
-        document.getElementById("header-desc").innerHTML =
-          `Senaste observationerna inom ${currentRadius} km från Tåkern · Data från <a href="https://www.artportalen.se">Artportalen</a> m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a>`;
-        document.getElementById("status").textContent = "Laddar...";
+        currentDays = parseInt(btn.dataset.days);
+        document.getElementById("status").textContent = formatDateRange(currentDays) + " · Laddar...";
         document.getElementById("obs-list").innerHTML = '<div class="loading">Hämtar observationer...</div>';
         loadData();
       });
