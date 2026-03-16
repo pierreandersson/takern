@@ -193,8 +193,13 @@ if ($q === 'species' && $id === null) {
     $res = $db->query("SELECT taxon_id, vernacular_name, scientific_name,
         COUNT(*) obs_count, MAX(individual_count) max_count,
         MIN(event_start_date) first_obs, MAX(event_start_date) last_obs,
-        COUNT(DISTINCT SUBSTR(event_start_date,1,4)) years_present
+        COUNT(DISTINCT SUBSTR(event_start_date,1,4)) years_present,
+        taxonomic_order, family
         FROM observations WHERE vernacular_name IS NOT NULL
+            AND scientific_name LIKE '% %'
+            AND vernacular_name NOT LIKE '% x %'
+            AND vernacular_name NOT LIKE '%/%'
+            AND vernacular_name NOT LIKE '%, % morf'
         GROUP BY taxon_id ORDER BY obs_count DESC");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
         $species[] = [
@@ -206,6 +211,7 @@ if ($q === 'species' && $id === null) {
             'first_obs' => $row['first_obs'],
             'last_obs' => $row['last_obs'],
             'years_present' => intval($row['years_present']),
+            'bird_group' => getBirdGroup($row['taxonomic_order'] ?? '', $row['family'] ?? ''),
         ];
     }
     jsonOut(['species' => $species]);

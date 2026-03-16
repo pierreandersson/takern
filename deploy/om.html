@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Om Tåkern Fågelobservationer</title>
+  <title>Om Fågelobservationer vid Tåkern</title>
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="theme-color" content="#2d6a4f">
@@ -174,14 +174,16 @@
   <header>
     <div class="header-top">
       <div>
-        <h1>Om Tåkern Fågelobservationer</h1>
+        <h1><a href="index.html">Fågelobservationer vid Tåkern</a></h1>
         <p>Bakgrund, datakällor och metodik</p>
       </div>
     </div>
     <nav>
-      <a href="index.html">De senaste observationerna</a>
-      <a href="veckorapport.html">Denna vecka vid Tåkern</a>
-      <a href="statistik.html">Historisk statistik</a>
+      <a href="index.html">Senaste</a>
+      <a href="veckorapport.html">Denna vecka</a>
+      <a href="statistik.html">Statistik</a>
+      <a href="arter.html">Arter</a>
+      <a href="om.html" class="active">Om</a>
     </nav>
   </header>
 
@@ -190,16 +192,18 @@
     <!-- Syfte -->
     <div class="about-section">
       <h2>Vad är det här?</h2>
-      <p>Tåkern Fågelobservationer samlar och visualiserar fågelobservationer från Tåkern, en av Sveriges mest betydelsefulla fågelsjöar. Sjön ligger i Östergötland och är ett Natura 2000-område med ett exceptionellt rikt fågelliv – över 370 arter har rapporterats inom 15 km radie under de senaste 20 åren.</p>
+      <p>Fågelobservationer vid Tåkern samlar och visualiserar fågelobservationer från Tåkern, en av Sveriges mest betydelsefulla fågelsjöar. Sjön ligger i Östergötland och är ett Natura 2000-område med ett exceptionellt rikt fågelliv – över 300 arter har rapporterats inom 15 km radie under de senaste 20 åren.</p>
       <p>Sajten uppdateras dagligen och visar allt från dagens observationer till 20 års historisk statistik. Syftet är att göra Tåkerns fågeldata tillgänglig, sökbar och visuellt intressant – för fågelskådare som planerar besök, för den som vill följa vårens framsteg, eller för den som är nyfiken på långsiktiga trender.</p>
     </div>
 
     <!-- Sidorna -->
     <div class="about-section">
-      <h2>Sajtens tre delar</h2>
+      <h2>Sajtens fem delar</h2>
       <p><strong><a href="index.html">Senaste observationer</a></strong> – En karta och lista med de senaste dagarnas rapporter. Observationer kan grupperas per art eller sorteras efter hur noterbara de är. Observationer från idag och igår hämtas live, äldre dagar kommer från databasen.</p>
       <p><strong><a href="veckorapport.html">Tåkern i veckan</a></strong> – Veckoöversikt med artackumulering jämfört med femårssnitt, artfördelning per fågelgrupp, vårens framsteg, nyanlända arter och veckans höjdpunkter. Inkluderar daglig medeltemperatur från SMHI.</p>
       <p><strong><a href="statistik.html">Historisk statistik</a></strong> – Översikt och detaljsidor för alla arter. Visar observationer per år, säsongsfördelning, fenologi, senaste observationer och trendanalys av säsongslängd med regressionslinjer.</p>
+      <p><strong><a href="arter.html">Arter</a></strong> – Utforska alla arter som observerats vid Tåkern. Bläddra bland de mest observerade eller filtrera per fågelgrupp. Varje art har en detaljsida med senaste observationer, månadsfördelning och fenologi.</p>
+      <p><strong><a href="om.html">Om sajten</a></strong> – Bakgrund, datakällor, metodik och kontaktinformation.</p>
     </div>
 
     <!-- Datakällor -->
@@ -239,7 +243,7 @@
         </tbody>
       </table>
 
-      <p>Databasen innehåller cirka 333 000 observationer av 374 arter, från 2006 till idag. Data uppdateras automatiskt varje natt.</p>
+      <p>Databasen innehåller över 300 000 observationer av över 300 arter, från 2006 till idag. Data uppdateras automatiskt varje natt.</p>
       <p>Temperaturdata hämtas från <a href="https://www.smhi.se/data/meteorologi/ladda-ner-meteorologiska-observationer">SMHI:s öppna API</a> – stationen Härsnäs (85180), belägen 26 km öster om Tåkern. Dygnsmedeltemperatur (parameter 2) visas i artackumuleringskurvan.</p>
     </div>
 
@@ -252,7 +256,7 @@
     <!-- Bakom sajten -->
     <div class="about-section">
       <h2>Bakom sajten</h2>
-      <p>Tåkern Fågelobservationer är byggt av <strong>Pierre Andersson</strong> som ett hobbyprojekt. Sajten är byggd med HTML, CSS och JavaScript på klientsidan, och PHP med SQLite på serversidan. Inga ramverk – bara grundläggande webbteknologi.</p>
+      <p>Fågelobservationer vid Tåkern är byggt av <strong>Pierre Andersson</strong> som ett hobbyprojekt. Sajten är byggd med HTML, CSS och JavaScript på klientsidan, och PHP med SQLite på serversidan. Inga ramverk – bara grundläggande webbteknologi.</p>
       <p>Källkoden är öppen:</p>
       <div class="contact-row">
         <a href="https://github.com/pierreandersson/takern">GitHub: pierreandersson/takern</a>

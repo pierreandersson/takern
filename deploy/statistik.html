@@ -49,149 +49,6 @@
     }
     [id^="sec-"] { scroll-margin-top: 3rem; }
 
-    /* Search */
-    .search-box {
-      position: relative;
-      margin-bottom: 2rem;
-      z-index: 10000;
-    }
-
-    .search-box input {
-      width: 100%;
-      padding: 0.75rem 1rem 0.75rem 2.5rem;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 1rem;
-      background: var(--card);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .search-box input:focus { border-color: var(--accent); }
-
-    .search-box::before {
-      content: "\1F50D";
-      position: absolute;
-      left: 0.85rem;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 1rem;
-    }
-
-    .search-results {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-height: 400px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-
-    .search-results.open { display: block; }
-
-    .search-result {
-      padding: 0.6rem 1rem;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.1s;
-    }
-
-    .search-result:last-child { border-bottom: none; }
-    .search-result:hover { background: var(--accent-light); }
-
-    .search-result .name { font-weight: 600; }
-    .search-result .sci { font-style: italic; color: var(--muted); font-size: 0.85rem; }
-    .search-result .count { color: var(--muted); font-size: 0.85rem; }
-
-    /* Species detail */
-    .species-detail {
-      display: none;
-    }
-
-    .species-detail.active { display: block; }
-
-    /* Loading skeleton */
-    .skeleton {
-      background: linear-gradient(90deg, var(--border) 25%, color-mix(in srgb, var(--border) 60%, transparent) 50%, var(--border) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 6px;
-    }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    .skeleton-text { height: 1rem; margin-bottom: 0.5rem; }
-    .skeleton-card { height: 4.5rem; border-radius: 10px; }
-    .skeleton-chart { height: 200px; border-radius: 10px; }
-
-    .species-header {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .species-header h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .species-header .scientific {
-      font-style: italic;
-      color: var(--muted);
-      font-size: 1rem;
-    }
-
-    .species-header .back {
-      color: var(--accent);
-      cursor: pointer;
-      font-size: 0.9rem;
-      text-decoration: underline;
-    }
-
-    .species-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    .stat-card .stat-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .stat-card .stat-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 0.2rem;
-    }
-
     /* Top species list */
     .top-list {
       display: flex;
@@ -402,7 +259,6 @@
     }
 
     @media (max-width: 600px) {
-      .species-stats { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -410,13 +266,15 @@
   <header>
     <div class="header-top">
       <div>
-        <h1>Tåkern – Historisk statistik</h1>
+        <h1><a href="index.html">Fågelobservationer vid Tåkern</a></h1>
         <p>20 år av fågeldata · 2006–2026</p>
       </div>
     </div>
     <nav>
-      <a href="index.html">De senaste observationerna</a>
-      <a href="veckorapport.html">Denna vecka vid Tåkern</a>
+      <a href="index.html">Senaste</a>
+      <a href="veckorapport.html">Denna vecka</a>
+      <a href="statistik.html" class="active">Statistik</a>
+      <a href="arter.html">Arter</a>
       <a href="om.html">Om</a>
     </nav>
   </header>
@@ -434,47 +292,21 @@
       </div>
     </div>
 
-    <!-- Search (shown immediately) -->
-    <div class="section-title">Sök art</div>
-    <div class="search-box">
-      <input type="text" id="species-search" placeholder="Skriv artnamn..." autocomplete="off">
-      <div class="search-results" id="search-results"></div>
-    </div>
-
     <!-- Overview section (filled progressively) -->
     <div id="overview-section">
       <div class="loading" id="loading">Laddar diagram och kartor...</div>
     </div>
-
-    <!-- Species detail (hidden until selected) -->
-    <div class="species-detail" id="species-detail"></div>
   </div>
 
   <script src="utils.js"></script>
   <script>
     // ── State ──
     let speciesCache = null;
-    let currentChart1 = null;
-    let currentChart2 = null;
-    let currentChart3 = null;
-    let currentChart4 = null;
-    let currentSpeciesMap = null;
 
     function toSlug(name) {
       return name.toLowerCase()
         .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
         .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    }
-
-    function findSpeciesBySlug(slug) {
-      if (!speciesCache) return null;
-      return speciesCache.find(s => toSlug(s.name) === slug);
-    }
-
-    function weekToDate(week) {
-      const d = new Date(2024, 0, 1);
-      d.setDate(d.getDate() + week * 7);
-      return `${d.getDate()} ${MONTHS_SV[d.getMonth()]}`;
     }
 
     // ── Section navigation ──
@@ -489,16 +321,6 @@
       { id: "sec-aktivitet", label: "Aktivitet" },
       { id: "sec-observatorer", label: "Observatörer" },
     ];
-    const SPECIES_SECTIONS = [
-      { id: "sec-senaste", label: "Senaste" },
-      { id: "sec-sp-karta", label: "Karta" },
-      { id: "sec-sp-sasong", label: "Säsong" },
-      { id: "sec-sp-frekvens", label: "Frekvens" },
-      { id: "sec-sp-fenologi", label: "Fenologi" },
-      { id: "sec-sp-antal", label: "Antal" },
-      { id: "sec-sp-lokaler", label: "Lokaler" },
-    ];
-
     let sectionObserver = null;
 
     function updateSectionNav(sections) {
@@ -854,19 +676,17 @@
         });
       }
 
-      // Wire up click handlers
+      // Wire up click handlers – navigate to arter.html
       document.querySelectorAll("[data-taxon]").forEach(el => {
         el.style.cursor = "pointer";
         el.addEventListener("click", () => {
           const nameEl = el.querySelector(".name");
-          const sciEl = el.querySelector(".sci");
-          const hint = nameEl ? { name: nameEl.textContent, scientific: sciEl ? sciEl.textContent : "" } : null;
-          loadSpecies(parseInt(el.dataset.taxon), false, hint);
+          if (nameEl) {
+            const slug = toSlug(nameEl.textContent);
+            window.location.href = `arter.html?art=${slug}`;
+          }
         });
       });
-
-      // Wire up search
-      setupSearch();
 
       // Section nav for overview
       updateSectionNav(OVERVIEW_SECTIONS);
@@ -954,759 +774,17 @@
         requestAnimationFrame(() => drawSparkline(canvas, vals, color));
       });
 
-      // Wire up click handlers
+      // Wire up click handlers – navigate to arter.html
       container.querySelectorAll("[data-taxon]").forEach(el => {
         el.style.cursor = "pointer";
         el.addEventListener("click", () => {
           const nameEl = el.querySelector(".name, .trend-name");
-          const hint = nameEl ? { name: nameEl.textContent, scientific: "" } : null;
-          loadSpecies(parseInt(el.dataset.taxon), false, hint);
-        });
-      });
-    }
-
-    // ── Search ──
-
-    async function setupSearch() {
-      if (!speciesCache) {
-        const resp = await fetch("stats-api.php?q=species");
-        const data = await resp.json();
-        speciesCache = data.species;
-      }
-
-      const input = document.getElementById("species-search");
-      const results = document.getElementById("search-results");
-
-      input.addEventListener("input", () => {
-        const q = input.value.trim().toLowerCase();
-        if (q.length < 2) {
-          results.classList.remove("open");
-          return;
-        }
-
-        const matches = speciesCache
-          .filter(s => s.name.toLowerCase().includes(q) || s.scientific.toLowerCase().includes(q))
-          .slice(0, 15);
-
-        if (matches.length === 0) {
-          results.innerHTML = '<div style="padding:0.75rem 1rem;color:var(--muted)">Inga arter hittade</div>';
-        } else {
-          results.innerHTML = matches.map(s => `
-            <div class="search-result" data-taxon="${s.taxon_id}">
-              <div>
-                <span class="name">${s.name}</span>
-                <span class="sci">${s.scientific}</span>
-              </div>
-              <span class="count">${s.obs_count.toLocaleString("sv")} obs</span>
-            </div>
-          `).join("");
-        }
-
-        results.classList.add("open");
-
-        results.querySelectorAll(".search-result").forEach(el => {
-          el.addEventListener("click", () => {
-            results.classList.remove("open");
-            input.value = "";
-            const nameEl = el.querySelector(".name");
-            const sciEl = el.querySelector(".sci");
-            loadSpecies(parseInt(el.dataset.taxon), false, {
-              name: nameEl ? nameEl.textContent : "",
-              scientific: sciEl ? sciEl.textContent : ""
-            });
-          });
-        });
-      });
-
-      // Close on click outside
-      document.addEventListener("click", (e) => {
-        if (!e.target.closest(".search-box")) {
-          results.classList.remove("open");
-        }
-      });
-    }
-
-    function showOverview() {
-      const detail = document.getElementById("species-detail");
-      detail.classList.remove("active");
-      detail.innerHTML = "";
-      document.getElementById("summary-cards").style.display = "";
-      document.querySelector(".search-box").style.display = "";
-      document.querySelector(".search-box").previousElementSibling.style.display = "";
-      document.getElementById("overview-section").style.display = "";
-      if (currentChart1) { currentChart1.destroy(); currentChart1 = null; }
-      if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
-      if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
-      if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
-      if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
-      updateSectionNav(OVERVIEW_SECTIONS);
-    }
-
-    window.addEventListener("popstate", (e) => {
-      if (e.state && e.state.taxonId) {
-        loadSpecies(e.state.taxonId, true);
-      } else {
-        showOverview();
-      }
-    });
-
-    // ── Recent observations helpers ──
-
-    function renderRecentObs(items) {
-      if (!items || items.length === 0) return '<div style="color:var(--muted);font-size:0.9rem">Inga observationer</div>';
-      return items.slice(0, 5).map(o => {
-        const date = formatDateSwedish(o.date);
-        const time = o.time && o.time !== "00:00" ? ` ${o.time}` : "";
-        const loc = o.locality || "";
-        const obs = o.observer ? `<span style="color:var(--muted)">${o.observer}</span>` : "";
-        const link = o.url ? `<a href="${o.url}" target="_blank" rel="noopener" style="color:var(--accent);margin-left:0.3rem">↗</a>` : "";
-        const src = o.source ? `<span style="font-size:0.75rem;color:var(--muted);background:var(--border);padding:0.1rem 0.4rem;border-radius:3px;margin-left:0.3rem">${o.source}</span>` : "";
-        return `<div style="font-size:0.9rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
-          ${loc}${loc && obs ? " · " : ""}${obs}${src}
-          <span style="color:var(--muted);float:right">${date}${time}${link}</span>
-        </div>`;
-      }).join("");
-    }
-
-    function mergeRecentObs(cached, live) {
-      // Convert live API records to the same format as cached recent obs
-      const liveItems = live.map(r => {
-        const startDate = r.event?.startDate || "";
-        const date = startDate.substring(0, 10);
-        const timePart = startDate.length > 10 ? startDate.substring(11, 16) : null;
-        const time = timePart && timePart !== "00:00" ? timePart : null;
-        return {
-          date,
-          time,
-          locality: r.location?.locality || "",
-          observer: r.occurrence?.recordedBy || null,
-          url: (() => {
-            const oid = r.occurrence?.occurrenceId || "";
-            const m = oid.match(/artportalen\.se:sighting:(\d+)/);
-            return m ? `https://artportalen.se/sighting/${m[1]}` : null;
-          })(),
-          source: "Artportalen",
-        };
-      });
-      // Merge: dedup on date+locality, live items take priority (are fresher)
-      const seen = new Set();
-      const merged = [];
-      for (const o of liveItems) {
-        const key = (o.date || "") + "|" + (o.locality || "");
-        if (seen.has(key)) continue;
-        seen.add(key);
-        merged.push(o);
-      }
-      for (const o of cached) {
-        const key = (o.date || "") + "|" + (o.locality || "");
-        if (seen.has(key)) continue;
-        seen.add(key);
-        merged.push(o);
-      }
-      // Sort by date+time descending
-      merged.sort((a, b) => {
-        const da = (a.date || "") + (a.time || "");
-        const db = (b.date || "") + (b.time || "");
-        return db.localeCompare(da);
-      });
-      return merged;
-    }
-
-    async function refreshRecentObs(taxonId, cachedRecent) {
-      try {
-        const resp = await fetch(`api.php?days=1&taxon=${taxonId}`);
-        const data = await resp.json();
-        if (!data.records || data.records.length === 0) return;
-        // Filter to only this taxon (in case API returns related taxa)
-        const taxonRecords = data.records.filter(r => r.taxon?.id === taxonId);
-        if (taxonRecords.length === 0) return;
-        const merged = mergeRecentObs(cachedRecent || [], taxonRecords);
-        const el = document.getElementById("recent-obs-list");
-        if (el) el.innerHTML = renderRecentObs(merged);
-      } catch (e) {
-        // Silently fail – cached data is still shown
-      }
-    }
-
-    // ── Species detail ──
-
-    async function loadSpecies(taxonId, skipPush, hint) {
-      // Immediately show skeleton with species name if available
-      document.getElementById("summary-cards").style.display = "none";
-      document.querySelector(".search-box").style.display = "none";
-      document.querySelector(".search-box").previousElementSibling.style.display = "none";
-      document.getElementById("overview-section").style.display = "none";
-      const detail = document.getElementById("species-detail");
-      detail.classList.add("active");
-
-      // Look up name from speciesCache if no hint provided
-      if (!hint && speciesCache) {
-        const cached = speciesCache.find(s => s.taxon_id === taxonId);
-        if (cached) hint = { name: cached.name, scientific: cached.scientific };
-      }
-
-      detail.innerHTML = `
-        <div class="species-header">
-          <div>
-            <span class="back" id="back-btn-loading">&larr; Tillbaka till översikten</span>
-            <h2>${hint ? hint.name : '<span class="skeleton skeleton-text" style="display:inline-block;width:10rem"></span>'}</h2>
-            <div class="scientific">${hint ? hint.scientific : '<span class="skeleton skeleton-text" style="display:inline-block;width:8rem"></span>'}</div>
-          </div>
-        </div>
-        <div class="species-stats">
-          <div class="stat-card skeleton skeleton-card"></div>
-          <div class="stat-card skeleton skeleton-card"></div>
-          <div class="stat-card skeleton skeleton-card"></div>
-          <div class="stat-card skeleton skeleton-card"></div>
-        </div>
-        <div class="skeleton skeleton-chart" style="margin-top:1.5rem"></div>
-      `;
-      document.getElementById("back-btn-loading").addEventListener("click", () => {
-        showOverview();
-        history.pushState({}, "", "statistik.html");
-      });
-      // Scroll to top immediately
-      window.scrollTo(0, 0);
-
-      const resp = await fetch(`stats-api.php?q=species&id=${taxonId}`);
-      const sp = await resp.json();
-
-      if (sp.error) { showOverview(); return; }
-
-      // Update URL
-      if (!skipPush) {
-        const slug = toSlug(sp.name);
-        history.pushState({ taxonId }, "", `?art=${slug}`);
-      }
-
-      // Destroy old charts
-      if (currentChart1) { currentChart1.destroy(); currentChart1 = null; }
-      if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
-      if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
-      if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
-      if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
-
-      let html = "";
-
-      // Header
-      const rlBadge = sp.redlist_category && sp.redlist_category !== "LC"
-        ? `<span style="display:inline-block;padding:0.1rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:600;margin-left:0.5rem;background:${["CR","EN"].includes(sp.redlist_category) ? "var(--red-light);color:var(--red)" : "var(--orange-light);color:var(--orange)"}">${sp.redlist_category}</span>`
-        : "";
-      html += `<div class="species-header">
-        <div>
-          <span class="back" id="back-btn">&larr; Tillbaka till översikten</span>
-          <h2>${sp.name} ${rlBadge}</h2>
-          <div class="scientific">${sp.scientific}</div>
-          <div style="font-size:0.85rem;color:var(--muted);margin-top:0.25rem">${sp.family || ""}${sp.order ? ` · ${sp.order}` : ""}</div>
-        </div>
-      </div>`;
-
-      // Key stats
-      html += `<div class="species-stats">
-        <div class="stat-card">
-          <div class="stat-value">${sp.phenology_summary.avg_first || "–"}</div>
-          <div class="stat-label">snitt första obs</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${sp.phenology_summary.avg_last || "–"}</div>
-          <div class="stat-label">snitt sista obs</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${sp.phenology_summary.earliest_ever || "–"}</div>
-          <div class="stat-label">allra tidigast</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${sp.obs_count.toLocaleString("sv")}</div>
-          <div class="stat-label">totalt antal observationer</div>
-        </div>
-      </div>`;
-
-      // Recent observations – rendered with cached data, then updated with live API
-      html += `<div class="chart-section" id="sec-senaste">
-        <h2>Senaste observationer</h2>
-        <div id="recent-obs-list" style="display:flex;flex-direction:column;gap:0.4rem">
-          ${renderRecentObs(sp.recent || [])}
-        </div>
-      </div>`;
-
-      // 1. Geo heatmap – VAR
-      html += `<div class="chart-section" id="sec-sp-karta">
-        <h2>Geografisk spridning</h2>
-        <div id="speciesMap" class="geo-heatmap"></div>
-      </div>`;
-
-      // 2. Season curve – NÄR på året
-      html += `<div class="chart-section" id="sec-sp-sasong">
-        <h2>Säsongskurva – genomsnittliga observationer per vecka</h2>
-        <div class="chart-container"><canvas id="seasonChart"></canvas></div>
-      </div>`;
-
-      // 3. Time of day – NÄR på dygnet
-      const todHours = Object.keys(sp.time_of_day || {});
-      if (todHours.length > 0) {
-        html += `<div class="chart-section">
-          <h2>Tid på dygnet</h2>
-          <div class="chart-container"><canvas id="todChart"></canvas></div>
-        </div>`;
-      }
-
-      // 4. Encounter rate chart – TREND
-      const erData = sp.encounter_rate || {};
-      const erYears = Object.keys(erData).sort();
-      if (erYears.length > 0) {
-        const erTrend = sp.encounter_rate_trend;
-        let trendText = '';
-        if (erTrend) {
-          const s = erTrend.slope_per_decade;
-          const abs = Math.abs(s).toFixed(1);
-          if (abs < 0.5) {
-            trendText = 'Stabil rapportfrekvens';
-          } else {
-            const dir = s > 0 ? 'Ökande' : 'Minskande';
-            const arrow = s > 0 ? '▲' : '▼';
-            const color = s > 0 ? 'var(--accent)' : '#c0392b';
-            trendText = `<span style="color:${color}">${arrow} ${dir} med ${abs} procentenheter per decennium</span>`;
-          }
-        }
-        html += `<div class="chart-section" id="sec-sp-frekvens">
-          <h2>Rapportfrekvens över tid</h2>
-          <p style="color:var(--muted);font-size:0.85rem;margin:-0.5rem 0 0.75rem">Andel fältbesök som noterar arten – kompenserar för ökande rapportörsantal</p>
-          ${trendText ? `<p style="font-size:0.9rem;margin-bottom:0.75rem">${trendText}</p>` : ''}
-          <div class="chart-container"><canvas id="trendChart"></canvas></div>
-        </div>`;
-      }
-
-      // 5. Phenology timeline – NÄR (detalj)
-      const phenYears = Object.keys(sp.phenology).filter(y => +y < new Date().getFullYear()).sort();
-      if (phenYears.length > 0) {
-        // Calculate global date range across all years (as day-of-year)
-        const monthNames = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
-        const doy = d => { const dt = new Date(d); return Math.floor((dt - new Date(dt.getFullYear(),0,0)) / 86400000); };
-        const fmtDate = d => { const dt = new Date(d); return `${dt.getDate()} ${monthNames[dt.getMonth()]}`; };
-        let globalMin = 366, globalMax = 0;
-        phenYears.forEach(y => {
-          const f = doy(sp.phenology[y].first), l = doy(sp.phenology[y].last);
-          if (f < globalMin) globalMin = f;
-          if (l > globalMax) globalMax = l;
-        });
-        // Pad to nearest month boundaries
-        const padMin = Math.max(1, Math.floor((globalMin - 1) / 30.44) * 30.44 + 1);
-        const padMax = Math.min(365, Math.ceil(globalMax / 30.44) * 30.44);
-        const range = padMax - padMin || 1;
-
-        // Month grid lines
-        const monthStarts = [];
-        for (let m = 0; m < 12; m++) {
-          const d = Math.floor(m * 30.44) + 1; // approx day-of-year for month start
-          if (d >= padMin && d <= padMax) monthStarts.push({ month: monthNames[m], pos: ((d - padMin) / range * 100) });
-        }
-
-        html += `<div class="chart-section" id="sec-sp-fenologi">
-          <h2>Säsongens längd per år</h2>
-          <div class="phen-timeline" style="position:relative">
-            <div style="display:flex;align-items:end;padding:0 0 0.3rem 3rem;border-bottom:1px solid var(--border);font-size:0.75rem;color:var(--muted);height:1.6rem">
-              <div style="position:relative;flex:1;height:100%">
-                ${monthStarts.map(ms => `<span style="position:absolute;left:${ms.pos}%;transform:translateX(-50%)">${ms.month}</span>`).join("")}
-              </div>
-            </div>
-            ${phenYears.slice().reverse().map(y => {
-              const f = doy(sp.phenology[y].first), l = doy(sp.phenology[y].last);
-              const left = (f - padMin) / range * 100;
-              const width = Math.max(0.5, (l - f) / range * 100);
-              const days = l - f;
-              return `<div style="display:flex;align-items:center;padding:0.2rem 0;border-bottom:1px solid color-mix(in srgb, var(--border) 50%, transparent)" title="${fmtDate(sp.phenology[y].first)} – ${fmtDate(sp.phenology[y].last)} (${days} dagar)">
-                <span style="width:3rem;flex-shrink:0;font-size:0.8rem;color:var(--muted);text-align:right;padding-right:0.5rem">${y}</span>
-                <div style="flex:1;position:relative;height:1.1rem">
-                  ${monthStarts.map(ms => `<div style="position:absolute;left:${ms.pos}%;top:0;bottom:0;width:1px;background:color-mix(in srgb, var(--border) 40%, transparent)"></div>`).join("")}
-                  <div style="position:absolute;left:${left}%;width:${width}%;height:100%;background:#2d6a4f;border-radius:3px;opacity:0.75"></div>
-                </div>
-              </div>`;
-            }).join("")}
-          </div>
-          ${(() => {
-            // Theil-Sen estimator: median of all pairwise slopes (robust against outliers)
-            const reg = (pts) => {
-              const n = pts.length; if (n < 4) return null;
-              const slopes = [];
-              for (let i = 0; i < n; i++)
-                for (let j = i + 1; j < n; j++)
-                  if (pts[j][0] !== pts[i][0])
-                    slopes.push((pts[j][1] - pts[i][1]) / (pts[j][0] - pts[i][0]));
-              slopes.sort((a, b) => a - b);
-              const median = arr => arr.length % 2 ? arr[(arr.length - 1) / 2] : (arr[arr.length / 2 - 1] + arr[arr.length / 2]) / 2;
-              const slope = median(slopes);
-              // R² for goodness of fit
-              const my = pts.reduce((s,p) => s+p[1], 0) / n;
-              const intercept = median(pts.map(p => p[1] - slope * p[0]).sort((a,b) => a-b));
-              const sstot = pts.reduce((s,p) => s+(p[1]-my)**2, 0);
-              const ssres = pts.reduce((s,p) => s+(p[1]-(intercept+slope*p[0]))**2, 0);
-              const r2 = sstot ? 1 - ssres/sstot : 0;
-              return { slope, perDecade: slope * 10, r2 };
-            };
-            const currentYear = new Date().getFullYear();
-            const firstPts = [], lastPts = [], lenPts = [];
-            phenYears.forEach(y => {
-              const yr = +y;
-              if (yr >= currentYear) return; // skip incomplete current year
-              const f = doy(sp.phenology[y].first), l = doy(sp.phenology[y].last);
-              firstPts.push([yr, f]); lastPts.push([yr, l]); lenPts.push([yr, l - f]);
-            });
-            const firstT = reg(firstPts), lastT = reg(lastPts), lenT = reg(lenPts);
-            if (!firstT) return '';
-
-            // goodDir: -1 = negative slope is good (earlier first obs), +1 = positive slope is good (later last obs, longer season)
-            const trendText = (t, negWord, posWord, goodDir) => {
-              const d = Math.abs(t.perDecade);
-              if (d < 0.5) return `<span style="color:var(--muted)">Stabil</span>`;
-              const isPositiveSlope = t.perDecade > 0;
-              const word = isPositiveSlope ? posWord : negWord;
-              const isGood = (t.perDecade > 0 && goodDir > 0) || (t.perDecade < 0 && goodDir < 0);
-              const color = isGood ? '#2d6a4f' : '#b45309';
-              const arrow = isGood ? '↑' : '↓';
-              const strength = t.r2 > 0.15 ? '' : ' <span style="color:var(--muted);font-size:0.75rem">(svag)</span>';
-              return `<span style="color:${color}">${arrow} ${d.toFixed(1)} dagar ${word} per decennium</span>${strength}`;
-            };
-
-            // Store for chart rendering after DOM insert
-            window._phenTrend = { firstPts, lastPts, lenPts, firstT, lastT, lenT };
-
-            return `<div style="display:flex;flex-direction:column;gap:1rem;margin-top:1rem;padding-top:0.8rem;border-top:1px solid var(--border);font-size:0.85rem">
-              <div>
-                <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.3rem">
-                  <span style="color:var(--muted);font-size:0.75rem">Första obs</span>
-                  ${trendText(firstT, 'tidigare', 'senare', -1)}
-                </div>
-                <div style="height:150px"><canvas id="phenTrendFirst"></canvas></div>
-              </div>
-              <div>
-                <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.3rem">
-                  <span style="color:var(--muted);font-size:0.75rem">Sista obs</span>
-                  ${trendText(lastT, 'tidigare', 'senare', +1)}
-                </div>
-                <div style="height:150px"><canvas id="phenTrendLast"></canvas></div>
-              </div>
-              <div>
-                <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.3rem">
-                  <span style="color:var(--muted);font-size:0.75rem">Säsongslängd</span>
-                  ${trendText(lenT, 'kortare', 'längre', +1)}
-                </div>
-                <div style="height:150px"><canvas id="phenTrendLen"></canvas></div>
-              </div>
-            </div>`;
-          })()}
-        </div>`;
-      }
-
-      // 6. Max counts per year – HISTORIK
-      const maxYears = Object.keys(sp.max_counts_per_year).sort();
-      if (maxYears.length > 0) {
-        html += `<div class="chart-section" id="sec-sp-antal">
-          <h2>Största noterade antal vid enskilt tillfälle</h2>
-          <div class="chart-container"><canvas id="maxCountChart"></canvas></div>
-        </div>`;
-      }
-
-      // 7. Top localities – REFERENS
-      if (sp.top_localities.length > 0) {
-        html += `<div class="chart-section" id="sec-sp-lokaler">
-          <h2>Mest rapporterade lokaler</h2>
-          <div class="locality-list">
-            ${sp.top_localities.map(l => `
-              <div class="locality-item">
-                <span>${l.name}</span>
-                <span style="color:var(--muted)">${l.count.toLocaleString("sv")} obs</span>
-              </div>
-            `).join("")}
-          </div>
-        </div>`;
-      }
-
-      detail.innerHTML = html;
-
-      // Refresh recent observations with live API data (async, non-blocking)
-      refreshRecentObs(taxonId, sp.recent || []);
-
-      // Section nav for species detail
-      updateSectionNav(SPECIES_SECTIONS);
-
-      // Back button
-      document.getElementById("back-btn").addEventListener("click", () => {
-        showOverview();
-        history.pushState({}, "", "statistik.html");
-      });
-
-      // Render season curve
-      const weeks = Array.from({ length: 53 }, (_, i) => i);
-      const seasonData = weeks.map(w => sp.season_curve[w] || 0);
-      const weekLabels = weeks.map(w => weekToDate(w));
-
-      const seasonCtx = document.getElementById("seasonChart");
-      currentChart1 = new Chart(seasonCtx, {
-        type: "line",
-        data: {
-          labels: weekLabels,
-          datasets: [{
-            label: "Snitt obs/vecka",
-            data: seasonData,
-            borderColor: "#2d6a4f",
-            backgroundColor: "rgba(45, 106, 79, 0.15)",
-            borderWidth: 2,
-            pointRadius: 0,
-            fill: true,
-            tension: 0.3,
-          }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: {
-              ticks: {
-                maxTicksLimit: 12,
-                callback: function(val, index) {
-                  return weekLabels[index];
-                },
-              },
-            },
-            y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
-          },
-        },
-      });
-
-      // Render time of day chart
-      if (todHours.length > 0) {
-        const hours = Array.from({ length: 24 }, (_, i) => i);
-        const todData = hours.map(h => sp.time_of_day[h] || 0);
-        const todLabels = hours.map(h => `${String(h).padStart(2, "0")}:00`);
-        const todCtx = document.getElementById("todChart");
-        currentChart4 = new Chart(todCtx, {
-          type: "bar",
-          data: {
-            labels: todLabels,
-            datasets: [{
-              label: "Observationer",
-              data: todData,
-              backgroundColor: "rgba(45, 106, 79, 0.6)",
-              borderColor: "#2d6a4f",
-              borderWidth: 1,
-              borderRadius: 3,
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { maxTicksLimit: 12 } },
-              y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
-            },
-          },
-        });
-      }
-
-      // Render encounter rate chart
-      if (erYears.length > 0) {
-        const erValues = erYears.map(y => erData[y] || 0);
-        const datasets = [{
-          label: "Rapportfrekvens (%)",
-          data: erValues,
-          borderColor: "#2d6a4f",
-          backgroundColor: "rgba(45, 106, 79, 0.15)",
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: "#2d6a4f",
-          fill: true,
-          tension: 0.3,
-        }];
-
-        // Add Theil-Sen trend line if available
-        const erTrend = sp.encounter_rate_trend;
-        if (erTrend) {
-          // intercept is raw rate (0–1), slope_per_decade is percentage points per decade
-          // fitted value in % = (intercept + slopePerYear * year) * 100
-          const slopePerYear = erTrend.slope_per_decade / 10 / 100; // back to raw rate per year
-          const trendLine = erYears.map(y => {
-            const val = (erTrend.intercept + slopePerYear * parseInt(y)) * 100;
-            return Math.max(0, parseFloat(val.toFixed(2)));
-          });
-          datasets.push({
-            label: "Trend",
-            data: trendLine,
-            borderColor: erTrend.slope_per_decade > 0 ? "rgba(45, 106, 79, 0.5)" : "rgba(192, 57, 43, 0.5)",
-            borderWidth: 2,
-            borderDash: [6, 4],
-            pointRadius: 0,
-            fill: false,
-            tension: 0,
-          });
-        }
-
-        const trendCtx = document.getElementById("trendChart");
-        currentChart2 = new Chart(trendCtx, {
-          type: "line",
-          data: { labels: erYears, datasets },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: datasets.length > 1, labels: { boxWidth: 12, font: { size: 11 } } },
-              tooltip: {
-                callbacks: {
-                  label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + ' %',
-                },
-              },
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: "rgba(0,0,0,0.05)" },
-                ticks: { callback: v => v + ' %' },
-              },
-            },
-          },
-        });
-      }
-
-      // Render max count chart
-      if (maxYears.length > 0) {
-        const maxCountCtx = document.getElementById("maxCountChart");
-        const maxData = maxYears.map(y => sp.max_counts_per_year[y]?.max || 0);
-        const maxMeta = maxYears.map(y => sp.max_counts_per_year[y] || {});
-        currentChart3 = new Chart(maxCountCtx, {
-          type: "bar",
-          data: {
-            labels: maxYears,
-            datasets: [{
-              label: "Största antal",
-              data: maxData,
-              backgroundColor: "rgba(45, 106, 79, 0.6)",
-              borderColor: "#2d6a4f",
-              borderWidth: 1,
-              borderRadius: 4,
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  afterLabel: function(ctx) {
-                    const m = maxMeta[ctx.dataIndex];
-                    let lines = [];
-                    if (m.date) lines.push(m.date);
-                    if (m.locality) lines.push(m.locality);
-                    if (m.total) lines.push(`Totalt under året: ${m.total.toLocaleString("sv")}`);
-                    return lines;
-                  },
-                },
-              },
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: { color: "rgba(0,0,0,0.05)" },
-                ticks: { callback: v => v.toLocaleString("sv") },
-              },
-            },
-            onClick: (evt, elements) => {
-              if (elements.length > 0) {
-                const m = maxMeta[elements[0].index];
-                if (m.url) window.open(m.url, "_blank");
-              }
-            },
-          },
-        });
-      }
-
-      // Render phenology trend mini-charts
-      if (window._phenTrend) {
-        const pt = window._phenTrend;
-        const doyToLabel = d => {
-          const dt = new Date(2024, 0, d);
-          const m = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
-          return `${dt.getDate()} ${m[dt.getMonth()]}`;
-        };
-        const renderTrendChart = (canvasId, pts, trend, yLabel) => {
-          const ctx = document.getElementById(canvasId);
-          if (!ctx) return;
-          const years = pts.map(p => p[0]);
-          const minY = Math.min(...years), maxY = Math.max(...years);
-          const my = pts.reduce((s,p) => s+p[1],0) / pts.length;
-          const intercept = (() => {
-            const vals = pts.map(p => p[1] - trend.slope * p[0]).sort((a,b) => a-b);
-            return vals.length % 2 ? vals[(vals.length-1)/2] : (vals[vals.length/2-1]+vals[vals.length/2])/2;
-          })();
-          const trendLine = [{ x: minY, y: intercept + trend.slope * minY }, { x: maxY, y: intercept + trend.slope * maxY }];
-          new Chart(ctx, {
-            type: "scatter",
-            data: {
-              datasets: [
-                {
-                  data: pts.map(p => ({ x: p[0], y: p[1] })),
-                  backgroundColor: "rgba(45,106,79,0.5)",
-                  pointRadius: 3,
-                  pointHoverRadius: 5,
-                },
-                {
-                  type: "line",
-                  data: trendLine,
-                  borderColor: "rgba(45,106,79,0.4)",
-                  borderWidth: 1.5,
-                  borderDash: [4, 3],
-                  pointRadius: 0,
-                  fill: false,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false }, tooltip: {
-                callbacks: {
-                  label: item => {
-                    if (item.datasetIndex === 1) return null;
-                    return yLabel === "dagar" ? `${item.parsed.x}: ${Math.round(item.parsed.y)} dagar` : `${item.parsed.x}: ${doyToLabel(Math.round(item.parsed.y))}`;
-                  },
-                },
-              }},
-              scales: {
-                x: { type: "linear", ticks: { maxTicksLimit: 5, callback: v => String(v) }, grid: { display: false } },
-                y: { ticks: { maxTicksLimit: 4, callback: v => yLabel === "dagar" ? Math.round(v) : doyToLabel(Math.round(v)) }, grid: { color: "rgba(0,0,0,0.05)" } },
-              },
-            },
-          });
-        };
-        renderTrendChart("phenTrendFirst", pt.firstPts, pt.firstT, "datum");
-        renderTrendChart("phenTrendLast", pt.lastPts, pt.lastT, "datum");
-        renderTrendChart("phenTrendLen", pt.lenPts, pt.lenT, "dagar");
-        delete window._phenTrend;
-      }
-
-      // Init species geo heatmap
-      currentSpeciesMap = initMap("speciesMap");
-      setTimeout(() => currentSpeciesMap.invalidateSize(), 300);
-      fetch(`stats-api.php?q=geo&id=${taxonId}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.points.length > 0) {
-            const layer = createHeatLayer(data.points);
-            if (layer) layer.addTo(currentSpeciesMap);
-            setTimeout(() => currentSpeciesMap.invalidateSize(), 100);
+          if (nameEl) {
+            const slug = toSlug(nameEl.textContent);
+            window.location.href = `arter.html?art=${slug}`;
           }
         });
-
-      // Locality markers for this species
-      fetch(`stats-api.php?q=localities&id=${taxonId}`)
-        .then(r => r.json())
-        .then(data => {
-          addLocalityMarkers(currentSpeciesMap, data.localities);
-        });
-
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      });
     }
 
     // ── Init – single batch request for all data ──
@@ -1724,24 +802,23 @@
         if (data.trends) {
           renderTrends(data.trends);
         } else {
-          // Fetch trends separately if not in batch
           fetch("stats-api.php?q=trends").then(r => r.json()).then(renderTrends).catch(() => {});
         }
-        setupSearch();
       } catch (err) {
         console.error("Init failed, falling back to individual requests", err);
-        setupSearch();
         loadOverview();
         fetch("stats-api.php?q=trends").then(r => r.json()).then(renderTrends).catch(() => {});
       }
 
-      // Deep-link: load species from ?art= parameter
+      // Redirect old ?art= deep-links to arter.html
       const params = new URLSearchParams(window.location.search);
       const artSlug = params.get("art");
-      if (artSlug && speciesCache) {
-        const match = findSpeciesBySlug(artSlug);
-        if (match) loadSpecies(match.taxon_id, true, { name: match.name, scientific: match.scientific });
+      if (artSlug) {
+        window.location.replace(`arter.html?art=${artSlug}`);
+        return;
       }
+
+      updateSectionNav(OVERVIEW_SECTIONS);
     }
     init();
   </script>
