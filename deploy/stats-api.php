@@ -842,6 +842,35 @@ if ($q === 'trends') {
         }
     }
 
+    // 2b. Merge taxonomic splits that inflate trends
+    // Sädgås: skogsgås (232125) + tundragås (205924) → merge into sädgås (100009)
+    $mergeGroups = [
+        100009 => [232125, 205924],  // sädgås ← skogsgås, tundragås
+    ];
+    foreach ($mergeGroups as $targetId => $sourceIds) {
+        if (!isset($speciesVisits[$targetId])) continue;
+        // Merge visits using UNION of date|locality sets (need re-query for accurate dedup)
+        // Approximation: use max(target, source) per year since most visits overlap
+        // For accuracy, query the merged set directly
+        $idList = implode(',', array_merge([$targetId], $sourceIds));
+        $mergeRes = $db->query("
+            SELECT strftime('%Y', event_start_date) AS yr,
+                   COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+            FROM observations
+            WHERE taxon_id IN ($idList) AND event_start_date >= '2006-01-01'
+            GROUP BY yr
+        ");
+        $speciesVisits[$targetId] = [];
+        while ($row = $mergeRes->fetchArray(SQLITE3_ASSOC)) {
+            $speciesVisits[$targetId][$row['yr']] = intval($row['visits']);
+        }
+        // Remove source taxa from analysis
+        foreach ($sourceIds as $sid) {
+            unset($speciesVisits[$sid]);
+            unset($speciesInfo[$sid]);
+        }
+    }
+
     // 3. Compute encounter rates and filter by 0.2% threshold in any 5-year period
     $years = array_keys($totalVisits);
     sort($years);
