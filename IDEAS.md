@@ -222,7 +222,7 @@ Nu rensas cachen manuellt via cron-update.php eller clear_cache.sh.
 - [ ] Fenologikalender: Gantt-diagram med alla arters säsonger
 
 ### Fas 4: Nya sidor
-- [ ] Om-sida: bakgrund om projektet, datakällor, kontakt
+- [x] Om-sida: bakgrund om projektet, datakällor, kontakt
 - [ ] Artguide: bläddra bland arter med filter och "chansen att se nu"
 - [ ] Lokalsidor: klickbara lokaler med artlista och bästa besökstid
 

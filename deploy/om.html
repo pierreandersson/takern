@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Om Tåkern Fågelobs</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2d6a4f">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .about-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .about-section h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .about-section h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .about-section p,
+    .about-section li {
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    .about-section p + p {
+      margin-top: 0.75rem;
+    }
+
+    .about-section ul,
+    .about-section ol {
+      margin: 0.5rem 0 0.5rem 1.5rem;
+    }
+
+    .about-section li {
+      margin-bottom: 0.3rem;
+    }
+
+    .about-section a {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .about-section code {
+      background: var(--bg);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .about-section .formula {
+      background: var(--bg);
+      border-left: 3px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 0.75rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.88rem;
+      line-height: 1.7;
+    }
+
+    .about-section table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+    }
+
+    .about-section th,
+    .about-section td {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .about-section th {
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .about-section tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tech-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      transition: background 0.15s;
+    }
+
+    .tech-toggle:hover {
+      background: #c3ecd0;
+    }
+
+    .tech-toggle .arrow {
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    .tech-toggle.open .arrow {
+      transform: rotate(90deg);
+    }
+
+    .tech-details {
+      display: none;
+    }
+
+    .tech-details.open {
+      display: block;
+    }
+
+    .contact-row {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .contact-row a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .data-source-grid {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.4rem 1rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+
+    .data-source-grid .source-name { font-weight: 600; }
+    .data-source-grid .source-desc { color: var(--muted); }
+    .data-source-grid .source-pct { font-weight: 600; color: var(--accent); text-align: right; }
+
+    @media (max-width: 600px) {
+      .data-source-grid {
+        grid-template-columns: 1fr;
+      }
+      .data-source-grid .source-pct {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>Om Tåkern Fågelobs</h1>
+        <p>Bakgrund, datakällor och metodik</p>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html">De senaste observationerna</a>
+      <a href="veckorapport.html">Denna vecka vid Tåkern</a>
+      <a href="statistik.html">Historisk statistik</a>
+    </nav>
+  </header>
+
+  <div class="container">
+
+    <!-- Syfte -->
+    <div class="about-section">
+      <h2>Vad är det här?</h2>
+      <p>Tåkern Fågelobs samlar och visualiserar fågelobservationer från Tåkern, en av Sveriges mest betydelsefulla fågelsjöar. Sjön ligger i Östergötland och är ett Natura 2000-område med ett exceptionellt rikt fågelliv – över 370 arter har rapporterats inom 15 km radie under de senaste 20 åren.</p>
+      <p>Sajten uppdateras dagligen och visar allt från dagens observationer till 20 års historisk statistik. Syftet är att göra Tåkerns fågeldata tillgänglig, sökbar och visuellt intressant – för fågelskådare som planerar besök, för den som vill följa vårens framsteg, eller för den som är nyfiken på långsiktiga trender.</p>
+    </div>
+
+    <!-- Sidorna -->
+    <div class="about-section">
+      <h2>Sajtens tre delar</h2>
+      <p><strong><a href="index.html">Senaste observationer</a></strong> – En karta och lista med de senaste dagarnas rapporter. Observationer grupperas per art och sorteras efter hur noterbara de är. Observationer från idag och igår hämtas live, äldre dagar kommer från databasen.</p>
+      <p><strong><a href="veckorapport.html">Tåkern i veckan</a></strong> – Veckoöversikt med artackumulering jämfört med femårssnitt, artfördelning per fågelgrupp, vårens framsteg, nyanlända arter och veckans höjdpunkter. Inkluderar daglig medeltemperatur från SMHI.</p>
+      <p><strong><a href="statistik.html">Historisk statistik</a></strong> – Översikt och detaljsidor för alla arter. Visar observationer per år, säsongsfördelning, fenologi, senaste observationer och trendanalys av säsongslängd med regressionslinjer.</p>
+    </div>
+
+    <!-- Datakällor -->
+    <div class="about-section">
+      <h2>Datakällor</h2>
+      <p>All fågeldata hämtas via <a href="https://www.artdatabanken.se">SLU Artdatabankens</a> SOS-API (Swedish Observation System), som aggregerar observationer från flera källor:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Källa</th>
+            <th>Beskrivning</th>
+            <th>Andel</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong><a href="https://www.artportalen.se">Artportalen</a></strong></td>
+            <td>Medborgarforskning – rapporter från fågelskådare. Har observatör, tid och direktlänk.</td>
+            <td>~87%</td>
+          </tr>
+          <tr>
+            <td><strong>Ringmärkningscentralen (NRM)</strong></td>
+            <td>Ringmärkningsdata från Naturhistoriska riksmuseet. Saknar observatör och direktlänk.</td>
+            <td>~13%</td>
+          </tr>
+          <tr>
+            <td><strong>Svensk Fågeltaxering</strong></td>
+            <td>Standardiserade inventeringsrutter. Liten andel.</td>
+            <td>&lt;1%</td>
+          </tr>
+          <tr>
+            <td><strong>iNaturalist</strong></td>
+            <td>Global medborgarforskningsplattform. Minimal andel.</td>
+            <td>&lt;1%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Databasen innehåller cirka 333 000 observationer av 374 arter, från 2006 till idag. Data uppdateras automatiskt varje natt.</p>
+      <p>Temperaturdata hämtas från <a href="https://www.smhi.se/data/meteorologi/ladda-ner-meteorologiska-observationer">SMHI:s öppna API</a> – stationen Härsnäs (85180), belägen 26 km öster om Tåkern. Dygnsmedeltemperatur (parameter 2) visas i artackumuleringskurvan.</p>
+    </div>
+
+    <!-- Geografisk avgränsning -->
+    <div class="about-section">
+      <h2>Geografisk avgränsning</h2>
+      <p>Alla observationer inom 15 km radie från Tåkerns centrum inkluderas. Denna radie är konsekvent för både live-data och den historiska databasen. Radien täcker sjön och dess närmaste omgivningar – inklusive strandängar, våtmarker och skogspartier som hyser många av Tåkerns fågelarter.</p>
+    </div>
+
+    <!-- Bakom sajten -->
+    <div class="about-section">
+      <h2>Bakom sajten</h2>
+      <p>Tåkern Fågelobs är byggt av <strong>Pierre Andersson</strong> som ett hobbyprojekt. Sajten är byggd med HTML, CSS och JavaScript på klientsidan, och PHP med SQLite på serversidan. Inga ramverk – bara grundläggande webbteknologi.</p>
+      <p>Källkoden är öppen:</p>
+      <div class="contact-row">
+        <a href="https://github.com/pierreandersson/takern">GitHub: pierreandersson/takern</a>
+        <a href="mailto:pierre.andersson@icloud.com">pierre.andersson@icloud.com</a>
+      </div>
+    </div>
+
+    <!-- Teknisk dokumentation -->
+    <button class="tech-toggle" onclick="toggleTech()">
+      <span class="arrow">&#9654;</span> Teknisk dokumentation
+    </button>
+
+    <div class="tech-details" id="tech-details">
+
+      <!-- Notable scoring -->
+      <div class="about-section">
+        <h2>Noterbarhet – poängsättning</h2>
+        <p>På sidan <em>Senaste observationer</em> sorteras arter efter en poängsumma som speglar hur noterbara de är just nu. Observationer med 80 poäng eller mer markeras med en röd markering. Poängen baseras på tre huvudfaktorer:</p>
+
+        <h3>1. Fenologi – tidig ankomst</h3>
+        <p>Arter som anländer före sin historiska ankomsttid får en bonus baserat på hur många dagar före snittet de är. Historiskt snitt beräknas som medelvärdet av årets första observation de senaste fem åren. Tidigaste kända datum (earliest) hämtas som minimum av dag-på-året över hela 20-årsperioden, med januarifilter för arter som normalt inte är vinterfåglar.</p>
+
+        <div class="formula">
+          <strong>Före earliest-datum (aldrig så tidigt):</strong> 300 + dagar tidigt &times; 5 (max 500 extra)<br>
+          <strong>30+ dagar tidigt:</strong> 300 + dagar tidigt &times; 3<br>
+          <strong>14–29 dagar tidigt:</strong> 200 + dagar tidigt &times; 2<br>
+          <strong>0–13 dagar tidigt:</strong> 100 + dagar tidigt &times; 2<br>
+          <strong>Mer än 10 dagar sent:</strong> 0 poäng
+        </p>
+
+        <h3>2. Nyanlända arter</h3>
+        <p>Arter med få observationer hittills i år (max 20) får en bonus. Ju färre rapporter, desto högre bonus – det belönar arter som nyss dykt upp för säsongen.</p>
+        <div class="formula">
+          80 + (20 &minus; antal obs) &times; 8 poäng<br>
+          <em>Ger 80–240 poäng. Gäller bara vid &le;20 obs i år.</em>
+        </div>
+
+        <h3>3. Lokal sällsynthet</h3>
+        <p>Arter som är ovanliga vid Tåkern sett till hela 20-årsperioden. Baseras på genomsnittligt antal observationer per år.</p>
+        <table>
+          <thead>
+            <tr><th>Frekvens</th><th>Poäng</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>&lt;2 obs/år i snitt</td><td>120</td></tr>
+            <tr><td>&lt;5 obs/år i snitt</td><td>60</td></tr>
+            <tr><td>&lt;10 obs/år i snitt</td><td>30</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Övriga faktorer</h3>
+        <p>Stora antal ger en liten bonus (4–15 poäng för flockar om 20–500+ individer). Observationer med fältnoteringar får +5 poäng.</p>
+
+        <h3>Vad som inte påverkar poängen</h3>
+        <p>Rödlistestatus visas som badge (VU, NT etc.) men ingår <strong>inte</strong> i poängsättningen. Rödlistan speglar nationell hotbild – inte hur noteborthy en observation är vid Tåkern.</p>
+      </div>
+
+      <!-- Sällsynthetsfilter -->
+      <div class="about-section">
+        <h2>Sällsynthetsfilter</h2>
+        <p>Vid beräkning av sällsynthet och fenologi exkluderas poster som inte representerar tydliga arter:</p>
+        <ul>
+          <li><strong>Hybrider</strong> – namn som innehåller " x " (t.ex. "gräsand x bläsand")</li>
+          <li><strong>Osäkra bestämningar</strong> – namn med "/" (t.ex. "kärr-/ängshök")</li>
+          <li><strong>Morfer</strong> – namn som slutar med "morf" (t.ex. "fjällvråk, mörk morf")</li>
+          <li><strong>Artgrupper</strong> – vetenskapliga namn utan mellanslag (inte binomiala, t.ex. "Larus" utan artepitet)</li>
+        </ul>
+        <p>Sällsynthetsetiketter på observationskorten:</p>
+        <table>
+          <thead>
+            <tr><th>Etikett</th><th>Kriterium</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Sällsynt</strong></td><td>&lt;2 obs/år i snitt</td></tr>
+            <tr><td><strong>Ovanlig</strong></td><td>&lt;5 obs/år i snitt</td></tr>
+            <tr><td><strong>Fåtalig</strong></td><td>&lt;10 obs/år i snitt</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vårens framsteg -->
+      <div class="about-section">
+        <h2>Vårens framsteg</h2>
+        <p>Under vecka 8–22 (mitten av februari till slutet av maj) visas en framstegsmätare som visar hur stor andel av Tåkerns förväntade flyttfåglar som har anlänt.</p>
+        <p><strong>Urval av flyttfåglar:</strong> Alla arter med ett historiskt genomsnittligt första-obs-datum (dag på året) mellan 32 och 180, dvs. 1 februari – 30 juni. Det ger en lista på genuina flyttfåglar och utesluter stannfåglar och vintergäster.</p>
+        <p><strong>Beräkning:</strong> Antalet arter ur denna lista som redan observerats i år, dividerat med totala antalet förväntade arter. Tidigheten beräknas som medianen av skillnaden mellan faktiskt ankomstdatum och förväntat datum, med ett filter på &plusmn;30/+60 dagar för att utesluta övervintrade individer.</p>
+      </div>
+
+      <!-- Trendanalys -->
+      <div class="about-section">
+        <h2>Trendanalys – säsongslängd</h2>
+        <p>På varje artsida under <em>Historisk statistik</em> visas en trendanalys av artens säsong. Analysen visar tre aspekter: datum för årets första observation, datum för årets sista observation, och total säsongslängd i dagar.</p>
+
+        <h3>Theil-Sen estimator</h3>
+        <p>Istället för vanlig linjär regression (minsta kvadratmetoden) används <strong>Theil-Sen estimatorn</strong>, som beräknar <em>medianen</em> av alla parvis möjliga lutningar mellan datapunkter. Fördelen är att metoden är robust mot avvikare – till exempel enstaka januariobservationer av en art som normalt anländer i april påverkar inte trendlinjen nämnvärt.</p>
+        <div class="formula">
+          <strong>Lutning</strong> = median av (y<sub>j</sub> &minus; y<sub>i</sub>) / (x<sub>j</sub> &minus; x<sub>i</sub>) för alla par i &lt; j<br>
+          <strong>Intercept</strong> = median av y<sub>i</sub> &minus; lutning &times; x<sub>i</sub><br>
+          <strong>R&sup2;</strong> = 1 &minus; SS<sub>res</sub> / SS<sub>tot</sub> (beräknat mot Theil-Sen-linjen)
+        </div>
+
+        <h3>Tolkning</h3>
+        <p>Trender rapporteras i dagar per decennium med färgkodning:</p>
+        <table>
+          <thead>
+            <tr><th>Aspekt</th><th>Positiv trend (grön)</th><th>Negativ trend (orange)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Första obs</td><td>Tidigare ankomst</td><td>Senare ankomst</td></tr>
+            <tr><td>Sista obs</td><td>Senare avfärd</td><td>Tidigare avfärd</td></tr>
+            <tr><td>Säsongslängd</td><td>Längre säsong</td><td>Kortare säsong</td></tr>
+          </tbody>
+        </table>
+        <ul>
+          <li>Trender under 0,5 dagar per decennium visas som "Stabil"</li>
+          <li>R&sup2; under 0,15 markeras som "(svag)" – variationen i data förklaras dåligt av trenden</li>
+          <li>Pågående år exkluderas från beräkningen eftersom data är ofullständig</li>
+          <li>Minst 4 datapunkter krävs för att beräkna en trend</li>
+        </ul>
+      </div>
+
+      <!-- Säsongstidslinje -->
+      <div class="about-section">
+        <h2>Säsongstidslinje</h2>
+        <p>Under "Säsongens längd per år" på varje artsida visas en horisontell tidslinje där varje år representeras av en grön bar från årets första till sista observation, med ett månadsrutnät som bakgrund. Detta ger en omedelbar visuell bild av hur säsongen varierat mellan år – kortare säsonger, luckor, eller år då arten saknats helt.</p>
+      </div>
+
+      <!-- Artackumulering -->
+      <div class="about-section">
+        <h2>Artackumulering</h2>
+        <p>Veckorapporten visar en artackumuleringskurva – antalet unika arter observerade vid Tåkern hittills i år, dag för dag. Kurvan jämförs med genomsnittet av de fem föregående åren, vilket gör det möjligt att se om det nuvarande året ligger före eller efter det typiska mönstret.</p>
+        <p>I samma graf visas dygnsmedeltemperaturen (SMHI, station Härsnäs) på en sekundär y-axel. Temperatur och artackumulering följer ofta varandra – milda perioder driver ofta en våg av nyanländande flyttfåglar.</p>
+      </div>
+
+      <!-- Temperaturdata -->
+      <div class="about-section">
+        <h2>Temperaturdata</h2>
+        <p>Temperaturen hämtas från SMHI:s öppna data-API, station <strong>Härsnäs (85180)</strong>, belägen 26 km öster om Tåkern. Stationen valdes som närmaste tillgängliga med komplett data. Parametern är dygnsmedeltemperatur (parameter 2, period "latest-months").</p>
+      </div>
+
+      <!-- Fågelgrupper -->
+      <div class="about-section">
+        <h2>Fågelgrupper</h2>
+        <p>Arter kategoriseras i svenska fågelgrupper (t.ex. "Rovfåglar", "Vadare", "Sångare") baserat på taxonomisk ordning och familj. Denna gruppering används i artfördelningsdiagrammet i veckorapporten och som filter i andra sammanhang.</p>
+      </div>
+
+      <!-- Teknikstack -->
+      <div class="about-section">
+        <h2>Teknikstack</h2>
+        <table>
+          <thead>
+            <tr><th>Komponent</th><th>Teknologi</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Frontend</td><td>Vanilla HTML, CSS, JavaScript – inga ramverk</td></tr>
+            <tr><td>Kartor</td><td><a href="https://leafletjs.com">Leaflet</a> med heatmap-plugin</td></tr>
+            <tr><td>Grafer</td><td><a href="https://www.chartjs.org">Chart.js</a></td></tr>
+            <tr><td>Backend</td><td>PHP med SQLite-databas</td></tr>
+            <tr><td>Hosting</td><td>Websupport (delad hosting)</td></tr>
+            <tr><td>Deploy</td><td>GitHub Actions &rarr; FTP med automatisk cache-uppvärmning</td></tr>
+            <tr><td>Datakälla</td><td>SLU Artdatabankens SOS-API</td></tr>
+            <tr><td>Temperatur</td><td>SMHI Öppna Data API</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /tech-details -->
+
+    <footer>
+      <p>Data från <a href="https://www.artportalen.se">Artportalen</a> m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a> &middot; Temperatur: <a href="https://www.smhi.se">SMHI</a></p>
+    </footer>
+
+  </div>
+
+  <script>
+    function toggleTech() {
+      const btn = document.querySelector('.tech-toggle');
+      const details = document.getElementById('tech-details');
+      btn.classList.toggle('open');
+      details.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
