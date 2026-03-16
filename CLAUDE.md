@@ -26,9 +26,10 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 - **?q=init:** Batch-endpoint som returnerar overview+geo+localities+species från cache
 
 ## Deploy-flöde
-1. Push till main med ändringar i deploy/ → GitHub Actions FTP-deploy
-2. Efter FTP: curl till cron-update.php?action=clear-cache (värmer automatiskt, ~1 min blockerar PHP-worker)
-3. Secrets: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH, CRON_SECRET
+1. Push till main med ändringar i deploy/ eller .github/workflows/ → GitHub Actions FTP-deploy
+2. Före FTP: sed lägger till `?v=<git-hash>` på lokala assets (utils.js, style.css) i HTML-filer → cache-busting
+3. Efter FTP: curl till cron-update.php?action=clear-cache (värmer automatiskt, ~1 min blockerar PHP-worker)
+4. Secrets: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH, CRON_SECRET
 
 ## Viktigt att veta
 - **SQLite på Websupport:** %G/%V (ISO-vecka) fungerar INTE. Beräkna datumintervall i PHP istället.
@@ -76,7 +77,7 @@ Sektionen "Säsongens längd per år" på artsidor visar:
 - **days 0–1:** Enbart live SOS-API (snabbt, under 1000-gränsen)
 - **days 2–7:** Live API för idag+igår + SQLite för äldre dagar → merge + dedup på occurrence_id
 - **Varför:** Cron körs ~04:00, SQLite kan sakna gårdagens sena obs → live API täcker gapet
-- **Radie:** Fast 15 km, konsekvent med databasens nedladdningsradie. Ingen radieväljare.
+- **Radie:** Fast 15 km från [58.35, 14.81], konsekvent med databasens nedladdningsradie. Ingen radieväljare. Radien visas som subtil grön cirkel på alla Leaflet-kartor via `addRadiusCircle()` i utils.js.
 
 ## Utvecklingsplan
 Se IDEAS.md för fullständig att-göra-lista. Nästa steg:

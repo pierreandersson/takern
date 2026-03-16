@@ -27,7 +27,7 @@ Fyra sorteringslägen:
 - **Högst antal** – flest individer
 - **Art A–Ö** – alfabetiskt på artnamn
 
-Radie-väljare: 8 km, 10 km (standard), 12 km, 15 km.
+Fast 15 km radie från Tåkerns centrum (58.35, 14.81).
 
 #### Karta (Leaflet)
 
@@ -37,7 +37,7 @@ Radie-väljare: 8 km, 10 km (standard), 12 km, 15 km.
   - **Orange** (80–149 poäng) – noterbar
   - **Grön** (<80 poäng) – ordinär
 - Markörstorlek skalas med antal individer (4–12 px)
-- Radie-cirkel ritas med streckad linje runt valt avstånd
+- 15 km radiecirkel visas som subtil grön gräns för observationsområdet
 - Klick på observationskort i listan panorerar kartan till motsvarande markör
 
 #### Poängsystem för noterbara observationer
@@ -327,7 +327,7 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 - **Frontend:** Vanilla HTML/CSS/JS, Leaflet för kartor, Chart.js för grafer
 - **Backend:** PHP på Websupport shared hosting (en PHP-worker)
 - **Data:** SQLite-databas (~333k obs, 374 arter, 20 år) + live SOS-API
-- **Deploy:** GitHub Actions → FTP → auto cache-clear/warm
+- **Deploy:** GitHub Actions → cache-bust (git-hash på lokala assets) → FTP → auto cache-clear/warm
 
 ## Mappar
 
