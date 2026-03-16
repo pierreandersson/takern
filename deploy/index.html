@@ -130,6 +130,13 @@
       font-weight: 600;
       font-size: 1rem;
     }
+    .obs-species a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .obs-species a:hover {
+      text-decoration: underline;
+    }
 
     .obs-scientific {
       font-style: italic;
@@ -385,6 +392,16 @@
       return timePart !== "00:00" ? `${datePart} ${timePart}` : datePart;
     }
 
+    function toSlug(name) {
+      return name.toLowerCase()
+        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function speciesLink(name) {
+      return `<a href="statistik.html?art=${toSlug(name)}" target="_blank">${name}</a>`;
+    }
+
     // ── Rendering ──
     let allObs = [];
 
@@ -429,7 +446,7 @@
           <div class="obs-card${highlight}" data-index="${i}" data-lat="${lat}" data-lng="${lng}">
             <div class="obs-header">
               <div>
-                <div class="obs-species">${name} ${badge}</div>
+                <div class="obs-species">${speciesLink(name)} ${badge}</div>
                 <div class="obs-scientific">${sci}</div>
               </div>
               ${count ? `<div class="obs-count">${count} ex</div>` : ""}
@@ -453,6 +470,11 @@
             map.flyTo([lat, lng], 14, { duration: 0.5 });
           }
         });
+      });
+
+      // Prevent species links from triggering card fly-to
+      list.querySelectorAll(".obs-species a").forEach(a => {
+        a.addEventListener("click", e => e.stopPropagation());
       });
     }
 
@@ -545,7 +567,7 @@
           <div class="group-card${highlight}" data-group="${gi}">
             <div class="group-header">
               <div>
-                <div class="obs-species">${name} ${badge}</div>
+                <div class="obs-species">${speciesLink(name)} ${badge}</div>
                 <div class="obs-scientific">${sci}</div>
                 <div class="obs-meta">${latestDate}${totalCount ? ` · totalt ${totalCount} ex` : ""}</div>
                 ${pheno.label ? phenologyInfo(rep) : ""}
@@ -567,6 +589,11 @@
             ? toggle.innerHTML.replace("\u25B6", "\u25BC")
             : toggle.innerHTML.replace("\u25BC", "\u25B6");
         });
+      });
+
+      // Prevent species links from triggering expand/collapse
+      list.querySelectorAll(".obs-species a").forEach(a => {
+        a.addEventListener("click", e => e.stopPropagation());
       });
 
       // Click detail cards to fly to marker
