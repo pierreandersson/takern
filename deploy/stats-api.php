@@ -226,22 +226,45 @@ if ($q === 'species' && $id !== null) {
     $phenology = [];
     $firstDays = [];
     $lastDays = [];
+    $firstDates = []; // actual date strings keyed by doy
+    $lastDates = [];  // actual date strings keyed by doy
     $res = $db->query("SELECT SUBSTR(event_start_date,1,4) y,
         MIN(event_start_date) first, MAX(event_start_date) last
         FROM observations WHERE taxon_id = $id GROUP BY y ORDER BY y");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
         $phenology[$row['y']] = ['first' => $row['first'], 'last' => $row['last']];
         $d = DateTime::createFromFormat('Y-m-d', $row['first']);
-        if ($d) $firstDays[] = intval($d->format('z')) + 1;
+        if ($d) {
+            $doy = intval($d->format('z')) + 1;
+            $firstDays[] = $doy;
+            // Track earliest actual date for this doy (chronologically first)
+            if (!isset($firstDates[$doy]) || $row['first'] < $firstDates[$doy]) {
+                $firstDates[$doy] = $row['first'];
+            }
+        }
         $d = DateTime::createFromFormat('Y-m-d', $row['last']);
-        if ($d) $lastDays[] = intval($d->format('z')) + 1;
+        if ($d) {
+            $doy = intval($d->format('z')) + 1;
+            $lastDays[] = $doy;
+            if (!isset($lastDates[$doy]) || $row['last'] > $lastDates[$doy]) {
+                $lastDates[$doy] = $row['last'];
+            }
+        }
     }
+
+    // Format earliest/latest from actual dates to avoid leap-year mismatch in doyToStr
+    $months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+    $fmtDate = function($dateStr) use ($months) {
+        return intval(substr($dateStr, 8, 2)) . ' ' . $months[intval(substr($dateStr, 5, 2)) - 1];
+    };
+    $earliestFirstDate = !empty($firstDays) ? $firstDates[min($firstDays)] : null;
+    $latestLastDate = !empty($lastDays) ? $lastDates[max($lastDays)] : null;
 
     $phenSummary = [
         'avg_first' => !empty($firstDays) ? doyToStr(intval(round(array_sum($firstDays)/count($firstDays)))) : null,
         'avg_last' => !empty($lastDays) ? doyToStr(intval(round(array_sum($lastDays)/count($lastDays)))) : null,
-        'earliest_ever' => !empty($firstDays) ? doyToStr(min($firstDays)) : null,
-        'latest_ever' => !empty($lastDays) ? doyToStr(max($lastDays)) : null,
+        'earliest_ever' => $earliestFirstDate ? $fmtDate($earliestFirstDate) : null,
+        'latest_ever' => $latestLastDate ? $fmtDate($latestLastDate) : null,
     ];
 
     $maxCounts = [];
@@ -420,10 +443,12 @@ if ($q === 'week_context') {
     }
 
     // 2) All years: earliest observation by day-of-year (exclude January to avoid overwintering noise)
-    // Subquery finds the min doy per species, outer query gets the year of that observation
+    // Subquery finds the min doy per species, outer query gets the actual earliest date
+    // Uses MIN(event_start_date) to deterministically pick the chronologically first occurrence
+    // and avoids doyToStr leap-year mismatch by storing the real date
     $phenAllTime = [];
     $res = $db->query("SELECT e.taxon_id, e.earliest_doy,
-        SUBSTR(o.event_start_date, 1, 4) AS earliest_year
+        MIN(o.event_start_date) AS earliest_actual_date
         FROM (
             SELECT taxon_id,
                 MIN(CAST(STRFTIME('%j', event_start_date) AS INTEGER)) AS earliest_doy
@@ -440,7 +465,7 @@ if ($q === 'week_context') {
         $tid = strval($row['taxon_id']);
         $phenAllTime[$tid] = [
             'earliest_doy' => intval($row['earliest_doy']),
-            'earliest_year' => $row['earliest_year'],
+            'earliest_actual_date' => $row['earliest_actual_date'],
         ];
     }
 
@@ -452,14 +477,25 @@ if ($q === 'week_context') {
 
         // Earliest from all-time data (by day-of-year, not chronological)
         $earliestDoy = isset($phenAllTime[$tid]) ? $phenAllTime[$tid]['earliest_doy'] : min($doys);
-        $earliestYear = isset($phenAllTime[$tid]) ? $phenAllTime[$tid]['earliest_year'] : null;
+        // Use actual date from DB to avoid leap-year mismatch in doyToStr
+        $earliestActualDate = isset($phenAllTime[$tid]) ? $phenAllTime[$tid]['earliest_actual_date'] : null;
+        if ($earliestActualDate) {
+            $earliestYear = substr($earliestActualDate, 0, 4);
+            $d = intval(substr($earliestActualDate, 8, 2));
+            $m = intval(substr($earliestActualDate, 5, 2));
+            $months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+            $earliestDate = $d . ' ' . $months[$m - 1];
+        } else {
+            $earliestYear = null;
+            $earliestDate = doyToStr($earliestDoy);
+        }
 
         $phenology[$tid] = [
             'name' => $data['name'],
             'avg_first_doy' => $avgDoy,
             'avg_first_date' => doyToStr($avgDoy),
             'earliest_doy' => $earliestDoy,
-            'earliest_date' => doyToStr($earliestDoy),
+            'earliest_date' => $earliestDate,
             'earliest_year' => $earliestYear,
             'years_seen' => count($data['years']),
             'avg_year_range' => $minYear5 . '–' . $maxYear,
