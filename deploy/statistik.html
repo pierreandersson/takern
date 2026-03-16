@@ -119,6 +119,21 @@
 
     .species-detail.active { display: block; }
 
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, color-mix(in srgb, var(--border) 60%, transparent) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-text { height: 1rem; margin-bottom: 0.5rem; }
+    .skeleton-card { height: 4.5rem; border-radius: 10px; }
+    .skeleton-chart { height: 200px; border-radius: 10px; }
+
     .species-header {
       background: var(--card);
       border: 1px solid var(--border);
@@ -842,7 +857,12 @@
       // Wire up click handlers
       document.querySelectorAll("[data-taxon]").forEach(el => {
         el.style.cursor = "pointer";
-        el.addEventListener("click", () => loadSpecies(parseInt(el.dataset.taxon)));
+        el.addEventListener("click", () => {
+          const nameEl = el.querySelector(".name");
+          const sciEl = el.querySelector(".sci");
+          const hint = nameEl ? { name: nameEl.textContent, scientific: sciEl ? sciEl.textContent : "" } : null;
+          loadSpecies(parseInt(el.dataset.taxon), false, hint);
+        });
       });
 
       // Wire up search
@@ -937,7 +957,11 @@
       // Wire up click handlers
       container.querySelectorAll("[data-taxon]").forEach(el => {
         el.style.cursor = "pointer";
-        el.addEventListener("click", () => loadSpecies(parseInt(el.dataset.taxon)));
+        el.addEventListener("click", () => {
+          const nameEl = el.querySelector(".name, .trend-name");
+          const hint = nameEl ? { name: nameEl.textContent, scientific: "" } : null;
+          loadSpecies(parseInt(el.dataset.taxon), false, hint);
+        });
       });
     }
 
@@ -984,7 +1008,12 @@
           el.addEventListener("click", () => {
             results.classList.remove("open");
             input.value = "";
-            loadSpecies(parseInt(el.dataset.taxon));
+            const nameEl = el.querySelector(".name");
+            const sciEl = el.querySelector(".sci");
+            loadSpecies(parseInt(el.dataset.taxon), false, {
+              name: nameEl ? nameEl.textContent : "",
+              scientific: sciEl ? sciEl.textContent : ""
+            });
           });
         });
       });
@@ -1101,25 +1130,54 @@
 
     // ── Species detail ──
 
-    async function loadSpecies(taxonId, skipPush) {
-      const resp = await fetch(`stats-api.php?q=species&id=${taxonId}`);
-      const sp = await resp.json();
-
-      if (sp.error) return;
-
-      // Update URL
-      if (!skipPush) {
-        const slug = toSlug(sp.name);
-        history.pushState({ taxonId }, "", `?art=${slug}`);
-      }
-
-      // Hide overview, show detail
+    async function loadSpecies(taxonId, skipPush, hint) {
+      // Immediately show skeleton with species name if available
       document.getElementById("summary-cards").style.display = "none";
       document.querySelector(".search-box").style.display = "none";
       document.querySelector(".search-box").previousElementSibling.style.display = "none";
       document.getElementById("overview-section").style.display = "none";
       const detail = document.getElementById("species-detail");
       detail.classList.add("active");
+
+      // Look up name from speciesCache if no hint provided
+      if (!hint && speciesCache) {
+        const cached = speciesCache.find(s => s.taxon_id === taxonId);
+        if (cached) hint = { name: cached.name, scientific: cached.scientific };
+      }
+
+      detail.innerHTML = `
+        <div class="species-header">
+          <div>
+            <span class="back" id="back-btn-loading">&larr; Tillbaka till översikten</span>
+            <h2>${hint ? hint.name : '<span class="skeleton skeleton-text" style="display:inline-block;width:10rem"></span>'}</h2>
+            <div class="scientific">${hint ? hint.scientific : '<span class="skeleton skeleton-text" style="display:inline-block;width:8rem"></span>'}</div>
+          </div>
+        </div>
+        <div class="species-stats">
+          <div class="stat-card skeleton skeleton-card"></div>
+          <div class="stat-card skeleton skeleton-card"></div>
+          <div class="stat-card skeleton skeleton-card"></div>
+          <div class="stat-card skeleton skeleton-card"></div>
+        </div>
+        <div class="skeleton skeleton-chart" style="margin-top:1.5rem"></div>
+      `;
+      document.getElementById("back-btn-loading").addEventListener("click", () => {
+        showOverview();
+        history.pushState({}, "", "statistik.html");
+      });
+      // Scroll to top immediately
+      window.scrollTo(0, 0);
+
+      const resp = await fetch(`stats-api.php?q=species&id=${taxonId}`);
+      const sp = await resp.json();
+
+      if (sp.error) { showOverview(); return; }
+
+      // Update URL
+      if (!skipPush) {
+        const slug = toSlug(sp.name);
+        history.pushState({ taxonId }, "", `?art=${slug}`);
+      }
 
       // Destroy old charts
       if (currentChart1) { currentChart1.destroy(); currentChart1 = null; }
@@ -1682,7 +1740,7 @@
       const artSlug = params.get("art");
       if (artSlug && speciesCache) {
         const match = findSpeciesBySlug(artSlug);
-        if (match) loadSpecies(match.taxon_id, true);
+        if (match) loadSpecies(match.taxon_id, true, { name: match.name, scientific: match.scientific });
       }
     }
     init();
