@@ -157,13 +157,15 @@ Standardmått inom fågelövervakning (eBird, BirdLife). Kompenserar automatiskt
 >
 > Därför använder vi *rapportfrekvens* – samma mått som används av eBird och BirdLife International. Istället för att räkna observationer frågar vi: *hur stor andel av alla fältbesök noterade arten?* Ett fältbesök definieras som en unik kombination av datum och lokal. Om 200 besök gjordes ett år och sångsvan noterades vid 40 av dem, är rapportfrekvensen 20 %.
 >
-> När fler rapportörer tillkommer ökar både antalet besök som noterar arten och det totala antalet besök – kvoten förblir stabil om artens faktiska förekomst inte förändrats. Måttet kompenserar därmed automatiskt för ökad rapporteringsaktivitet.
+> Rapportfrekvens speglar hur ofta en art påträffas vid fältbesök, inte förändringar i faktiskt antal individer – det kräver standardiserade inventeringar. När fler rapportörer tillkommer ökar både antalet besök som noterar arten och det totala antalet besök – kvoten förblir stabil om artens faktiska förekomst inte förändrats. Måttet kompenserar därmed automatiskt för ökad rapporteringsaktivitet.
 >
 > Trenden beräknas med Theil-Sen-regression: för varje par av år (med 20 år blir det 190 par) beräknas hur snabbt rapportfrekvensen förändrades. Trenden är mittenvärdet (medianen) av alla dessa lutningar. Det gör att enstaka extremår – en sträng vinter eller en invasion – inte snedvrider resultatet.
 >
 > För att rättvist kunna jämföra vanliga och ovanliga arter rankas de efter *relativ förändring*: trendens storlek i förhållande till artens genomsnittliga rapportfrekvens. En art som gått från 0,5 % till 5 % har förändrats mer i relativa termer än en art som gått från 10 % till 15 %, trots att den absoluta ökningen är mindre.
 >
 > Arterna som visas har valts ut genom ett enda kriterium: rapportfrekvensen måste ha nått minst 0,2 % under någon femårsperiod. Det säkerställer att vi bara analyserar arter med tillräckligt dataunderlag, samtidigt som vi fångar både arter som försvunnit och arter som nyetablerat sig.
+>
+> Arter som genomgått taxonomiska uppdelningar (t.ex. sädgås → skogsgås + tundragås) slås ihop till den ursprungliga arten för att undvika att omklassificeringar tolkas som verkliga förändringar.
 
 ---
 
