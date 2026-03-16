@@ -478,9 +478,10 @@
       { id: "sec-senaste", label: "Senaste" },
       { id: "sec-sp-karta", label: "Karta" },
       { id: "sec-sp-sasong", label: "Säsong" },
-      { id: "sec-sp-lokaler", label: "Lokaler" },
+      { id: "sec-sp-frekvens", label: "Frekvens" },
       { id: "sec-sp-fenologi", label: "Fenologi" },
       { id: "sec-sp-antal", label: "Antal" },
+      { id: "sec-sp-lokaler", label: "Lokaler" },
     ];
 
     let sectionObserver = null;
@@ -1126,23 +1127,34 @@
         </div>`;
       }
 
-      // 4. Top localities – VAR (detalj)
-      if (sp.top_localities.length > 0) {
-        html += `<div class="chart-section" id="sec-sp-lokaler">
-          <h2>Mest rapporterade lokaler</h2>
-          <div class="locality-list">
-            ${sp.top_localities.map(l => `
-              <div class="locality-item">
-                <span>${l.name}</span>
-                <span style="color:var(--muted)">${l.count.toLocaleString("sv")} obs</span>
-              </div>
-            `).join("")}
-          </div>
+      // 4. Encounter rate chart – TREND
+      const erData = sp.encounter_rate || {};
+      const erYears = Object.keys(erData).sort();
+      if (erYears.length > 0) {
+        const erTrend = sp.encounter_rate_trend;
+        let trendText = '';
+        if (erTrend) {
+          const s = erTrend.slope_per_decade;
+          const abs = Math.abs(s).toFixed(1);
+          if (abs < 0.5) {
+            trendText = 'Stabil rapportfrekvens';
+          } else {
+            const dir = s > 0 ? 'Ökande' : 'Minskande';
+            const arrow = s > 0 ? '▲' : '▼';
+            const color = s > 0 ? 'var(--accent)' : '#c0392b';
+            trendText = `<span style="color:${color}">${arrow} ${dir} med ${abs} procentenheter per decennium</span>`;
+          }
+        }
+        html += `<div class="chart-section" id="sec-sp-frekvens">
+          <h2>Rapportfrekvens över tid</h2>
+          <p style="color:var(--muted);font-size:0.85rem;margin:-0.5rem 0 0.75rem">Andel fältbesök som noterar arten – kompenserar för ökande rapportörsantal</p>
+          ${trendText ? `<p style="font-size:0.9rem;margin-bottom:0.75rem">${trendText}</p>` : ''}
+          <div class="chart-container"><canvas id="trendChart"></canvas></div>
         </div>`;
       }
 
       // 5. Phenology timeline – NÄR (detalj)
-      const phenYears = Object.keys(sp.phenology).sort();
+      const phenYears = Object.keys(sp.phenology).filter(y => +y < new Date().getFullYear()).sort();
       if (phenYears.length > 0) {
         // Calculate global date range across all years (as day-of-year)
         const monthNames = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
@@ -1271,12 +1283,20 @@
         </div>`;
       }
 
-      // 7. Trend chart – HISTORIK
-      const years = Object.keys(sp.observations_per_year).sort();
-      html += `<div class="chart-section">
-        <h2>Antal enskilda rapporter per år</h2>
-        <div class="chart-container"><canvas id="trendChart"></canvas></div>
-      </div>`;
+      // 7. Top localities – REFERENS
+      if (sp.top_localities.length > 0) {
+        html += `<div class="chart-section" id="sec-sp-lokaler">
+          <h2>Mest rapporterade lokaler</h2>
+          <div class="locality-list">
+            ${sp.top_localities.map(l => `
+              <div class="locality-item">
+                <span>${l.name}</span>
+                <span style="color:var(--muted)">${l.count.toLocaleString("sv")} obs</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>`;
+      }
 
       detail.innerHTML = html;
 
@@ -1359,30 +1379,68 @@
         });
       }
 
-      // Render trend chart
-      const trendCtx = document.getElementById("trendChart");
-      currentChart2 = new Chart(trendCtx, {
-        type: "bar",
-        data: {
-          labels: years,
-          datasets: [{
-            label: "Observationer",
-            data: years.map(y => sp.observations_per_year[y] || 0),
-            backgroundColor: "rgba(45, 106, 79, 0.6)",
-            borderColor: "#2d6a4f",
-            borderWidth: 1,
-            borderRadius: 4,
-          }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+      // Render encounter rate chart
+      if (erYears.length > 0) {
+        const erValues = erYears.map(y => erData[y] || 0);
+        const datasets = [{
+          label: "Rapportfrekvens (%)",
+          data: erValues,
+          borderColor: "#2d6a4f",
+          backgroundColor: "rgba(45, 106, 79, 0.15)",
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#2d6a4f",
+          fill: true,
+          tension: 0.3,
+        }];
+
+        // Add Theil-Sen trend line if available
+        const erTrend = sp.encounter_rate_trend;
+        if (erTrend) {
+          // intercept is raw rate (0–1), slope_per_decade is percentage points per decade
+          // fitted value in % = (intercept + slopePerYear * year) * 100
+          const slopePerYear = erTrend.slope_per_decade / 10 / 100; // back to raw rate per year
+          const trendLine = erYears.map(y => {
+            const val = (erTrend.intercept + slopePerYear * parseInt(y)) * 100;
+            return Math.max(0, parseFloat(val.toFixed(2)));
+          });
+          datasets.push({
+            label: "Trend",
+            data: trendLine,
+            borderColor: erTrend.slope_per_decade > 0 ? "rgba(45, 106, 79, 0.5)" : "rgba(192, 57, 43, 0.5)",
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            fill: false,
+            tension: 0,
+          });
+        }
+
+        const trendCtx = document.getElementById("trendChart");
+        currentChart2 = new Chart(trendCtx, {
+          type: "line",
+          data: { labels: erYears, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: datasets.length > 1, labels: { boxWidth: 12, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + ' %',
+                },
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: "rgba(0,0,0,0.05)" },
+                ticks: { callback: v => v + ' %' },
+              },
+            },
           },
-        },
-      });
+        });
+      }
 
       // Render max count chart
       if (maxYears.length > 0) {

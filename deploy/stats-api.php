@@ -357,6 +357,82 @@ if ($q === 'species' && $id !== null) {
         if (count($recent) >= 20) break;
     }
 
+    // ── Encounter rate (reporting frequency) per year ──
+    // Total field visits per year (all species)
+    $totalVisits = [];
+    $tvRes = $db->query("
+        SELECT strftime('%Y', event_start_date) AS yr,
+               COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations
+        WHERE event_start_date >= '2006-01-01'
+        GROUP BY yr
+    ");
+    while ($r = $tvRes->fetchArray(SQLITE3_ASSOC)) {
+        $totalVisits[$r['yr']] = intval($r['visits']);
+    }
+
+    // Species field visits per year
+    // Handle taxonomic merges (sädgås = skogsgås + tundragås)
+    $mergeGroups = [100009 => [232125, 205924]];
+    $queryIds = [$id];
+    foreach ($mergeGroups as $targetId => $sourceIds) {
+        if ($id == $targetId) $queryIds = array_merge($queryIds, $sourceIds);
+    }
+    $idList = implode(',', $queryIds);
+    $spVisits = [];
+    $svRes = $db->query("
+        SELECT strftime('%Y', event_start_date) AS yr,
+               COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations
+        WHERE taxon_id IN ($idList) AND event_start_date >= '2006-01-01'
+        GROUP BY yr
+    ");
+    while ($r = $svRes->fetchArray(SQLITE3_ASSOC)) {
+        $spVisits[$r['yr']] = intval($r['visits']);
+    }
+
+    // Compute rates and Theil-Sen trend
+    $encounterRate = [];
+    $erYears = array_keys($totalVisits);
+    sort($erYears);
+    $currentYear = date('Y');
+    $trendPts = [];
+    foreach ($erYears as $yr) {
+        if ($yr == $currentYear) continue; // Exclude incomplete year
+        $rate = ($totalVisits[$yr] > 0) ? ($spVisits[$yr] ?? 0) / $totalVisits[$yr] : 0;
+        $encounterRate[$yr] = round($rate * 100, 2); // as percentage
+        $trendPts[] = [intval($yr), $rate];
+    }
+
+    $erTrend = null;
+    if (count($trendPts) >= 5) {
+        // Theil-Sen: median of pairwise slopes
+        $slopes = [];
+        for ($i = 0; $i < count($trendPts); $i++) {
+            for ($j = $i + 1; $j < count($trendPts); $j++) {
+                $dx = $trendPts[$j][0] - $trendPts[$i][0];
+                if ($dx != 0) $slopes[] = ($trendPts[$j][1] - $trendPts[$i][1]) / $dx;
+            }
+        }
+        sort($slopes);
+        $medianSlope = $slopes[intval(count($slopes) / 2)];
+
+        // Intercept = median of (y - slope * x)
+        $intercepts = array_map(fn($p) => $p[1] - $medianSlope * $p[0], $trendPts);
+        sort($intercepts);
+        $intercept = $intercepts[intval(count($intercepts) / 2)];
+
+        // First and last fitted values (in percentage)
+        $firstYr = $trendPts[0][0];
+        $lastYr = $trendPts[count($trendPts) - 1][0];
+        $erTrend = [
+            'slope_per_decade' => round($medianSlope * 10 * 100, 2), // percentage points per decade
+            'intercept' => $intercept,
+            'first_year' => $firstYr,
+            'last_year' => $lastYr,
+        ];
+    }
+
     jsonOut([
         'taxon_id' => $id,
         'name' => $info['vernacular_name'],
@@ -375,6 +451,8 @@ if ($q === 'species' && $id !== null) {
         'top_localities' => $topLocalities,
         'time_of_day' => $timeOfDay,
         'recent' => $recent,
+        'encounter_rate' => $encounterRate,
+        'encounter_rate_trend' => $erTrend,
     ]);
 }
 
