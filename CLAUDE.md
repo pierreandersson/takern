@@ -1,7 +1,7 @@
 # Tåkern Fågelobs – Projektkontext
 
 ## Vad detta är
-Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. Tre sidor: index.html (senaste obs), veckorapport.html (veckosammanfattning), statistik.html (20 års historik med artsidor).
+Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. Tre sidor: index.html (senaste obs), veckorapport.html ("Tåkern i veckan" – veckoöversikt med artackumulering, artfördelning, höjdpunkter, heatmap), statistik.html (20 års historik med artsidor).
 
 ## Tech stack
 - **Frontend:** Vanilla HTML/CSS/JS, Leaflet för kartor, Chart.js för grafer
@@ -48,8 +48,11 @@ Ranking baseras på tre transparenta faktorer – rödlistestatus visas som badg
 2. **Nyanlända:** Arter med ≤20 obs hittills i år får bonus (80–240 poäng, fler obs = lägre bonus)
 3. **Sällsynthet:** Lokalt sällsynta arter vid Tåkern (<2 obs/år = 120p, <5 = 60p, <10 = 30p)
 
-## Veckorapport-sektioner
-Ordning: Sammanfattningskort → Karta → Håll utkik efter (arter förväntade inom 21 dagar men ej rapporterade) → Nya observationer för året → Aktivitet per dag → Alla arter
+## "Tåkern i veckan" (veckorapport.html)
+Sektioner: Sammanfattningskort (med förra årets jämförelse) → Heatmap-karta → Artackumulering (kurva: i år vs 5-årssnitt + dygnsmedeltemperatur, Chart.js time-axis) + Vårens framsteg (meter, vecka 8–22) → Nytt för säsongen (årets-första-arter) → Håll utkik efter (arter förväntade inom 21 dagar) → Veckans höjdpunkter (top 8 noterbara, poängbaserat) → Artfördelning (donut per fågelgrupp)
+- **Fågelgrupper:** Mappas via `getBirdGroup()` i stats-api.php (taxonomic_order + family → svensk grupp)
+- **Artackumulering:** Endpoint `?q=accumulation&year=YYYY` – kumulativt unika arter per dag, 5-årssnitt, SMHI-temperatur
+- **Temperatur:** Dygnsmedeltemperatur från SMHI Härsnäs (station 85180, 26 km öster om Tåkern). Parameter 2, period latest-months.
 
 ## Säkerhet
 - .htaccess blockerar takern_api_key.txt och cron_secret.txt
@@ -58,7 +61,7 @@ Ordning: Sammanfattningskort → Karta → Håll utkik efter (arter förväntade
 
 ## Hybrid-arkitektur (api.php)
 - **days 0–1:** Enbart live SOS-API (snabbt, under 1000-gränsen)
-- **days 2–6:** Live API för idag+igår + SQLite för äldre dagar → merge + dedup på occurrence_id
+- **days 2–7:** Live API för idag+igår + SQLite för äldre dagar → merge + dedup på occurrence_id
 - **Varför:** Cron körs ~04:00, SQLite kan sakna gårdagens sena obs → live API täcker gapet
 - **Radie:** Fast 15 km, konsekvent med databasens nedladdningsradie. Ingen radieväljare.
 

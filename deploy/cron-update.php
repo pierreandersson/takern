@@ -415,7 +415,7 @@ $db->close();
 
 // ── Clear stats-api cache so fresh data is served ──
 $cacheDir = __DIR__ . '/cache';
-$warmEndpoints = ['overview', 'species', 'week_context&year=' . date('Y') . '&days=7'];
+$warmEndpoints = ['overview', 'species', 'week_context&year=' . date('Y') . '&days=7', 'accumulation&year=' . date('Y')];
 
 // Mondays: also clear and re-warm the slow geo/localities caches
 $isWeeklyRefresh = (date('N') == 1); // 1 = Monday

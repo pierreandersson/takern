@@ -4,7 +4,7 @@
 
 Tre sidor:
 - **index.html** – Senaste observationer (0–6 dagar, hybrid live API + SQLite), karta + lista, fenologi-scoring
-- **veckorapport.html** – Veckosammanfattning med årets-första-analys
+- **veckorapport.html** – "Tåkern i veckan": veckoöversikt med artackumulering (vs 5-årssnitt + temperatur), artfördelning, höjdpunkter, heatmap
 - **statistik.html** – 20 års historik (~333k obs, 374 arter), artsidor, grafer, heatmaps
 
 Backend: PHP-proxy (api.php) mot Artdatabankens SOS-API + stats-api.php mot SQLite-databas. Filbaserad JSON-cache. GitHub Actions → FTP-deploy till Websupport med automatisk cache-clear/warm.
@@ -218,7 +218,7 @@ Nu rensas cachen manuellt via cron-update.php eller clear_cache.sh.
 - [x] index.html: Art A–Ö grupperad vy med expanderbara detaljer + Artportalen-länkar
 
 ### Fas 3: Nya visualiseringar
-- [ ] Artackumulering: årets artlista dag för dag vs tidigare år
+- [x] Artackumulering: årets artlista dag för dag vs 5-årssnitt + dygnsmedeltemperatur (SMHI)
 - [ ] Fenologikalender: Gantt-diagram med alla arters säsonger
 
 ### Fas 4: Nya sidor

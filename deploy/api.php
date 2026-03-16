@@ -24,7 +24,7 @@ $RADIUS_M = 15000;
 $DB_FILE = __DIR__ . '/takern_observations.db';
 
 $DAYS_BACK = 1;
-$ALLOWED_DAYS = [0, 1, 2, 3, 4, 5, 6];
+$ALLOWED_DAYS = [0, 1, 2, 3, 4, 5, 6, 7];
 
 if (isset($_GET['days'])) {
     $d = intval($_GET['days']);

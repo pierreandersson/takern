@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tåkern – Veckorapport</title>
+  <title>Tåkern i veckan</title>
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="theme-color" content="#2d6a4f">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Page-specific styles for veckorapport */
+    /* Page-specific styles */
 
     .compare {
       font-size: 0.75rem;
@@ -21,7 +22,7 @@
     .compare.up { color: var(--accent); }
     .compare.down { color: var(--red); }
 
-
+    /* Highlight cards */
     .highlights {
       display: flex;
       flex-direction: column;
@@ -39,19 +40,9 @@
       gap: 0.75rem;
     }
 
-    .highlight-card.first-of-year {
-      border-left: 4px solid var(--purple);
-    }
-
-    .highlight-card.notable {
-      border-left: 4px solid var(--red);
-    }
-
-    .highlight-icon {
-      font-size: 1.3rem;
-      flex-shrink: 0;
-      margin-top: 0.1rem;
-    }
+    .highlight-card.first-of-year { border-left: 4px solid var(--purple); }
+    .highlight-card.notable { border-left: 4px solid var(--orange); }
+    .highlight-card.watch { border-left: 4px solid var(--accent); }
 
     .highlight-content { flex: 1; }
     .highlight-content .species { font-weight: 600; }
@@ -61,54 +52,6 @@
       margin-top: 0.15rem;
     }
 
-    .badge {
-      margin-left: 0.4rem;
-      vertical-align: middle;
-    }
-
-    /* Species table */
-    .species-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      margin-bottom: 2rem;
-    }
-
-    .species-table th {
-      text-align: left;
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      padding: 0.5rem 0.75rem;
-      border-bottom: 2px solid var(--border);
-    }
-
-    .species-table td {
-      padding: 0.6rem 0.75rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.9rem;
-      vertical-align: middle;
-    }
-
-    .species-table tr:last-child td { border-bottom: none; }
-    .species-table .species-name { font-weight: 600; }
-    .species-table .scientific { font-style: italic; color: var(--muted); font-size: 0.8rem; }
-
-    .days-dots {
-      display: flex;
-      gap: 3px;
-    }
-
-    .day-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--border);
-    }
-
-    .day-dot.active { background: var(--accent); }
-
     .no-highlights {
       color: var(--muted);
       font-size: 0.9rem;
@@ -116,6 +59,112 @@
       margin-bottom: 2rem;
     }
 
+    /* Accumulation chart */
+    .accumulation-chart {
+      height: 300px;
+    }
+
+    /* Spring progress bar */
+    .spring-meter {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--accent-light);
+      border-radius: 8px;
+    }
+
+    .spring-meter .meter-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .spring-meter .meter-bar {
+      flex: 1;
+      height: 10px;
+      background: rgba(45, 106, 79, 0.15);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .spring-meter .meter-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 5px;
+      transition: width 0.6s ease;
+    }
+
+    .spring-meter .meter-pct {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .spring-detail {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+      text-align: right;
+    }
+
+    /* Donut + legend layout */
+    .donut-layout {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .donut-chart-wrap {
+      width: 220px;
+      height: 220px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .donut-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .donut-center .big { font-size: 1.8rem; font-weight: 700; }
+    .donut-center .sub { font-size: 0.75rem; color: var(--muted); }
+
+    .donut-legend {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .donut-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .donut-legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .donut-legend-count {
+      margin-left: auto;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* Heatmap */
     #weekMap {
       height: 450px;
       width: 100%;
@@ -123,15 +172,17 @@
 
     @media (max-width: 600px) {
       #weekMap { height: 300px; }
-      .species-table .scientific { display: none; }
-      .species-table .hist-col { display: none; }
+      .donut-layout { flex-direction: column; align-items: stretch; }
+      .donut-chart-wrap { width: 180px; height: 180px; margin: 0 auto; }
+      .accumulation-chart { height: 220px; }
+      .spring-meter { flex-wrap: wrap; }
     }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1>Tåkern – Veckorapport</h1>
+      <h1>Tåkern i veckan</h1>
       <p id="header-desc">Laddar...</p>
     </div>
     <nav>
@@ -145,6 +196,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="utils.js"></script>
   <script>
     const DAYS_BACK = 7;
@@ -155,6 +207,33 @@
       const d = new Date(dateStr);
       return d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
     }
+
+    function toSlug(name) {
+      return name.toLowerCase()
+        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    // ── Donut chart colors ──
+    const GROUP_COLORS = {
+      "Andfåglar": "#2d6a4f",
+      "Tättingar": "#b45309",
+      "Rovfåglar": "#b91c1c",
+      "Vadare": "#0e7490",
+      "Måsar & tärnor": "#6366f1",
+      "Hägrar": "#7c3aed",
+      "Tran- & rallfåglar": "#059669",
+      "Doppingar": "#0284c7",
+      "Hackspettar": "#dc2626",
+      "Duvor": "#9ca3af",
+      "Ugglor": "#78716c",
+      "Skarvar": "#475569",
+      "Lommar": "#1e40af",
+      "Hönsfåglar": "#92400e",
+      "Seglare": "#64748b",
+      "Gökar": "#6b7280",
+      "Övriga": "#d1d5db",
+    };
 
     // ── Data processing ──
 
@@ -176,13 +255,7 @@
         if (byDate[dateKey]) byDate[dateKey].push(obs);
       }
 
-      const dailyStats = allDates.map(date => {
-        const dayObs = byDate[date];
-        const species = new Set(dayObs.map(o => o.taxon?.vernacularName));
-        return { date, obs: dayObs.length, species: species.size };
-      });
-
-      // Species aggregation – also track first occurrenceId for Artportalen link
+      // Species aggregation
       const speciesMap = {};
       for (const obs of records) {
         const name = obs.taxon?.vernacularName || obs.taxon?.scientificName;
@@ -197,21 +270,18 @@
             totalCount: 0,
             maxCount: 0,
             daysSeen: new Set(),
-            firstOccurrenceId: null,
-            firstObsDate: null,
+            bestObs: null,
           };
         }
         const sp = speciesMap[name];
         const count = parseInt(obs.occurrence?.individualCount) || 1;
         sp.totalCount += count;
-        if (count > sp.maxCount) sp.maxCount = count;
+        if (count > sp.maxCount) {
+          sp.maxCount = count;
+          sp.bestObs = obs;
+        }
         const dateKey = (obs.event?.startDate || "").slice(0, 10);
         sp.daysSeen.add(dateKey);
-        // Track earliest observation's occurrenceId for linking
-        if (!sp.firstObsDate || dateKey < sp.firstObsDate) {
-          sp.firstObsDate = dateKey;
-          sp.firstOccurrenceId = obs.occurrence?.occurrenceId || null;
-        }
       }
 
       const speciesList = Object.values(speciesMap).map(sp => ({
@@ -224,31 +294,27 @@
       const totalObs = records.length;
       const uniqueSpecies = new Set(records.map(o => o.taxon?.vernacularName)).size;
 
-      return { dailyStats, speciesList, totalObs, uniqueSpecies, allDates };
+      return { allDates, speciesList, totalObs, uniqueSpecies };
     }
 
-    function crossReference(liveData, context) {
+    function findHighlights(speciesList, context) {
       const yearFirsts = context.year_firsts || {};
-      const dbPhenology = context.phenology || {};
+      const phenology = context.phenology || {};
+      const rarity = context.rarity || {};
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - DAYS_BACK);
+      const weekStartStr = weekStart.toISOString().slice(0, 10);
 
+      // First of year
       const firstOfYear = [];
-
-      // Use the same date range as shown in the header
-      const weekStart = liveData.allDates[0];
-
-      for (const sp of liveData.speciesList) {
+      for (const sp of speciesList) {
         const tid = sp.taxonId;
         if (!tid) continue;
-
         const yearData = yearFirsts[tid];
-        const phen = dbPhenology[tid]; // DB phenology (5 yrs, excl. January)
+        const phen = phenology[tid];
         const firstDateThisYear = yearData?.first_date;
-
-        // Species whose first obs this year falls within this week's date range
-        const isRecentFirst = !firstDateThisYear || firstDateThisYear >= weekStart;
-        // Exclude obvious year-round residents: if in DB and first_date is January, skip
+        const isRecentFirst = !firstDateThisYear || firstDateThisYear >= weekStartStr;
         const isJanuaryResident = firstDateThisYear && firstDateThisYear.slice(5, 7) === "01";
-
         if (isRecentFirst && !isJanuaryResident) {
           firstOfYear.push({
             ...sp,
@@ -257,38 +323,71 @@
             historicalTypical: phen?.avg_first_date || null,
             historicalEarliest: phen?.earliest_date || null,
             earliestYear: phen?.earliest_year || null,
-            yearsSeen: phen?.years_seen || null,
-            yearRange: phen?.avg_year_range || null,
             hasPhenology: !!phen,
           });
         }
       }
-
-      // Sort: species with phenology data first, then by date
       firstOfYear.sort((a, b) => (b.hasPhenology ? 1 : 0) - (a.hasPhenology ? 1 : 0) || a.firstDate.localeCompare(b.firstDate));
 
-      return { firstOfYear };
+      // Notable highlights: score each species
+      const scored = [];
+      for (const sp of speciesList) {
+        const tid = sp.taxonId;
+        if (!tid) continue;
+        let score = 0;
+        const reasons = [];
+
+        // Rarity
+        const r = rarity[tid];
+        if (r) {
+          if (r.avg_per_year < 2) { score += 120; reasons.push(`Sällsynt vid Tåkern (${r.avg_per_year} obs/år)`); }
+          else if (r.avg_per_year < 5) { score += 60; reasons.push(`Ovanlig vid Tåkern (${r.avg_per_year} obs/år)`); }
+          else if (r.avg_per_year < 10) { score += 30; reasons.push(`Fåtalig vid Tåkern`); }
+        }
+
+        // First of year
+        const isFirst = firstOfYear.some(f => f.name === sp.name);
+        if (isFirst) { score += 100; reasons.push("Årets första"); }
+
+        // Redlisted
+        const rl = sp.redlist;
+        if (rl === "CR" || rl === "EN") { score += 80; reasons.push(`Rödlistad (${rl})`); }
+        else if (rl === "VU") { score += 40; reasons.push("Rödlistad (VU)"); }
+        else if (rl === "NT") { score += 20; reasons.push("Nära hotad (NT)"); }
+
+        // High count
+        if (sp.maxCount >= 100) { score += 50; reasons.push(`Stort antal: ${sp.maxCount} ex`); }
+        else if (sp.maxCount >= 50) { score += 25; reasons.push(`${sp.maxCount} ex`); }
+
+        if (score > 0) {
+          scored.push({ ...sp, score, reasons });
+        }
+      }
+      scored.sort((a, b) => b.score - a.score);
+      const topHighlights = scored.slice(0, 8);
+
+      return { firstOfYear, topHighlights };
     }
 
     // ── Rendering ──
 
-    function toSlug(name) {
-      return name.toLowerCase()
-        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
-        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    }
-
-    function render(liveData, highlights, records, rarity, lastYearWeek, springProgress, phenology, yearFirsts) {
+    function render(liveData, highlights, records, context, accumData) {
       const container = document.getElementById("main");
+      const rarity = context.rarity || {};
+      const lastYearWeek = context.last_year_week || null;
+      const springProgress = context.spring_progress || null;
+      const phenology = context.phenology || {};
+      const yearFirsts = context.year_firsts || {};
+      const birdGroups = context.bird_groups || {};
 
       const dateRange = `${formatDayShort(liveData.allDates[0])} – ${formatDayShort(liveData.allDates[liveData.allDates.length - 1])}`;
       document.getElementById("header-desc").innerHTML =
         `${dateRange} · Data från <a href="https://www.artportalen.se" style="color:#d8f3dc">Artportalen</a> m.fl. · Historik från <a href="statistik.html" style="color:#d8f3dc">20 års databas</a>`;
 
       let html = "";
-
-      // Summary cards with last-year comparison
       const ly = lastYearWeek;
+
+      // ── 1. Summary cards ──
       function delta(current, lastYear) {
         if (!ly || lastYear == null) return "";
         const diff = current - lastYear;
@@ -300,23 +399,24 @@
 
       html += `<div class="summary">`;
       html += `<div class="summary-card">
+        <div class="label">Arter</div>
+        <div class="value">${liveData.uniqueSpecies}</div>
+        <div class="detail">unika arter i veckan</div>
+        ${delta(liveData.uniqueSpecies, ly?.species_count)}
+      </div>`;
+      html += `<div class="summary-card">
         <div class="label">Observationer</div>
         <div class="value">${liveData.totalObs.toLocaleString("sv")}</div>
         <div class="detail">senaste ${DAYS_BACK} dagarna</div>
         ${delta(liveData.totalObs, ly?.obs_count)}
       </div>`;
       html += `<div class="summary-card">
-        <div class="label">Arter</div>
-        <div class="value">${liveData.uniqueSpecies}</div>
-        <div class="detail">unika arter</div>
-        ${delta(liveData.uniqueSpecies, ly?.species_count)}
-      </div>`;
-      html += `<div class="summary-card">
         <div class="label">Årets första</div>
         <div class="value">${highlights.firstOfYear.length}</div>
-        <div class="detail">arter nya för säsongen</div>
+        <div class="detail">nya arter för säsongen</div>
         ${delta(highlights.firstOfYear.length, ly?.first_of_year)}
       </div>`;
+
       const redlistedThisWeek = [...new Set(liveData.speciesList
         .filter(s => s.redlist && s.redlist !== "LC")
         .map(s => s.name))];
@@ -325,31 +425,62 @@
         <div class="value">${redlistedThisWeek.length}</div>
         <div class="detail">${redlistedThisWeek.slice(0, 3).join(", ") || "–"}${redlistedThisWeek.length > 3 ? " ..." : ""}</div>
       </div>`;
+      html += `</div>`;
 
-      // Spring progress card (week 8–22 only)
+      // ── Heatmap (right after summary) ──
+      html += `<div class="map-section">
+        <h2>Var observerades det?</h2>
+        <div id="weekMap"></div>
+      </div>`;
+
+      // ── 2. Spring progress + accumulation curve ──
+      html += `<div class="chart-section">
+        <h2>Så går det för flyttfåglarna</h2>
+        <div class="accumulation-chart"><canvas id="accumChart"></canvas></div>`;
+
       if (springProgress && springProgress.pct != null) {
         const earlyLate = springProgress.median_diff_days != null
           ? (springProgress.median_diff_days < -2 ? `${Math.abs(springProgress.median_diff_days)} dagar tidig`
             : springProgress.median_diff_days > 2 ? `${springProgress.median_diff_days} dagar sen`
-            : "i fas")
+            : "i fas med normalt")
           : "";
-        html += `<div class="summary-card">
-          <div class="label">Vårens framsteg</div>
-          <div class="value">${springProgress.pct}%</div>
-          <div class="detail">${springProgress.arrived} av ${springProgress.total} flyttfåglar</div>
-          ${earlyLate ? `<div class="detail compare ${springProgress.median_diff_days < -2 ? "up" : springProgress.median_diff_days > 2 ? "down" : ""}">${earlyLate}</div>` : ""}
-        </div>`;
+
+        html += `<div class="spring-meter">
+          <span class="meter-label">Vårens flyttfåglar</span>
+          <div class="meter-bar"><div class="meter-fill" style="width:${springProgress.pct}%"></div></div>
+          <span class="meter-pct">${springProgress.pct}%</span>
+        </div>
+        <div class="spring-detail">${springProgress.arrived} av ${springProgress.total} förväntade arter har anlänt${earlyLate ? ` · Medianen ${earlyLate}` : ""}</div>`;
       }
 
       html += `</div>`;
 
-      // Map – after summary cards, like statistik.html
-      html += `<div class="map-section">
-        <h2>Karta – veckans observationer</h2>
-        <div id="weekMap"></div>
-      </div>`;
+      // ── 3. First of year ──
+      html += `<div class="section-title">Nytt för säsongen <span class="badge badge-purple">${highlights.firstOfYear.length}</span></div>`;
+      if (highlights.firstOfYear.length > 0) {
+        html += `<div class="highlights">`;
+        for (const sp of highlights.firstOfYear) {
+          let contextParts = [];
+          contextParts.push(`Först sedd ${formatDateSwedish(sp.firstDate)}`);
+          if (sp.historicalTypical) contextParts.push(`Normalt först ${sp.historicalTypical}`);
+          if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
 
-      // "Håll utkik efter" – species expected in the next 21 days but not yet reported this year
+          const speciesLink = `<a href="statistik.html?art=${toSlug(sp.name)}" style="color:inherit">${sp.name}</a>`;
+          const firstObsLink = sp.firstUrl ? ` · <a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Visa obs</a>` : "";
+
+          html += `<div class="highlight-card first-of-year">
+            <div class="highlight-content">
+              <div class="species">${speciesLink} <span class="badge badge-purple">Årets första</span>${redlistBadgeHtml(sp.redlist)}</div>
+              <div class="context">${contextParts.join(" · ")}${firstObsLink}</div>
+            </div>
+          </div>`;
+        }
+        html += `</div>`;
+      } else {
+        html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
+      }
+
+      // ── 4. Watch for ──
       if (phenology && Object.keys(phenology).length > 0) {
         const currentDoy = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
         const lookAhead = [];
@@ -363,9 +494,9 @@
         }
         lookAhead.sort((a, b) => a.avgDoy - b.avgDoy);
         if (lookAhead.length > 0) {
-          html += `<div class="section-title">Håll utkik efter <span class="badge">${lookAhead.length}</span></div>`;
+          html += `<div class="section-title">Håll utkik efter <span class="badge badge-green">${lookAhead.length}</span></div>`;
           html += `<div class="highlights">${lookAhead.map(s => `
-            <div class="highlight-card" style="border-left:4px solid var(--accent)">
+            <div class="highlight-card watch">
               <div class="highlight-content">
                 <div class="species"><a href="statistik.html?art=${toSlug(s.name)}" style="color:inherit">${s.name}</a></div>
                 <div class="context">Brukar komma runt ${s.avgDate} – inte sedd i år ännu</div>
@@ -375,185 +506,260 @@
         }
       }
 
-      // First of year section
-      html += `<div class="section-title">Nya observationer för året från veckan som gått <span class="badge badge-purple">${highlights.firstOfYear.length}</span></div>`;
-      if (highlights.firstOfYear.length > 0) {
+      // ── 5. Weekly highlights ──
+      if (highlights.topHighlights.length > 0) {
+        html += `<div class="section-title">Veckans höjdpunkter <span class="badge badge-orange">${highlights.topHighlights.length}</span></div>`;
         html += `<div class="highlights">`;
-        for (const sp of highlights.firstOfYear) {
-          let contextParts = [];
-          contextParts.push(`Först sedd ${formatDateSwedish(sp.firstDate)}`);
-          if (sp.historicalTypical) contextParts.push(`Normalt först ${sp.historicalTypical}`);
-          if (sp.historicalEarliest) contextParts.push(`Tidigast ${sp.historicalEarliest}${sp.earliestYear ? ` (${sp.earliestYear})` : ""}`);
-          const context = contextParts.join(" · ");
+        for (const sp of highlights.topHighlights) {
+          const speciesLink = `<a href="statistik.html?art=${toSlug(sp.name)}" style="color:inherit">${sp.name}</a>`;
+          const badges = sp.reasons.map(r => {
+            if (r.includes("Sällsynt")) return `<span class="badge badge-orange">${r}</span>`;
+            if (r.includes("Ovanlig")) return `<span class="badge badge-orange">${r}</span>`;
+            if (r.includes("Årets första")) return `<span class="badge badge-purple">${r}</span>`;
+            if (r.includes("Rödlistad") || r.includes("Nära hotad")) return `<span class="badge badge-red">${r}</span>`;
+            if (r.includes("antal") || r.includes("ex")) return `<span class="badge badge-blue">${r}</span>`;
+            return `<span class="badge badge-green">${r}</span>`;
+          }).join(" ");
 
-          const speciesLink = sp.taxonId ? `<a href="statistik.html?art=${toSlug(sp.name)}" style="color:inherit">${sp.name}</a>` : sp.name;
-          const firstObsLink = sp.firstUrl ? ` · <a href="${sp.firstUrl}" target="_blank" rel="noopener" style="color:var(--accent)">Visa obs</a>` : "";
+          const obs = sp.bestObs;
+          const loc = obs?.location?.locality || "";
+          const date = obs?.event?.startDate ? formatDateSwedish(obs.event.startDate) : "";
+          const detailParts = [date, loc].filter(Boolean);
 
-          html += `<div class="highlight-card first-of-year">
+          html += `<div class="highlight-card notable">
             <div class="highlight-content">
-              <div class="species">${speciesLink} <span class="badge badge-purple">Årets första</span></div>
-              <div class="context">${context}${firstObsLink}</div>
+              <div class="species">${speciesLink} ${badges}</div>
+              ${detailParts.length ? `<div class="context">${detailParts.join(" · ")} · ${sp.totalCount} obs i veckan</div>` : ""}
             </div>
           </div>`;
         }
         html += `</div>`;
-      } else {
-        html += `<p class="no-highlights">Inga nya arter för säsongen denna vecka.</p>`;
       }
 
-      // Chart
+      // ── 6. Species composition donut ──
+      const groupCounts = {};
+      for (const sp of liveData.speciesList) {
+        const group = birdGroups[sp.taxonId] || "Övriga";
+        groupCounts[group] = (groupCounts[group] || 0) + 1;
+      }
+      const sortedGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]);
+
       html += `<div class="chart-section">
-        <h2>Aktivitet per dag</h2>
-        <div class="chart-container"><canvas id="dailyChart"></canvas></div>
+        <h2>Artfördelning per grupp</h2>
+        <div class="donut-layout">
+          <div class="donut-chart-wrap">
+            <canvas id="donutChart"></canvas>
+            <div class="donut-center">
+              <div class="big">${liveData.uniqueSpecies}</div>
+              <div class="sub">arter</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
       </div>`;
 
-      // Full species table
-      html += `<div class="section-title">Alla arter denna vecka (${liveData.speciesList.length})</div>`;
-      html += `<table class="species-table">
-        <thead><tr>
-          <th>Art</th>
-          <th>Antal</th>
-          <th>Dagar</th>
-          <th class="hist-col">Status</th>
-        </tr></thead><tbody>`;
-
-      const firstOfYearNames = new Set(highlights.firstOfYear.map(s => s.name));
-
-      for (const sp of liveData.speciesList) {
-        let statusBadges = "";
-        if (firstOfYearNames.has(sp.name)) statusBadges += `<span class="badge badge-purple">Årets 1:a</span> `;
-        const r = rarity[sp.taxonId];
-        if (r) {
-          if (r.avg_per_year < 2) statusBadges += `<span class="badge badge-orange">Sällsynt · ${r.avg_per_year} obs/år</span> `;
-          else if (r.avg_per_year < 5) statusBadges += `<span class="badge badge-green">Ovanlig · ${r.avg_per_year} obs/år</span> `;
-          else statusBadges += `<span class="badge badge-green">Fåtalig · ${r.avg_per_year} obs/år</span> `;
-        }
-        const rlBadge = redlistBadgeHtml(sp.redlist);
-
-        const dots = liveData.allDates.map(d =>
-          `<div class="day-dot${sp.daysSeen.includes(d) ? " active" : ""}" title="${formatDayShort(d)}"></div>`
-        ).join("");
-
-        html += `<tr>
-          <td><span class="species-name">${sp.name}</span>${rlBadge}<br><span class="scientific">${sp.scientific}</span></td>
-          <td>${sp.totalCount}</td>
-          <td><div class="days-dots">${dots}</div></td>
-          <td class="hist-col">${statusBadges || "–"}</td>
-        </tr>`;
-      }
-
-      html += `</tbody></table>`;
-
       html += `<footer>
-        Fenologi baserad på senaste 5 åren (exkl. januariobservationer) ·
         Data från <a href="https://www.artportalen.se">Artportalen</a>, Ringmärkningscentralen m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a> ·
+        Fenologi baserad på senaste 5 åren ·
         Uppdaterad ${new Date().toLocaleString("sv-SE")}
       </footer>`;
 
       container.innerHTML = html;
-      renderChart(liveData.dailyStats);
-      renderMap(records);
+
+      // Render charts and map
+      renderAccumulation(accumData);
+      renderDonut(sortedGroups);
+      renderHeatmap(records);
     }
 
-    function renderChart(dailyStats) {
-      const ctx = document.getElementById("dailyChart");
-      if (!ctx) return;
+    // ── Charts ──
 
-      const labels = dailyStats.map(d => {
-        const date = new Date(d.date);
-        return date.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "numeric" });
-      });
+    function renderAccumulation(data) {
+      const ctx = document.getElementById("accumChart");
+      if (!ctx || !data) return;
+
+      const year = data.year;
+      const avgRange = data.avg_range || "";
+
+      // Convert sparse [date, count] arrays to chart points
+      function toPoints(arr) {
+        if (!arr || !arr.length) return [];
+        const today = new Date();
+        return arr.filter(([date]) => new Date(date) <= today)
+          .map(([date, count]) => ({ x: date, y: count }));
+      }
+
+      const thisYearPoints = toPoints(data.this_year);
+      const avgPoints = toPoints(data.avg_5yr);
+
+      // Temperature overlay (daily mean, right y-axis)
+      const tempPoints = (data.temperature || []).map(([date, temp]) => ({ x: date, y: temp }));
+      const hasTemp = tempPoints.length > 0;
+
+      const datasets = [
+        {
+          label: `${year}`,
+          data: thisYearPoints,
+          borderColor: "#2d6a4f",
+          backgroundColor: "rgba(45, 106, 79, 0.08)",
+          borderWidth: 2.5,
+          pointRadius: 0,
+          pointHitRadius: 8,
+          fill: true,
+          tension: 0.3,
+          yAxisID: "y",
+        },
+        {
+          label: `Snitt ${avgRange}`,
+          data: avgPoints,
+          borderColor: "#9ca3af",
+          borderDash: [6, 3],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHitRadius: 8,
+          fill: false,
+          tension: 0.3,
+          yAxisID: "y",
+        },
+      ];
+
+      if (hasTemp) {
+        datasets.push({
+          label: data.temp_station || "Dygnsmedeltemperatur",
+          data: tempPoints,
+          borderColor: "rgba(220, 38, 38, 0.4)",
+          backgroundColor: "rgba(220, 38, 38, 0.05)",
+          borderWidth: 1,
+          pointRadius: 0,
+          pointHitRadius: 8,
+          fill: true,
+          tension: 0.4,
+          yAxisID: "yTemp",
+        });
+      }
 
       new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Observationer",
-              data: dailyStats.map(d => d.obs),
-              backgroundColor: "rgba(45, 106, 79, 0.6)",
-              borderColor: "#2d6a4f",
-              borderWidth: 1,
-              borderRadius: 4,
-              yAxisID: "y",
-            },
-            {
-              label: "Arter",
-              data: dailyStats.map(d => d.species),
-              type: "line",
-              borderColor: "#b45309",
-              backgroundColor: "rgba(180, 83, 9, 0.1)",
-              borderWidth: 2,
-              pointRadius: 4,
-              pointBackgroundColor: "#b45309",
-              fill: true,
-              tension: 0.3,
-              yAxisID: "y1",
-            },
-          ],
-        },
+        type: "line",
+        data: { datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           interaction: { mode: "index", intersect: false },
-          plugins: { legend: { position: "top" } },
+          plugins: {
+            legend: { position: "top" },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  if (!items.length) return "";
+                  return formatDateSwedish(items[0].raw.x);
+                },
+                label: (item) => {
+                  if (item.dataset.yAxisID === "yTemp") return `${item.dataset.label}: ${item.raw.y}°C`;
+                  return `${item.dataset.label}: ${item.raw.y} arter`;
+                },
+              },
+            },
+          },
           scales: {
+            x: {
+              type: "time",
+              time: { unit: "month", displayFormats: { month: "MMM" } },
+              grid: { display: false },
+            },
             y: {
-              type: "linear",
-              position: "left",
-              title: { display: true, text: "Observationer" },
+              title: { display: true, text: "Antal arter" },
               beginAtZero: true,
               grid: { color: "rgba(0,0,0,0.05)" },
             },
-            y1: {
-              type: "linear",
-              position: "right",
-              title: { display: true, text: "Arter" },
-              beginAtZero: true,
-              grid: { drawOnChartArea: false },
+            ...(hasTemp ? {
+              yTemp: {
+                position: "right",
+                title: { display: true, text: "°C" },
+                grid: { drawOnChartArea: false },
+              },
+            } : {}),
+          },
+        },
+      });
+    }
+
+    function renderDonut(sortedGroups) {
+      const ctx = document.getElementById("donutChart");
+      if (!ctx) return;
+
+      const labels = sortedGroups.map(([g]) => g);
+      const values = sortedGroups.map(([, c]) => c);
+      const colors = sortedGroups.map(([g]) => GROUP_COLORS[g] || "#d1d5db");
+
+      // Build legend
+      const legendEl = document.getElementById("donutLegend");
+      if (legendEl) {
+        legendEl.innerHTML = sortedGroups.map(([g, c], i) =>
+          `<div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background:${colors[i]}"></div>
+            <span>${g}</span>
+            <span class="donut-legend-count">${c}</span>
+          </div>`
+        ).join("");
+      }
+
+      new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderWidth: 2,
+            borderColor: "#fff",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: "62%",
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (item) => `${item.label}: ${item.raw} arter`,
+              },
             },
           },
         },
       });
     }
 
-    function renderMap(records) {
+    function renderHeatmap(records) {
       const mapEl = document.getElementById("weekMap");
       if (!mapEl) return;
 
       const map = initMap("weekMap");
-      const markers = L.layerGroup().addTo(map);
 
+      // Build heatmap points
+      const points = [];
       for (const obs of records) {
         const lat = obs.location?.decimalLatitude;
         const lng = obs.location?.decimalLongitude;
         if (!lat || !lng) continue;
-
-        const name = obs.taxon?.vernacularName || obs.taxon?.scientificName || "Okänd";
-        const sci = obs.taxon?.scientificName || "";
-        const count = obs.occurrence?.individualCount;
-        const date = obs.event?.startDate ? formatDateSwedish(obs.event.startDate) : "";
-        const loc = obs.location?.locality || "";
-        const observer = obs.occurrence?.reportedBy || "";
-
-        const marker = L.circleMarker([lat, lng], {
-          radius: 5,
-          color: "#2d6a4f",
-          fillColor: "#2d6a4f",
-          fillOpacity: 0.6,
-          weight: 1,
-        }).bindPopup(
-          `<strong>${name}</strong><br>${sci}` +
-          (count ? `<br>${count} ex` : "") +
-          (date ? `<br>${date}` : "") +
-          (loc ? `<br>${loc}` : "") +
-          (observer ? `<br><small>${observer}</small>` : "")
-        );
-        markers.addLayer(marker);
+        points.push({ lat, lng, count: 1 });
       }
 
-      // Locality markers (visible when zoomed in)
+      // Aggregate by location (round to ~100m grid)
+      const grid = {};
+      for (const p of points) {
+        const key = `${(p.lat * 1000 | 0)},${(p.lng * 1000 | 0)}`;
+        if (!grid[key]) grid[key] = { lat: p.lat, lng: p.lng, count: 0 };
+        grid[key].count++;
+      }
+      const heatPoints = Object.values(grid);
+
+      if (heatPoints.length > 0) {
+        const layer = createHeatLayer(heatPoints);
+        if (layer) layer.addTo(map);
+      }
+
+      // Locality markers (zoomed in)
       const localities = {};
       for (const obs of records) {
         const loc = obs.location?.locality;
@@ -565,7 +771,6 @@
         const sp = obs.taxon?.vernacularName || obs.taxon?.scientificName;
         if (sp) localities[loc].species.add(sp);
       }
-
       addLocalityMarkers(map, Object.values(localities));
     }
 
@@ -573,15 +778,18 @@
 
     async function init() {
       try {
-        // Fetch live data and historical context in parallel
-        const [liveResp, contextResp] = await Promise.all([
-          fetch(`api.php?radius=10&days=${DAYS_BACK}`),
-          fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}&days=${DAYS_BACK}`),
+        const year = new Date().getFullYear();
+        const [liveResp, contextResp, accumResp] = await Promise.all([
+          fetch(`api.php?days=${DAYS_BACK}`),
+          fetch(`stats-api.php?q=week_context&year=${year}&days=${DAYS_BACK}`),
+          fetch(`stats-api.php?q=accumulation&year=${year}`),
         ]);
 
         const liveRaw = await liveResp.json();
         let context = {};
-        try { context = await contextResp.json(); } catch (e) { console.warn("Could not load historical context:", e); }
+        let accumData = null;
+        try { context = await contextResp.json(); } catch (e) { console.warn("Context error:", e); }
+        try { accumData = await accumResp.json(); } catch (e) { console.warn("Accumulation error:", e); }
 
         if (liveRaw.error) {
           document.getElementById("main").innerHTML =
@@ -597,13 +805,8 @@
         }
 
         const liveData = processLiveData(records);
-        const highlights = crossReference(liveData, context);
-        const rarity = context.rarity || {};
-        const lastYearWeek = context.last_year_week || null;
-        const springProgress = context.spring_progress || null;
-        const phenology = context.phenology || {};
-        const yearFirsts = context.year_firsts || {};
-        render(liveData, highlights, records, rarity, lastYearWeek, springProgress, phenology, yearFirsts);
+        const highlights = findHighlights(liveData.speciesList, context);
+        render(liveData, highlights, records, context, accumData);
       } catch (err) {
         document.getElementById("main").innerHTML =
           `<div class="error">Kunde inte hämta data: ${err.message}</div>`;

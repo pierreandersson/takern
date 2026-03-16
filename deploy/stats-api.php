@@ -55,6 +55,37 @@ function doyToStr($doy) {
     return intval(date('j', $ts)) . ' ' . $months[intval(date('n', $ts)) - 1];
 }
 
+function getBirdGroup($order, $family) {
+    // Map taxonomic order + family to Swedish bird group names
+    $map = [
+        'Anseriformes' => 'Andfåglar',
+        'Accipitriformes' => 'Rovfåglar',
+        'Falconiformes' => 'Rovfåglar',
+        'Strigiformes' => 'Ugglor',
+        'Passeriformes' => 'Tättingar',
+        'Gruiformes' => 'Tran- & rallfåglar',
+        'Podicipediformes' => 'Doppingar',
+        'Piciformes' => 'Hackspettar',
+        'Columbiformes' => 'Duvor',
+        'Gaviiformes' => 'Lommar',
+        'Galliformes' => 'Hönsfåglar',
+        'Apodiformes' => 'Seglare',
+        'Cuculiformes' => 'Gökar',
+        'Suliformes' => 'Skarvar',
+        'Ciconiiformes' => 'Storkar',
+        'Caprimulgiformes' => 'Nattskärror',
+        'Coraciiformes' => 'Kungsfiskare m.fl.',
+    ];
+    // Charadriiformes split by family: waders vs gulls/terns
+    if ($order === 'Charadriiformes') {
+        $waderFamilies = ['Scolopacidae','Charadriidae','Haematopodidae','Recurvirostridae','Burhinidae'];
+        return in_array($family, $waderFamilies) ? 'Vadare' : 'Måsar & tärnor';
+    }
+    // Pelecaniformes: herons are the main group at Tåkern
+    if ($order === 'Pelecaniformes') return 'Hägrar';
+    return $map[$order] ?? 'Övriga';
+}
+
 function jsonOut($data) {
     global $cacheFile;
     $json = json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -619,6 +650,15 @@ if ($q === 'week_context') {
         ];
     }
 
+    // Bird group classification per taxon
+    $birdGroups = [];
+    $res = $db->query("SELECT DISTINCT taxon_id, taxonomic_order, family
+        FROM observations
+        WHERE vernacular_name IS NOT NULL AND taxonomic_order IS NOT NULL");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $birdGroups[strval($row['taxon_id'])] = getBirdGroup($row['taxonomic_order'], $row['family']);
+    }
+
     jsonOut([
         'year' => $year,
         'year_firsts' => $yearFirsts,
@@ -626,6 +666,133 @@ if ($q === 'week_context') {
         'rarity' => $rarity,
         'last_year_week' => $lastYearWeek,
         'spring_progress' => $springProgress,
+        'bird_groups' => $birdGroups,
+    ]);
+}
+
+// ── Species accumulation: cumulative unique species per day ──
+if ($q === 'accumulation') {
+    $year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
+
+    // Get first observation date per species for a single year
+    function getFirstDates($db, $yr) {
+        $stmt = $db->prepare("SELECT taxon_id, MIN(event_start_date) AS first_date
+            FROM observations
+            WHERE SUBSTR(event_start_date,1,4) = :year
+              AND vernacular_name IS NOT NULL
+            GROUP BY taxon_id
+            ORDER BY first_date");
+        $stmt->bindValue(':year', strval($yr), SQLITE3_TEXT);
+        $res = $stmt->execute();
+        $dates = [];
+        while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+            $d = $row['first_date'];
+            if (!isset($dates[$d])) $dates[$d] = 0;
+            $dates[$d]++;
+        }
+        ksort($dates);
+        $cumulative = [];
+        $total = 0;
+        foreach ($dates as $date => $count) {
+            $total += $count;
+            $cumulative[] = [$date, $total];
+        }
+        return $cumulative;
+    }
+
+    // 5-year average: accumulate per day-of-year, then average
+    function getAvgAccumulation($db, $year, $numYears = 5) {
+        $startYear = $year - $numYears;
+        $endYear = $year - 1;
+
+        // Get first DOY per species per year
+        $stmt = $db->prepare("SELECT taxon_id, SUBSTR(event_start_date,1,4) AS yr,
+            CAST(STRFTIME('%j', MIN(event_start_date)) AS INTEGER) AS first_doy
+            FROM observations
+            WHERE CAST(SUBSTR(event_start_date,1,4) AS INTEGER) >= :start
+              AND CAST(SUBSTR(event_start_date,1,4) AS INTEGER) <= :end
+              AND vernacular_name IS NOT NULL
+            GROUP BY taxon_id, SUBSTR(event_start_date,1,4)");
+        $stmt->bindValue(':start', $startYear, SQLITE3_INTEGER);
+        $stmt->bindValue(':end', $endYear, SQLITE3_INTEGER);
+        $res = $stmt->execute();
+
+        // Group by year: doy => count of new species
+        $yearData = []; // year => [doy => new_species_count]
+        while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+            $yr = $row['yr'];
+            $doy = intval($row['first_doy']);
+            if (!isset($yearData[$yr])) $yearData[$yr] = [];
+            if (!isset($yearData[$yr][$doy])) $yearData[$yr][$doy] = 0;
+            $yearData[$yr][$doy]++;
+        }
+
+        if (empty($yearData)) return [];
+
+        // Build cumulative curve per year, sampled at each DOY 1-366
+        $yearCurves = [];
+        foreach ($yearData as $yr => $doys) {
+            ksort($doys);
+            $curve = [];
+            $total = 0;
+            foreach ($doys as $doy => $count) {
+                $total += $count;
+                $curve[$doy] = $total;
+            }
+            $yearCurves[$yr] = $curve;
+        }
+
+        // Average across years at each DOY where at least one year has data
+        $allDoys = [];
+        foreach ($yearCurves as $curve) {
+            foreach (array_keys($curve) as $doy) $allDoys[$doy] = true;
+        }
+        ksort($allDoys);
+
+        $nYears = count($yearCurves);
+        $result = [];
+        foreach (array_keys($allDoys) as $doy) {
+            $sum = 0;
+            foreach ($yearCurves as $curve) {
+                // Find the cumulative value at or before this DOY
+                $val = 0;
+                foreach ($curve as $d => $v) {
+                    if ($d <= $doy) $val = $v;
+                    else break;
+                }
+                $sum += $val;
+            }
+            $avg = round($sum / $nYears, 1);
+            // Convert DOY to a date string (use current year for alignment)
+            $dateStr = date('Y-m-d', mktime(0, 0, 0, 1, $doy, $year));
+            $result[] = [$dateStr, $avg];
+        }
+
+        return $result;
+    }
+
+    // Daily mean temperature from SMHI (Härsnäs station 85180, 26km east of Tåkern)
+    $tempData = [];
+    $smhiUrl = 'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/2/station/85180/period/latest-months/data.json';
+    $smhiCtx = stream_context_create(['http' => ['timeout' => 10]]);
+    $smhiJson = @file_get_contents($smhiUrl, false, $smhiCtx);
+    if ($smhiJson) {
+        $smhi = json_decode($smhiJson, true);
+        foreach ($smhi['value'] ?? [] as $v) {
+            $date = $v['ref'] ?? '';
+            if (substr($date, 0, 4) === strval($year)) {
+                $tempData[] = [$date, floatval($v['value'])];
+            }
+        }
+    }
+
+    jsonOut([
+        'this_year' => getFirstDates($db, $year),
+        'avg_5yr' => getAvgAccumulation($db, $year, 5),
+        'temperature' => $tempData,
+        'temp_station' => 'Dygnsmedeltemperatur',
+        'year' => $year,
+        'avg_range' => ($year - 5) . '–' . ($year - 1),
     ]);
 }
 
@@ -650,7 +817,7 @@ if ($q === 'init') {
 }
 
 // ── Unknown endpoint ──
-echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=week_context, or ?q=init']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=week_context, ?q=accumulation, or ?q=init']);
 
 } catch (Throwable $e) {
     http_response_code(500);
