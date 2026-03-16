@@ -54,6 +54,19 @@ Sektioner: Sammanfattningskort (med förra årets jämförelse) → Heatmap-kart
 - **Artackumulering:** Endpoint `?q=accumulation&year=YYYY` – kumulativt unika arter per dag, 5-årssnitt, SMHI-temperatur
 - **Temperatur:** Dygnsmedeltemperatur från SMHI Härsnäs (station 85180, 26 km öster om Tåkern). Parameter 2, period latest-months.
 
+## Säsongstidslinje och trendanalys (statistik.html artsidor)
+Sektionen "Säsongens längd per år" på artsidor visar:
+1. **Horisontell tidslinje:** Varje år som en grön bar från första till sista obs, med månadsrutnät. Alla år visas utan scroll.
+2. **Trendanalys:** Tre scatterplots (Första obs, Sista obs, Säsongslängd) med Theil-Sen regressionslinjer.
+
+### Theil-Sen estimator
+- Beräknar medianen av alla parvis slopes – robust mot outliers (t.ex. övervintrande individer med jan-obs)
+- R² beräknas mot Theil-Sen-linjen (intercept = median av residualer)
+- Trender visas per decennium med färgkodning: grönt/↑ = positiv trend (tidigare första obs, senare sista obs, längre säsong), orange/↓ = negativ
+- `goodDir`-parameter styr vad som räknas som positivt: -1 för första obs (tidigare = bra), +1 för sista obs och säsongslängd (senare/längre = bra)
+- Trender <0.5 dagar/decennium visas som "Stabil", R² <0.15 markeras "(svag)"
+- **Pågående år exkluderas** från trendberäkning (ofullständig data)
+
 ## Säkerhet
 - .htaccess blockerar takern_api_key.txt och cron_secret.txt
 - Cron-nyckel roterad 2026-03-15 (gammal var exponerad via webbläsaren)
@@ -67,6 +80,5 @@ Sektioner: Sammanfattningskort (med förra årets jämförelse) → Heatmap-kart
 
 ## Utvecklingsplan
 Se IDEAS.md för fullständig att-göra-lista. Nästa steg:
-- statistik.html: trendpilar på artsidor (▲▼ senaste 5 åren)
 - Fas 3: Artackumulering, Fenologikalender
 - Fas 4: Om-sida, Artguide, Lokalsidor

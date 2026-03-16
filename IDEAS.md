@@ -212,7 +212,7 @@ Nu rensas cachen manuellt via cron-update.php eller clear_cache.sh.
 - [x] statistik.html: permalänkar för artsidor (?art=sangsvan)
 - [x] Deploy: auto-clear + warm cache efter FTP-upload
 - [x] Säkerhet: .htaccess blockerar cron_secret.txt, nyckel roterad
-- [ ] statistik.html: trendpilar på artsidor (▲▼ senaste 5 åren)
+- [x] statistik.html: säsongstidslinje + trendanalys på artsidor (Theil-Sen regression)
 - [x] index.html: tidsomfångs-väljare – knappar: Idag, +1...+6 dagar (hybrid live API + SQLite)
 - [x] index.html: ta bort radieväljare (fast 15 km, konsekvent med DB)
 - [x] index.html: Art A–Ö grupperad vy med expanderbara detaljer + Artportalen-länkar

@@ -270,8 +270,14 @@ Nås via sökning eller permalänk (`?art=slug`). Slug-format: å/ä→a, ö→o
 **Mest rapporterade lokaler:**
 - Lista med lokalnamn och obs-antal
 
-**Första och sista obs per år:**
-- Tabell: år, första obs-datum, sista obs-datum (nyast först)
+**Säsongstidslinje:**
+- Visuell tidslinje med horisontella staplar per år (första → sista obs)
+- Månadsrutnät som referens, hover visar exakta datum
+- Trendanalys med Theil-Sen regression (robust mot outliers som övervintrare)
+- Tre scatter-plottar: Första obs, Sista obs, Säsongslängd
+- Trendlinjer med riktning, styrka (dagar/decennium) och R²-indikator
+- Innevarande år exkluderas från trendberäkningen (ofullständig data)
+- Trösklar: <0.5 dagar/decennium = "Stabil", R² < 0.15 = "(svag)", min 4 datapunkter
 
 **Största noterade antal per år:**
 - Stapeldiagram med högsta enskilda obs per år
