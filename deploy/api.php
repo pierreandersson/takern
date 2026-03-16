@@ -33,6 +33,9 @@ if (isset($_GET['days'])) {
     }
 }
 
+// Optional taxon filter – when set, search for this specific taxon instead of all birds
+$TAXON_ID = isset($_GET['taxon']) ? intval($_GET['taxon']) : null;
+
 // ── Helper: convert SQLite row to SOS-API record format ──
 function sqliteToRecord($row) {
     $startDate = $row['event_start_date'];
@@ -112,10 +115,9 @@ if ($DAYS_BACK <= 1) {
 
 // ── Fetch from live SOS-API ──
 $search_body = [
-    'taxon' => [
-        'ids' => [4000104],
-        'includeUnderlyingTaxa' => true,
-    ],
+    'taxon' => $TAXON_ID
+        ? ['ids' => [$TAXON_ID], 'includeUnderlyingTaxa' => false]
+        : ['ids' => [4000104], 'includeUnderlyingTaxa' => true],
     'date' => [
         'startDate' => $api_date_from,
         'endDate' => $date_to,

@@ -1021,6 +1021,84 @@
       }
     });
 
+    // ── Recent observations helpers ──
+
+    function renderRecentObs(items) {
+      if (!items || items.length === 0) return '<div style="color:var(--muted);font-size:0.9rem">Inga observationer</div>';
+      return items.slice(0, 5).map(o => {
+        const date = formatDateSwedish(o.date);
+        const time = o.time && o.time !== "00:00" ? ` ${o.time}` : "";
+        const loc = o.locality || "";
+        const obs = o.observer ? `<span style="color:var(--muted)">${o.observer}</span>` : "";
+        const link = o.url ? `<a href="${o.url}" target="_blank" rel="noopener" style="color:var(--accent);margin-left:0.3rem">↗</a>` : "";
+        const src = o.source ? `<span style="font-size:0.75rem;color:var(--muted);background:var(--border);padding:0.1rem 0.4rem;border-radius:3px;margin-left:0.3rem">${o.source}</span>` : "";
+        return `<div style="font-size:0.9rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
+          ${loc}${loc && obs ? " · " : ""}${obs}${src}
+          <span style="color:var(--muted);float:right">${date}${time}${link}</span>
+        </div>`;
+      }).join("");
+    }
+
+    function mergeRecentObs(cached, live) {
+      // Convert live API records to the same format as cached recent obs
+      const liveItems = live.map(r => {
+        const startDate = r.event?.startDate || "";
+        const date = startDate.substring(0, 10);
+        const timePart = startDate.length > 10 ? startDate.substring(11, 16) : null;
+        const time = timePart && timePart !== "00:00" ? timePart : null;
+        return {
+          date,
+          time,
+          locality: r.location?.locality || "",
+          observer: r.occurrence?.recordedBy || null,
+          url: (() => {
+            const oid = r.occurrence?.occurrenceId || "";
+            const m = oid.match(/artportalen\.se:sighting:(\d+)/);
+            return m ? `https://artportalen.se/sighting/${m[1]}` : null;
+          })(),
+          source: "Artportalen",
+        };
+      });
+      // Merge: dedup on date+locality, live items take priority (are fresher)
+      const seen = new Set();
+      const merged = [];
+      for (const o of liveItems) {
+        const key = (o.date || "") + "|" + (o.locality || "");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(o);
+      }
+      for (const o of cached) {
+        const key = (o.date || "") + "|" + (o.locality || "");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(o);
+      }
+      // Sort by date+time descending
+      merged.sort((a, b) => {
+        const da = (a.date || "") + (a.time || "");
+        const db = (b.date || "") + (b.time || "");
+        return db.localeCompare(da);
+      });
+      return merged;
+    }
+
+    async function refreshRecentObs(taxonId, cachedRecent) {
+      try {
+        const resp = await fetch(`api.php?days=1&taxon=${taxonId}`);
+        const data = await resp.json();
+        if (!data.records || data.records.length === 0) return;
+        // Filter to only this taxon (in case API returns related taxa)
+        const taxonRecords = data.records.filter(r => r.taxon?.id === taxonId);
+        if (taxonRecords.length === 0) return;
+        const merged = mergeRecentObs(cachedRecent || [], taxonRecords);
+        const el = document.getElementById("recent-obs-list");
+        if (el) el.innerHTML = renderRecentObs(merged);
+      } catch (e) {
+        // Silently fail – cached data is still shown
+      }
+    }
+
     // ── Species detail ──
 
     async function loadSpecies(taxonId, skipPush) {
@@ -1085,26 +1163,13 @@
         </div>
       </div>`;
 
-      // Recent observations
-      if (sp.recent && sp.recent.length > 0) {
-        html += `<div class="chart-section" id="sec-senaste">
-          <h2>Senaste observationer</h2>
-          <div style="display:flex;flex-direction:column;gap:0.4rem">
-            ${sp.recent.slice(0, 5).map(o => {
-              const date = formatDateSwedish(o.date);
-              const time = o.time && o.time !== "00:00" ? ` ${o.time}` : "";
-              const loc = o.locality || "";
-              const obs = o.observer ? `<span style="color:var(--muted)">${o.observer}</span>` : "";
-              const link = o.url ? `<a href="${o.url}" target="_blank" rel="noopener" style="color:var(--accent);margin-left:0.3rem">↗</a>` : "";
-              const src = o.source ? `<span style="font-size:0.75rem;color:var(--muted);background:var(--border);padding:0.1rem 0.4rem;border-radius:3px;margin-left:0.3rem">${o.source}</span>` : "";
-              return `<div style="font-size:0.9rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
-                ${loc}${loc && obs ? " · " : ""}${obs}${src}
-                <span style="color:var(--muted);float:right">${date}${time}${link}</span>
-              </div>`;
-            }).join("")}
-          </div>
-        </div>`;
-      }
+      // Recent observations – rendered with cached data, then updated with live API
+      html += `<div class="chart-section" id="sec-senaste">
+        <h2>Senaste observationer</h2>
+        <div id="recent-obs-list" style="display:flex;flex-direction:column;gap:0.4rem">
+          ${renderRecentObs(sp.recent || [])}
+        </div>
+      </div>`;
 
       // 1. Geo heatmap – VAR
       html += `<div class="chart-section" id="sec-sp-karta">
@@ -1299,6 +1364,9 @@
       }
 
       detail.innerHTML = html;
+
+      // Refresh recent observations with live API data (async, non-blocking)
+      refreshRecentObs(taxonId, sp.recent || []);
 
       // Section nav for species detail
       updateSectionNav(SPECIES_SECTIONS);
