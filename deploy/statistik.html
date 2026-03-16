@@ -13,6 +13,42 @@
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
+    /* Section nav */
+    .section-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 1rem;
+      gap: 0;
+      min-height: 0;
+      transition: min-height 0.2s;
+    }
+    .section-nav:empty { border-bottom: none; }
+    .section-nav::-webkit-scrollbar { display: none; }
+    .section-nav a {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .section-nav a:hover { color: var(--accent); }
+    .section-nav a.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+    [id^="sec-"] { scroll-margin-top: 3rem; }
+
     /* Search */
     .search-box {
       position: relative;
@@ -246,6 +282,110 @@
       color: transparent;
     }
 
+    /* Trends section */
+    .trends-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .trends-section h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+    }
+    .trends-section .trends-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .trends-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .trends-col h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .trends-col h3 .arrow-up { color: #2d6a4f; }
+    .trends-col h3 .arrow-down { color: #c0392b; }
+    .trend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .trend-item:last-child { border-bottom: none; }
+    .trend-item:hover { background: var(--accent-light); margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: 6px; }
+    .trend-rank {
+      color: var(--muted);
+      font-size: 0.8rem;
+      width: 1.5rem;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .trend-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .trend-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .trend-rates {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .trend-sparkline {
+      width: 60px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .trend-change {
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-width: 2.5rem;
+      text-align: right;
+    }
+    .trend-change.up { color: #2d6a4f; }
+    .trend-change.down { color: #c0392b; }
+    .trends-method {
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .trends-method summary {
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .trends-method p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0.5rem 0 0;
+    }
+
+    @media (max-width: 700px) {
+      .trends-columns { grid-template-columns: 1fr; }
+      .trend-sparkline { width: 48px; height: 20px; }
+    }
+
     @media (max-width: 600px) {
       .species-stats { grid-template-columns: 1fr 1fr; }
     }
@@ -265,6 +405,8 @@
       <a href="om.html">Om</a>
     </nav>
   </header>
+
+  <nav class="section-nav" id="section-nav"></nav>
 
   <div class="container">
     <!-- Summary cards (shown immediately with skeleton) -->
@@ -320,6 +462,74 @@
       return `${d.getDate()} ${MONTHS_SV[d.getMonth()]}`;
     }
 
+    // ── Section navigation ──
+    const OVERVIEW_SECTIONS = [
+      { id: "sec-karta", label: "Karta" },
+      { id: "trends-container", label: "Trender" },
+      { id: "sec-arter", label: "Arter" },
+      { id: "sec-artrikedom", label: "Artrikedom" },
+      { id: "sec-nyaarter", label: "Nya arter" },
+      { id: "sec-rekord", label: "Rekord" },
+      { id: "sec-perar", label: "Per år" },
+      { id: "sec-aktivitet", label: "Aktivitet" },
+      { id: "sec-observatorer", label: "Observatörer" },
+    ];
+    const SPECIES_SECTIONS = [
+      { id: "sec-senaste", label: "Senaste" },
+      { id: "sec-sp-karta", label: "Karta" },
+      { id: "sec-sp-sasong", label: "Säsong" },
+      { id: "sec-sp-lokaler", label: "Lokaler" },
+      { id: "sec-sp-fenologi", label: "Fenologi" },
+      { id: "sec-sp-antal", label: "Antal" },
+    ];
+
+    let sectionObserver = null;
+
+    function updateSectionNav(sections) {
+      const nav = document.getElementById("section-nav");
+      nav.innerHTML = sections.map(s =>
+        `<a href="#${s.id}" data-sec="${s.id}">${s.label}</a>`
+      ).join("");
+
+      // Smooth scroll on click
+      nav.querySelectorAll("a").forEach(a => {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          const el = document.getElementById(a.dataset.sec);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      // Observe sections for active highlighting
+      if (sectionObserver) sectionObserver.disconnect();
+      const navLinks = nav.querySelectorAll("a");
+      sectionObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const link = nav.querySelector(`[data-sec="${entry.target.id}"]`);
+          if (link) {
+            if (entry.isIntersecting) link.classList.add("active");
+            else link.classList.remove("active");
+          }
+        });
+        // If none active, activate first visible
+        if (!nav.querySelector("a.active")) {
+          const first = sections.find(s => {
+            const el = document.getElementById(s.id);
+            return el && el.getBoundingClientRect().bottom > 0;
+          });
+          if (first) nav.querySelector(`[data-sec="${first.id}"]`)?.classList.add("active");
+        }
+        // Auto-scroll nav to show active item
+        const active = nav.querySelector("a.active");
+        if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }, { rootMargin: "-50px 0px -60% 0px", threshold: 0 });
+
+      sections.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (el) sectionObserver.observe(el);
+      });
+    }
+
     // ── Load overview ──
 
     async function loadOverview() {
@@ -339,8 +549,8 @@
       const section = document.getElementById("overview-section");
       let html = "";
 
-      // 2. Geo heatmap + localities
-      html += `<div class="chart-section">
+      // 1. Geo heatmap + localities
+      html += `<div class="chart-section" id="sec-karta">
         <h2>Geografisk spridning av observationer</h2>
         <div id="overviewMap" class="geo-heatmap"></div>
         ${overview.top_localities && overview.top_localities.length > 0 ? `
@@ -356,17 +566,11 @@
         ` : ""}
       </div>`;
 
-      // 3. Species richness per month
-      if (overview.richness_per_month) {
-        const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
-        html += `<div class="chart-section">
-          <h2>Artrikedom per månad</h2>
-          <div class="chart-container"><canvas id="richnessChart"></canvas></div>
-        </div>`;
-      }
+      // 2. Trends placeholder (filled async)
+      html += `<div id="trends-container"></div>`;
 
-      // 4. Top 20 species
-      html += `<div class="section-title">De mest rapporterade arterna 2006–2026</div>
+      // 3. Top 20 species
+      html += `<div class="section-title" id="sec-arter">De mest rapporterade arterna 2006–2026</div>
       <div class="top-list">
         ${overview.top_species.map((s, i) => `
           <div class="top-item" data-taxon="${s.taxon_id}">
@@ -378,7 +582,56 @@
         `).join("")}
       </div>`;
 
-      // 5. Rapporteringsaktivitet per månad (heatmap table)
+      // 4. Species richness per month
+      if (overview.richness_per_month) {
+        const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+        html += `<div class="chart-section" id="sec-artrikedom">
+          <h2>Artrikedom per månad</h2>
+          <div class="chart-container"><canvas id="richnessChart"></canvas></div>
+        </div>`;
+      }
+
+      // 5. New species per year (skip first year – all species are "new")
+      if (overview.new_species_per_year) {
+        const allNsYears = Object.keys(overview.new_species_per_year).sort();
+        const nsYears = allNsYears.slice(1);
+        html += `<div class="chart-section" id="sec-nyaarter">
+          <h2>Nya arter per år</h2>
+          <div class="chart-container"><canvas id="newSpeciesChart"></canvas></div>
+          <div style="max-height:200px;overflow-y:auto;margin-top:1rem">
+            ${nsYears.reverse().map(y => {
+              const d = overview.new_species_per_year[y];
+              return d.count > 0 ? `<div style="padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+                <strong>${y}</strong> – ${d.count} nya: <span style="color:var(--muted)">${d.names}</span>
+              </div>` : "";
+            }).join("")}
+          </div>
+        </div>`;
+      }
+
+      // 6. Record counts
+      html += `<div class="section-title" id="sec-rekord">Största rapporterade antal – enskilda observationer</div>
+      <div class="record-list">
+        ${overview.record_counts.slice(0, 10).map(r => `
+          <div class="record-item" data-taxon="${r.taxon_id}">
+            <div>
+              <span class="name" style="font-weight:600;cursor:pointer">${r.name}</span>
+              <div class="meta">${r.date}${r.locality ? ` · ${r.locality}` : ""}${r.url ? ` · <a href="${r.url}" target="_blank" rel="noopener" style="color:var(--accent)">Artportalen ↗</a>` : ""}</div>
+            </div>
+            <div class="count">${r.count.toLocaleString("sv")} ex</div>
+          </div>
+        `).join("")}
+      </div>`;
+
+      // 7. Observations per year chart
+      const years = Object.keys(overview.observations_per_year).sort();
+      const counts = years.map(y => overview.observations_per_year[y]);
+      html += `<div class="chart-section" id="sec-perar">
+        <h2>Antal enskilda rapporter från Tåkern per år</h2>
+        <div class="chart-container"><canvas id="yearChart"></canvas></div>
+      </div>`;
+
+      // 8. Rapporteringsaktivitet per månad (heatmap table)
       if (overview.heatmap) {
         const hYears = Object.keys(overview.heatmap).sort();
         const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
@@ -395,7 +648,7 @@
           return `background:rgb(${r},${g},${b});color:#1b4332`;
         }
 
-        html += `<div class="heatmap-section">
+        html += `<div class="heatmap-section" id="sec-aktivitet">
           <h2>Rapporteringsaktivitet per månad</h2>
           <table class="heatmap-table">
             <thead><tr><th></th>${months.map(m => `<th>${m}</th>`).join("")}</tr></thead>
@@ -414,50 +667,10 @@
         </div>`;
       }
 
-      // 6. Observations per year chart
-      const years = Object.keys(overview.observations_per_year).sort();
-      const counts = years.map(y => overview.observations_per_year[y]);
-      html += `<div class="chart-section">
-        <h2>Antal enskilda rapporter från Tåkern per år</h2>
-        <div class="chart-container"><canvas id="yearChart"></canvas></div>
-      </div>`;
-
-      // 7. New species per year (skip first year – all species are "new")
-      if (overview.new_species_per_year) {
-        const allNsYears = Object.keys(overview.new_species_per_year).sort();
-        const nsYears = allNsYears.slice(1);
-        html += `<div class="chart-section">
-          <h2>Nya arter per år</h2>
-          <div class="chart-container"><canvas id="newSpeciesChart"></canvas></div>
-          <div style="max-height:200px;overflow-y:auto;margin-top:1rem">
-            ${nsYears.reverse().map(y => {
-              const d = overview.new_species_per_year[y];
-              return d.count > 0 ? `<div style="padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.85rem">
-                <strong>${y}</strong> – ${d.count} nya: <span style="color:var(--muted)">${d.names}</span>
-              </div>` : "";
-            }).join("")}
-          </div>
-        </div>`;
-      }
-
-      // 8. Record counts
-      html += `<div class="section-title">Största rapporterade antal – enskilda observationer</div>
-      <div class="record-list">
-        ${overview.record_counts.slice(0, 10).map(r => `
-          <div class="record-item" data-taxon="${r.taxon_id}">
-            <div>
-              <span class="name" style="font-weight:600;cursor:pointer">${r.name}</span>
-              <div class="meta">${r.date}${r.locality ? ` · ${r.locality}` : ""}${r.url ? ` · <a href="${r.url}" target="_blank" rel="noopener" style="color:var(--accent)">Artportalen ↗</a>` : ""}</div>
-            </div>
-            <div class="count">${r.count.toLocaleString("sv")} ex</div>
-          </div>
-        `).join("")}
-      </div>`;
-
       // 9. Top observers per year
       if (overview.top_observers) {
         const obsYears = Object.keys(overview.top_observers).sort().reverse();
-        html += `<div class="chart-section">
+        html += `<div class="chart-section" id="sec-observatorer">
           <h2>Mest aktiva observatörer</h2>
           <div style="max-height:400px;overflow-y:auto">
             ${obsYears.map(y => `
@@ -633,6 +846,98 @@
 
       // Wire up search
       setupSearch();
+
+      // Section nav for overview
+      updateSectionNav(OVERVIEW_SECTIONS);
+    }
+
+    // ── Trends: "Tåkerns fågelfauna i förändring" ──
+
+    function drawSparkline(canvas, values, color) {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width = canvas.offsetWidth * 2;
+      const h = canvas.height = canvas.offsetHeight * 2;
+      ctx.scale(2, 2);
+      const cw = canvas.offsetWidth;
+      const ch = canvas.offsetHeight;
+      const pad = 2;
+      const n = values.length;
+      if (n < 2) return;
+
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = "round";
+      for (let i = 0; i < n; i++) {
+        const x = pad + (i / (n - 1)) * (cw - 2 * pad);
+        const y = ch - pad - values[i] * (ch - 2 * pad);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Fill area under line
+      ctx.lineTo(pad + (cw - 2 * pad), ch - pad);
+      ctx.lineTo(pad, ch - pad);
+      ctx.closePath();
+      ctx.fillStyle = color.replace("1)", "0.1)");
+      ctx.fill();
+    }
+
+    function renderTrends(data) {
+      const container = document.getElementById("trends-container");
+      if (!container || !data || !data.increasing) return;
+
+      function trendItemHtml(item, rank) {
+        const isUp = item.mean_last5_pct > item.mean_first5_pct;
+        const changeClass = isUp ? "up" : "down";
+        const arrow = isUp ? "▲" : "▼";
+        const f5 = item.mean_first5_pct < 1 ? item.mean_first5_pct.toFixed(1) : Math.round(item.mean_first5_pct);
+        const l5 = item.mean_last5_pct < 1 ? item.mean_last5_pct.toFixed(1) : Math.round(item.mean_last5_pct);
+        return `<div class="trend-item" data-taxon="${item.taxon_id}">
+          <span class="trend-rank">${rank}.</span>
+          <div class="trend-info">
+            <div class="trend-name">${item.name}</div>
+            <div class="trend-rates">${f5} % → ${l5} %</div>
+          </div>
+          <canvas class="trend-sparkline" data-spark='${JSON.stringify(item.sparkline)}' data-color="${isUp ? 'rgba(45,106,79,1)' : 'rgba(192,57,43,1)'}"></canvas>
+          <span class="trend-change ${changeClass}">${arrow}</span>
+        </div>`;
+      }
+
+      const yearRange = data.years[0] + "–" + data.years[data.years.length - 1];
+      container.innerHTML = `<div class="trends-section">
+        <h2>Tåkerns fågelfauna i förändring</h2>
+        <div class="trends-subtitle">Arter med störst förändring i rapportfrekvens ${yearRange}</div>
+        <div class="trends-columns">
+          <div class="trends-col">
+            <h3><span class="arrow-up">▲</span> Mest ökande</h3>
+            ${data.increasing.map((item, i) => trendItemHtml(item, i + 1)).join("")}
+          </div>
+          <div class="trends-col">
+            <h3><span class="arrow-down">▼</span> Mest minskande</h3>
+            ${data.decreasing.map((item, i) => trendItemHtml(item, i + 1)).join("")}
+          </div>
+        </div>
+        <details class="trends-method">
+          <summary>Hur vi mäter trender</summary>
+          <p>Trender baseras på <em>rapportfrekvens</em> – andelen fältbesök (unika datum+lokal) som noterar arten – inte råa antal. Det kompenserar automatiskt för att antalet rapportörer vid Tåkern tredubblats under perioden. Trenden beräknas med Theil-Sen-regression, en robust metod som inte påverkas av enstaka extremår. Arter rankas efter relativ förändring i rapportfrekvens.</p>
+        </details>
+      </div>`;
+
+      // Draw sparklines
+      container.querySelectorAll(".trend-sparkline").forEach(canvas => {
+        const vals = JSON.parse(canvas.dataset.spark);
+        const color = canvas.dataset.color;
+        // Need to wait for layout
+        requestAnimationFrame(() => drawSparkline(canvas, vals, color));
+      });
+
+      // Wire up click handlers
+      container.querySelectorAll("[data-taxon]").forEach(el => {
+        el.style.cursor = "pointer";
+        el.addEventListener("click", () => loadSpecies(parseInt(el.dataset.taxon)));
+      });
     }
 
     // ── Search ──
@@ -704,6 +1009,7 @@
       if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
       if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
       if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
+      updateSectionNav(OVERVIEW_SECTIONS);
     }
 
     window.addEventListener("popstate", (e) => {
@@ -780,7 +1086,7 @@
 
       // Recent observations
       if (sp.recent && sp.recent.length > 0) {
-        html += `<div class="chart-section">
+        html += `<div class="chart-section" id="sec-senaste">
           <h2>Senaste observationer</h2>
           <div style="display:flex;flex-direction:column;gap:0.4rem">
             ${sp.recent.slice(0, 5).map(o => {
@@ -800,13 +1106,13 @@
       }
 
       // 1. Geo heatmap – VAR
-      html += `<div class="chart-section">
+      html += `<div class="chart-section" id="sec-sp-karta">
         <h2>Geografisk spridning</h2>
         <div id="speciesMap" class="geo-heatmap"></div>
       </div>`;
 
       // 2. Season curve – NÄR på året
-      html += `<div class="chart-section">
+      html += `<div class="chart-section" id="sec-sp-sasong">
         <h2>Säsongskurva – genomsnittliga observationer per vecka</h2>
         <div class="chart-container"><canvas id="seasonChart"></canvas></div>
       </div>`;
@@ -822,7 +1128,7 @@
 
       // 4. Top localities – VAR (detalj)
       if (sp.top_localities.length > 0) {
-        html += `<div class="chart-section">
+        html += `<div class="chart-section" id="sec-sp-lokaler">
           <h2>Mest rapporterade lokaler</h2>
           <div class="locality-list">
             ${sp.top_localities.map(l => `
@@ -860,7 +1166,7 @@
           if (d >= padMin && d <= padMax) monthStarts.push({ month: monthNames[m], pos: ((d - padMin) / range * 100) });
         }
 
-        html += `<div class="chart-section">
+        html += `<div class="chart-section" id="sec-sp-fenologi">
           <h2>Säsongens längd per år</h2>
           <div class="phen-timeline" style="position:relative">
             <div style="display:flex;align-items:end;padding:0 0 0.3rem 3rem;border-bottom:1px solid var(--border);font-size:0.75rem;color:var(--muted);height:1.6rem">
@@ -959,7 +1265,7 @@
       // 6. Max counts per year – HISTORIK
       const maxYears = Object.keys(sp.max_counts_per_year).sort();
       if (maxYears.length > 0) {
-        html += `<div class="chart-section">
+        html += `<div class="chart-section" id="sec-sp-antal">
           <h2>Största noterade antal vid enskilt tillfälle</h2>
           <div class="chart-container"><canvas id="maxCountChart"></canvas></div>
         </div>`;
@@ -973,6 +1279,9 @@
       </div>`;
 
       detail.innerHTML = html;
+
+      // Section nav for species detail
+      updateSectionNav(SPECIES_SECTIONS);
 
       // Back button
       document.getElementById("back-btn").addEventListener("click", () => {
@@ -1228,11 +1537,18 @@
         if (data.species) {
           speciesCache = data.species.species;
         }
+        if (data.trends) {
+          renderTrends(data.trends);
+        } else {
+          // Fetch trends separately if not in batch
+          fetch("stats-api.php?q=trends").then(r => r.json()).then(renderTrends).catch(() => {});
+        }
         setupSearch();
       } catch (err) {
         console.error("Init failed, falling back to individual requests", err);
         setupSearch();
         loadOverview();
+        fetch("stats-api.php?q=trends").then(r => r.json()).then(renderTrends).catch(() => {});
       }
 
       // Deep-link: load species from ?art= parameter

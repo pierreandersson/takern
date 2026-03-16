@@ -796,10 +796,196 @@ if ($q === 'accumulation') {
     ]);
 }
 
+// ── Trends: encounter rate + Theil-Sen regression ──
+if ($q === 'trends') {
+    // 1. Total field visits (unique date+locality) per year
+    $totalVisits = [];
+    $res = $db->query("
+        SELECT strftime('%Y', event_start_date) AS yr,
+               COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations
+        WHERE event_start_date >= '2006-01-01'
+        GROUP BY yr
+    ");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $totalVisits[$row['yr']] = intval($row['visits']);
+    }
+
+    // 2. Per-species visits per year (only species with scientific_name containing a space = real species)
+    $speciesVisits = [];
+    $speciesInfo = [];
+    $res = $db->query("
+        SELECT taxon_id, vernacular_name, scientific_name,
+               taxonomic_order, family, redlist_category,
+               strftime('%Y', event_start_date) AS yr,
+               COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations
+        WHERE event_start_date >= '2006-01-01'
+          AND scientific_name LIKE '% %'
+          AND scientific_name NOT LIKE '% x %'
+          AND vernacular_name NOT LIKE '%/%'
+          AND vernacular_name NOT LIKE '%morf%'
+        GROUP BY taxon_id, yr
+    ");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $tid = $row['taxon_id'];
+        $yr = $row['yr'];
+        if (!isset($speciesVisits[$tid])) $speciesVisits[$tid] = [];
+        $speciesVisits[$tid][$yr] = intval($row['visits']);
+        if (!isset($speciesInfo[$tid])) {
+            $speciesInfo[$tid] = [
+                'name' => $row['vernacular_name'],
+                'scientific' => $row['scientific_name'],
+                'group' => getBirdGroup($row['taxonomic_order'], $row['family']),
+                'redlist' => $row['redlist_category'],
+            ];
+        }
+    }
+
+    // 3. Compute encounter rates and filter by 0.2% threshold in any 5-year period
+    $years = array_keys($totalVisits);
+    sort($years);
+    $periods = [['2006','2010'], ['2011','2015'], ['2016','2020'], ['2021','2025']];
+
+    $qualified = [];
+    foreach ($speciesVisits as $tid => $yrVisits) {
+        // Compute encounter rate per year
+        $rates = [];
+        foreach ($years as $yr) {
+            $v = $yrVisits[$yr] ?? 0;
+            $rates[$yr] = ($totalVisits[$yr] > 0) ? $v / $totalVisits[$yr] : 0;
+        }
+
+        // Check 0.2% threshold in any 5-year period
+        $passes = false;
+        foreach ($periods as $p) {
+            $sum = 0; $cnt = 0;
+            for ($y = intval($p[0]); $y <= intval($p[1]); $y++) {
+                $yStr = strval($y);
+                if (isset($rates[$yStr])) { $sum += $rates[$yStr]; $cnt++; }
+            }
+            if ($cnt > 0 && ($sum / $cnt) >= 0.002) { $passes = true; break; }
+        }
+        if ($passes) $qualified[$tid] = $rates;
+    }
+
+    // 4. Theil-Sen regression on encounter rates (exclude current incomplete year)
+    $currentYear = date('Y');
+    function theilSen($rates, $years) {
+        global $currentYear;
+        $pts = [];
+        foreach ($years as $yr) {
+            if ($yr == $currentYear) continue;  // Exclude incomplete year
+            if (isset($rates[$yr])) $pts[] = [intval($yr), $rates[$yr]];
+        }
+        if (count($pts) < 5) return null;
+
+        // All pairwise slopes
+        $slopes = [];
+        for ($i = 0; $i < count($pts); $i++) {
+            for ($j = $i + 1; $j < count($pts); $j++) {
+                $dx = $pts[$j][0] - $pts[$i][0];
+                if ($dx != 0) $slopes[] = ($pts[$j][1] - $pts[$i][1]) / $dx;
+            }
+        }
+        sort($slopes);
+        $median = $slopes[intval(count($slopes) / 2)];
+
+        // Intercept = median of (y - slope * x)
+        $intercepts = array_map(fn($p) => $p[1] - $median * $p[0], $pts);
+        sort($intercepts);
+        $intercept = $intercepts[intval(count($intercepts) / 2)];
+
+        // Mean encounter rate
+        $meanRate = array_sum(array_column($pts, 1)) / count($pts);
+
+        // R²
+        $ssRes = 0; $ssTot = 0;
+        foreach ($pts as $p) {
+            $pred = $intercept + $median * $p[0];
+            $ssRes += ($p[1] - $pred) ** 2;
+            $ssTot += ($p[1] - $meanRate) ** 2;
+        }
+        $r2 = ($ssTot > 0) ? 1 - $ssRes / $ssTot : 0;
+
+        // Relative change = slope / mean rate
+        $relChange = ($meanRate > 0) ? $median / $meanRate : 0;
+
+        // Mean first 5 years, mean last 5 years
+        $firstYears = array_slice($pts, 0, 5);
+        $lastYears = array_slice($pts, -5);
+        $meanFirst = array_sum(array_column($firstYears, 1)) / count($firstYears);
+        $meanLast = array_sum(array_column($lastYears, 1)) / count($lastYears);
+
+        return [
+            'slope' => $median,
+            'r2' => $r2,
+            'rel_change' => $relChange,
+            'mean_rate' => $meanRate,
+            'mean_first5' => $meanFirst,
+            'mean_last5' => $meanLast,
+        ];
+    }
+
+    $trends = [];
+    foreach ($qualified as $tid => $rates) {
+        $t = theilSen($rates, $years);
+        if ($t === null) continue;
+        $trends[$tid] = $t;
+        $trends[$tid]['rates'] = $rates;
+    }
+
+    // 5. Sort by relative change, pick top 10 increasing + decreasing
+    uasort($trends, fn($a, $b) => $b['rel_change'] <=> $a['rel_change']);
+    $increasing = array_slice($trends, 0, 10, true);
+
+    uasort($trends, fn($a, $b) => $a['rel_change'] <=> $b['rel_change']);
+    $decreasing = array_slice($trends, 0, 10, true);
+
+    // 6. Format output (exclude current incomplete year from sparklines)
+    $completeYears = array_filter($years, fn($yr) => $yr != $currentYear);
+    function formatTrendItem($tid, $t, $info, $years) {
+        // Sparkline: yearly rates normalized to species' own min-max
+        $vals = [];
+        foreach ($years as $yr) $vals[] = $t['rates'][$yr] ?? 0;
+        $mn = min($vals); $mx = max($vals);
+        $range = $mx - $mn;
+        $sparkline = array_map(fn($v) => $range > 0 ? round(($v - $mn) / $range, 3) : 0.5, $vals);
+
+        return [
+            'taxon_id' => intval($tid),
+            'name' => $info['name'],
+            'scientific' => $info['scientific'],
+            'group' => $info['group'],
+            'redlist' => $info['redlist'],
+            'slope' => round($t['slope'] * 1000, 3),  // per mille per year
+            'r2' => round($t['r2'], 3),
+            'rel_change_pct' => round($t['rel_change'] * 100, 1),  // % per year
+            'mean_first5_pct' => round($t['mean_first5'] * 100, 2),
+            'mean_last5_pct' => round($t['mean_last5'] * 100, 2),
+            'sparkline' => $sparkline,
+        ];
+    }
+
+    $result = [
+        'years' => array_values($completeYears),
+        'increasing' => [],
+        'decreasing' => [],
+    ];
+    foreach ($increasing as $tid => $t) {
+        $result['increasing'][] = formatTrendItem($tid, $t, $speciesInfo[$tid], $completeYears);
+    }
+    foreach ($decreasing as $tid => $t) {
+        $result['decreasing'][] = formatTrendItem($tid, $t, $speciesInfo[$tid], $completeYears);
+    }
+
+    jsonOut($result);
+}
+
 // ── Batch endpoint for statistik.html initial load ──
 // Reads from cache files directly – avoids separate HTTP requests
 if ($q === 'init') {
-    $parts = ['overview', 'geo', 'localities', 'species'];
+    $parts = ['overview', 'geo', 'localities', 'species', 'trends'];
     $result = [];
     $allCached = true;
     foreach ($parts as $part) {

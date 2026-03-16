@@ -12,6 +12,39 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css">
   <style>
+    /* Section nav */
+    .section-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 1rem;
+    }
+    .section-nav:empty { border-bottom: none; }
+    .section-nav::-webkit-scrollbar { display: none; }
+    .section-nav a {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .section-nav a:hover { color: var(--accent); }
+    .section-nav a.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+    [id^="sec-"] { scroll-margin-top: 3rem; }
+
     /* Page-specific styles */
 
     .compare {
@@ -193,6 +226,8 @@
       <a href="om.html">Om</a>
     </nav>
   </header>
+
+  <nav class="section-nav" id="section-nav"></nav>
 
   <div class="container" id="main">
     <div class="loading" id="loading">Hämtar observationer...</div>
@@ -431,13 +466,13 @@
       html += `</div>`;
 
       // ── Heatmap (right after summary) ──
-      html += `<div class="map-section">
+      html += `<div class="map-section" id="sec-karta">
         <h2>Var observerades det?</h2>
         <div id="weekMap"></div>
       </div>`;
 
       // ── 2. Spring progress + accumulation curve ──
-      html += `<div class="chart-section">
+      html += `<div class="chart-section" id="sec-flyttfaglar">
         <h2>Så går det för flyttfåglarna</h2>
         <div class="accumulation-chart"><canvas id="accumChart"></canvas></div>`;
 
@@ -459,7 +494,7 @@
       html += `</div>`;
 
       // ── 3. First of year ──
-      html += `<div class="section-title">Nytt för säsongen <span class="badge badge-purple">${highlights.firstOfYear.length}</span></div>`;
+      html += `<div class="section-title" id="sec-nytt">Nytt för säsongen <span class="badge badge-purple">${highlights.firstOfYear.length}</span></div>`;
       if (highlights.firstOfYear.length > 0) {
         html += `<div class="highlights">`;
         for (const sp of highlights.firstOfYear) {
@@ -497,7 +532,7 @@
         }
         lookAhead.sort((a, b) => a.avgDoy - b.avgDoy);
         if (lookAhead.length > 0) {
-          html += `<div class="section-title">Håll utkik efter <span class="badge badge-green">${lookAhead.length}</span></div>`;
+          html += `<div class="section-title" id="sec-utkik">Håll utkik efter <span class="badge badge-green">${lookAhead.length}</span></div>`;
           html += `<div class="highlights">${lookAhead.map(s => `
             <div class="highlight-card watch">
               <div class="highlight-content">
@@ -511,7 +546,7 @@
 
       // ── 5. Weekly highlights ──
       if (highlights.topHighlights.length > 0) {
-        html += `<div class="section-title">Veckans höjdpunkter <span class="badge badge-orange">${highlights.topHighlights.length}</span></div>`;
+        html += `<div class="section-title" id="sec-hojdpunkter">Veckans höjdpunkter <span class="badge badge-orange">${highlights.topHighlights.length}</span></div>`;
         html += `<div class="highlights">`;
         for (const sp of highlights.topHighlights) {
           const speciesLink = `<a href="statistik.html?art=${toSlug(sp.name)}" style="color:inherit">${sp.name}</a>`;
@@ -549,7 +584,7 @@
       }
       const sortedGroups = Object.entries(groupCounts).sort((a, b) => b[1] - a[1]);
 
-      html += `<div class="chart-section">
+      html += `<div class="chart-section" id="sec-artfordelning">
         <h2>Artfördelning per grupp</h2>
         <div class="donut-layout">
           <div class="donut-chart-wrap">
@@ -575,6 +610,53 @@
       renderAccumulation(accumData);
       renderDonut(sortedGroups);
       renderHeatmap(records);
+
+      // Section nav
+      const sections = [
+        { id: "sec-karta", label: "Karta" },
+        { id: "sec-flyttfaglar", label: "Flyttfåglar" },
+        { id: "sec-nytt", label: "Nytt" },
+        { id: "sec-utkik", label: "Utkik" },
+        { id: "sec-hojdpunkter", label: "Höjdpunkter" },
+        { id: "sec-artfordelning", label: "Artfördelning" },
+      ].filter(s => document.getElementById(s.id));
+
+      const nav = document.getElementById("section-nav");
+      nav.innerHTML = sections.map(s =>
+        `<a href="#${s.id}" data-sec="${s.id}">${s.label}</a>`
+      ).join("");
+
+      nav.querySelectorAll("a").forEach(a => {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          const el = document.getElementById(a.dataset.sec);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const link = nav.querySelector(`[data-sec="${entry.target.id}"]`);
+          if (link) {
+            if (entry.isIntersecting) link.classList.add("active");
+            else link.classList.remove("active");
+          }
+        });
+        if (!nav.querySelector("a.active")) {
+          const first = sections.find(s => {
+            const el = document.getElementById(s.id);
+            return el && el.getBoundingClientRect().bottom > 0;
+          });
+          if (first) nav.querySelector(`[data-sec="${first.id}"]`)?.classList.add("active");
+        }
+        const active = nav.querySelector("a.active");
+        if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }, { rootMargin: "-50px 0px -60% 0px", threshold: 0 });
+
+      sections.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (el) observer.observe(el);
+      });
     }
 
     // ── Charts ──

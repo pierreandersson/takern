@@ -117,11 +117,59 @@ Cirkeldiagram som visar årets gång.
 - Visa innerst: nuvarande period markerad
 - Liknande design som klimatdiagram
 
+### 13. Tåkerns fågelfauna i förändring – Trendanalys
+
+Ny sektion på statistik.html som visar vilka arter som ökar respektive minskar vid Tåkern under 20 år (2006–2025). Bygger på samma Theil-Sen-metodik som redan finns på artsidorna.
+
+**Metodik: Rapportfrekvens (encounter rate)**
+
+Standardmått inom fågelövervakning (eBird, BirdLife). Kompenserar automatiskt för att antalet rapportörer vid Tåkern tredubblats under perioden.
+
+- **Rapportfrekvens per art och år** = antal unika datum+lokal-kombinationer där arten rapporteras / totalt antal unika datum+lokal-kombinationer det året
+- Mäter "hur stor andel av alla fältbesök som noterar arten" – inte råa antal
+- När fler rapportörer tillkommer ökar både täljare och nämnare proportionellt → bias elimineras
+
+**Trend: Theil-Sen regression**
+- Beräknar slope mellan varje par av år (20 år → 190 par), tar medianen → robust mot outliers
+- **Relativ förändring** = slope / medelrapportfrekvens → gör det möjligt att jämföra trender rättvist mellan vanliga och ovanliga arter
+- Ranking baseras på relativ förändring (störst ökning resp minskning)
+
+**Urval: Ett enda kriterium**
+- Arten måste ha ≥0,2 % rapportfrekvens i minst en 5-årsperiod (2006–2010, 2011–2015, 2016–2020, 2021–2025)
+- Denna enda regel ger automatiskt tillräcklig datatäthet – inga ytterligare filter behövs
+- Fångar både arter som försvunnit (fanns tidigt men inte nu) och nyetablerare (saknades tidigt men finns nu)
+
+**Visning:**
+- 10 mest ökande + 10 mest minskande arter
+- Sparkline per art: rapportfrekvens normaliserad till artens eget min–max (visar form, inte absolut nivå)
+- Etikett: "X % → Y %" (medel första 5 år → medel sista 5 år)
+- Klick → artsida med fullständig statistik
+
+**Förväntade topplistor (validerade mot databasen):**
+- *Ökande:* ägretthäger, röd glada, brandkronad kungsfågel, skogsgås, sydlig gulärla, rördrom, gransångare, kungsfiskare, svarthakedopping, större hackspett
+- *Minskande:* prutgås, dvärgbeckasin, mindre sångsvan, kornknarr, nattskärra, silvertärna, gräshoppsångare, pungmes, morkulla, jorduggla
+
+**Metodbeskrivning att publicera på sidan (utkast):**
+
+> **Hur vi mäter trender**
+>
+> Att jämföra fågelobservationer rakt av mellan 2006 och 2025 är missvisande – antalet aktiva rapportörer vid Tåkern har tredubblats under perioden. Fler ögon i fält ger fler rapporter, oavsett om fåglarna blivit fler.
+>
+> Därför använder vi *rapportfrekvens* – samma mått som används av eBird och BirdLife International. Istället för att räkna observationer frågar vi: *hur stor andel av alla fältbesök noterade arten?* Ett fältbesök definieras som en unik kombination av datum och lokal. Om 200 besök gjordes ett år och sångsvan noterades vid 40 av dem, är rapportfrekvensen 20 %.
+>
+> När fler rapportörer tillkommer ökar både antalet besök som noterar arten och det totala antalet besök – kvoten förblir stabil om artens faktiska förekomst inte förändrats. Måttet kompenserar därmed automatiskt för ökad rapporteringsaktivitet.
+>
+> Trenden beräknas med Theil-Sen-regression: för varje par av år (med 20 år blir det 190 par) beräknas hur snabbt rapportfrekvensen förändrades. Trenden är mittenvärdet (medianen) av alla dessa lutningar. Det gör att enstaka extremår – en sträng vinter eller en invasion – inte snedvrider resultatet.
+>
+> För att rättvist kunna jämföra vanliga och ovanliga arter rankas de efter *relativ förändring*: trendens storlek i förhållande till artens genomsnittliga rapportfrekvens. En art som gått från 0,5 % till 5 % har förändrats mer i relativa termer än en art som gått från 10 % till 15 %, trots att den absoluta ökningen är mindre.
+>
+> Arterna som visas har valts ut genom ett enda kriterium: rapportfrekvensen måste ha nått minst 0,2 % under någon femårsperiod. Det säkerställer att vi bara analyserar arter med tillräckligt dataunderlag, samtidigt som vi fångar både arter som försvunnit och arter som nyetablerat sig.
+
 ---
 
 ## C. Tekniska förbättringar
 
-### 13. Gemensam CSS → style.css
+### 14. Gemensam CSS → style.css
 ~300 rader CSS duplicerade i alla tre HTML-filer. Samma variabler, cards, badges, tabeller.
 
 **Vinst:** En ändring fixar alla sidor. Mindre filer. Cacheas av webbläsaren.
@@ -130,14 +178,14 @@ Cirkeldiagram som visar årets gång.
 - Extrahera gemensam CSS till `deploy/style.css`
 - Behåll sidspecifik CSS inline (kartstorlekar, layoutskillnader)
 
-### 14. Gemensamma JS-hjälpare → utils.js
+### 15. Gemensamma JS-hjälpare → utils.js
 Duplicerad kod: `formatDate`, `redlistBadge`, kart-setup, heatmap-konfiguration.
 
 **Att göra:**
 - Extrahera till `deploy/utils.js`: datumformatering, badges, kartinitiering
 - Import i varje sida via `<script src="utils.js">`
 
-### 15. Slå ihop deploy/ och public/
+### 16. Slå ihop deploy/ och public/
 Två parallella HTML-kopior som kan driva isär.
 
 **Förslag:**
@@ -146,7 +194,7 @@ Två parallella HTML-kopior som kan driva isär.
 - Ta bort `public/` (eller gör det till en symlink)
 - server.py och api.py blir onödiga om dev-server.py + live API fungerar
 
-### 16. Automatisera phenology.json
+### 17. Automatisera phenology.json
 Byggs manuellt med `build_phenology.py`. Kan bli inaktuell.
 
 **Alternativ:**
@@ -155,7 +203,7 @@ Byggs manuellt med `build_phenology.py`. Kan bli inaktuell.
 - **Förslag:** Migrera index.html till DB-fenologi via stats-api.php
 - Då kan phenology.json och build_phenology.py tas bort helt
 
-### 17. Batch-endpoint i stats-api.php
+### 18. Batch-endpoint i stats-api.php
 statistik.html gör 6–8 parallella API-anrop vid sidladdning.
 
 **Förslag:**
@@ -163,7 +211,7 @@ statistik.html gör 6–8 parallella API-anrop vid sidladdning.
 - Sparar HTTP-overhead, enklare cachehantering
 - Alternativt: Server-side rendering av hela overview-HTML
 
-### 18. API-svar: komprimering
+### 19. API-svar: komprimering
 stats-api.php returnerar okomprimerad JSON.
 
 **Förslag:**
@@ -171,14 +219,14 @@ stats-api.php returnerar okomprimerad JSON.
 - Eller `.htaccess`: `AddOutputFilterByType DEFLATE application/json`
 - Kan halvera svarstorleken
 
-### 19. Databasindex: compound index
+### 20. Databasindex: compound index
 Vanligaste query-mönstret: `WHERE taxon_id = X AND event_start_date ...`
 
 **Förslag:**
 - `CREATE INDEX idx_taxon_date ON observations(taxon_id, event_start_date)`
 - Snabbar upp artsidornas fenologi- och trendqueries
 
-### 20. Cachestrategi: TTL istället för manuell invalidering
+### 21. Cachestrategi: TTL istället för manuell invalidering
 Nu rensas cachen manuellt via cron-update.php eller clear_cache.sh.
 
 **Förslag:**
@@ -217,11 +265,12 @@ Nu rensas cachen manuellt via cron-update.php eller clear_cache.sh.
 - [x] index.html: ta bort radieväljare (fast 15 km, konsekvent med DB)
 - [x] index.html: Art A–Ö grupperad vy med expanderbara detaljer + Artportalen-länkar
 
-### Fas 3: Nya visualiseringar
+### Fas 3: Nya visualiseringar ✅ (klar 2026-03-15)
 - [x] Artackumulering: årets artlista dag för dag vs 5-årssnitt + dygnsmedeltemperatur (SMHI)
-- [ ] Fenologikalender: Gantt-diagram med alla arters säsonger
 
-### Fas 4: Nya sidor
+### Fas 4: Nya visualiseringar & sidor
+- [x] Trendanalys: "Tåkerns fågelfauna i förändring" på statistik.html (se §13)
+- [x] Sticky sektionsnavigering på statistik.html och veckorapport.html
 - [x] Om-sida: bakgrund om projektet, datakällor, kontakt
 - [ ] Artguide: bläddra bland arter med filter och "chansen att se nu"
 - [ ] Lokalsidor: klickbara lokaler med artlista och bästa besökstid
