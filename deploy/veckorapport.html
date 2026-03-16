@@ -528,11 +528,13 @@
           const loc = obs?.location?.locality || "";
           const date = obs?.event?.startDate ? formatDateSwedish(obs.event.startDate) : "";
           const detailParts = [date, loc].filter(Boolean);
+          const apId = obs?.occurrence?.occurrenceId?.match(/:sighting:(\d+)$/);
+          if (apId) detailParts.push(`<a href="https://www.artportalen.se/sighting/${apId[1]}" target="_blank" rel="noopener">Artportalen ↗</a>`);
 
           html += `<div class="highlight-card notable">
             <div class="highlight-content">
               <div class="species">${speciesLink} ${badges}</div>
-              ${detailParts.length ? `<div class="context">${detailParts.join(" · ")} · ${sp.totalCount} obs i veckan</div>` : ""}
+              ${detailParts.length ? `<div class="context">${detailParts.join(" · ")}</div>` : ""}
             </div>
           </div>`;
         }
