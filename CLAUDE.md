@@ -22,7 +22,7 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 ## Nyckelarkitektur
 - **stats-api.php:** Alla statistik-queries. Cache-filer per endpoint (overview.json, species.json, species_XXXXX.json, etc.)
 - **cron-update.php:** Daglig datainhämtning + cache-rensning. Skyddad med nyckel i cron_secret.txt
-- **api.php:** Proxy mot live SOS-API för index.html och veckorapport.html
+- **api.php:** Hybrid-proxy för index.html: live SOS-API (idag+igår) + SQLite (äldre dagar, days ≥ 2). Fast 15 km radie.
 - **?q=init:** Batch-endpoint som returnerar overview+geo+localities+species från cache
 
 ## Deploy-flöde
@@ -56,9 +56,14 @@ Ordning: Sammanfattningskort → Karta → Håll utkik efter (arter förväntade
 - Cron-nyckel roterad 2026-03-15 (gammal var exponerad via webbläsaren)
 - API-nyckel och cron-secret exkluderas från FTP-deploy
 
+## Hybrid-arkitektur (api.php)
+- **days 0–1:** Enbart live SOS-API (snabbt, under 1000-gränsen)
+- **days 2–6:** Live API för idag+igår + SQLite för äldre dagar → merge + dedup på occurrence_id
+- **Varför:** Cron körs ~04:00, SQLite kan sakna gårdagens sena obs → live API täcker gapet
+- **Radie:** Fast 15 km, konsekvent med databasens nedladdningsradie. Ingen radieväljare.
+
 ## Utvecklingsplan
 Se IDEAS.md för fullständig att-göra-lista. Nästa steg:
 - statistik.html: trendpilar på artsidor (▲▼ senaste 5 åren)
-- index.html: tidsomfångs-väljare (idag, +1...+6 dagar)
 - Fas 3: Artackumulering, Fenologikalender
 - Fas 4: Om-sida, Artguide, Lokalsidor

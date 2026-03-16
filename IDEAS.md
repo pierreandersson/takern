@@ -3,7 +3,7 @@
 ## Nuläge
 
 Tre sidor:
-- **index.html** – Senaste observationer (1–2 dagar), karta + lista, fenologi-scoring
+- **index.html** – Senaste observationer (0–6 dagar, hybrid live API + SQLite), karta + lista, fenologi-scoring
 - **veckorapport.html** – Veckosammanfattning med årets-första-analys
 - **statistik.html** – 20 års historik (~333k obs, 374 arter), artsidor, grafer, heatmaps
 
@@ -213,7 +213,9 @@ Nu rensas cachen manuellt via cron-update.php eller clear_cache.sh.
 - [x] Deploy: auto-clear + warm cache efter FTP-upload
 - [x] Säkerhet: .htaccess blockerar cron_secret.txt, nyckel roterad
 - [ ] statistik.html: trendpilar på artsidor (▲▼ senaste 5 åren)
-- [ ] index.html: tidsomfångs-väljare – knappar/steg: idag, +1, +2, +3, +4, +5, +6 dagar
+- [x] index.html: tidsomfångs-väljare – knappar: Idag, +1...+6 dagar (hybrid live API + SQLite)
+- [x] index.html: ta bort radieväljare (fast 15 km, konsekvent med DB)
+- [x] index.html: Art A–Ö grupperad vy med expanderbara detaljer + Artportalen-länkar
 
 ### Fas 3: Nya visualiseringar
 - [ ] Artackumulering: årets artlista dag för dag vs tidigare år
