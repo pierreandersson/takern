@@ -7,7 +7,8 @@ const HEATMAP_GRADIENT = {
   0.6: "#fddbc7", 0.8: "#ef8a62", 1: "#b2182b",
 };
 
-const TAKERN_CENTER = [58.35, 14.82];
+const TAKERN_CENTER = [58.35, 14.81];
+const TAKERN_RADIUS = 15000;
 
 /**
  * Create a Leaflet heatmap layer from an array of {lat, lng, count} points.
@@ -51,6 +52,21 @@ function addLocalityMarkers(map, localities) {
 }
 
 /**
+ * Add 15 km radius circle showing the observation area boundary.
+ */
+function addRadiusCircle(map) {
+  return L.circle(TAKERN_CENTER, {
+    radius: TAKERN_RADIUS,
+    color: "#2d6a4f",
+    weight: 1.5,
+    opacity: 0.5,
+    fillColor: "#2d6a4f",
+    fillOpacity: 0.04,
+    interactive: false,
+  }).addTo(map);
+}
+
+/**
  * Initialize a standard Leaflet map with OSM tiles.
  */
 function initMap(elementId, zoom = 11) {
@@ -59,6 +75,7 @@ function initMap(elementId, zoom = 11) {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 18,
   }).addTo(map);
+  addRadiusCircle(map);
   return map;
 }
 

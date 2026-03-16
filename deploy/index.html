@@ -271,13 +271,15 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="utils.js"></script>
   <script>
     // ── Map setup ──
-    const map = L.map("map").setView([58.35, 14.81], 12);
+    const map = L.map("map").setView(TAKERN_CENTER, 12);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap contributors | Data: <a href="https://www.artdatabanken.se">Artdatabanken</a>',
       maxZoom: 18,
     }).addTo(map);
+    addRadiusCircle(map);
 
     const markers = L.layerGroup().addTo(map);
     let currentDays = 1;
