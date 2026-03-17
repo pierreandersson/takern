@@ -27,6 +27,7 @@ $cacheKey = $q;
 if ($id !== null) $cacheKey .= "_$id";
 if (isset($_GET['year'])) $cacheKey .= "_y" . intval($_GET['year']);
 if (isset($_GET['name'])) $cacheKey .= "_n" . md5($_GET['name']);
+if ($q === 'top_weekly' || $q === 'top_yearly') $cacheKey .= '_' . date('Y-m-d');
 $cacheFile = "$CACHE_DIR/$cacheKey.json";
 
 if (file_exists($cacheFile)) {
@@ -216,6 +217,62 @@ if ($q === 'species' && $id === null) {
         ];
     }
     jsonOut(['species' => $species]);
+}
+
+// ── Weekly top species ──
+if ($q === 'top_weekly') {
+    $cutoff = date('Y-m-d', strtotime('-7 days'));
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name,
+        COUNT(*) obs_count, taxonomic_order, family
+        FROM observations
+        WHERE event_start_date >= :cutoff
+          AND vernacular_name IS NOT NULL
+          AND scientific_name LIKE '% %'
+          AND vernacular_name NOT LIKE '% x %'
+          AND vernacular_name NOT LIKE '%/%'
+          AND vernacular_name NOT LIKE '%, % morf'
+        GROUP BY taxon_id ORDER BY obs_count DESC LIMIT 15");
+    $stmt->bindValue(':cutoff', $cutoff, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    $species = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $species[] = [
+            'taxon_id' => intval($row['taxon_id']),
+            'name' => $row['vernacular_name'],
+            'scientific' => $row['scientific_name'],
+            'obs_count' => intval($row['obs_count']),
+            'bird_group' => getBirdGroup($row['taxonomic_order'] ?? '', $row['family'] ?? ''),
+        ];
+    }
+    jsonOut(['species' => $species, 'cutoff' => $cutoff]);
+}
+
+// ── Yearly top species ──
+if ($q === 'top_yearly') {
+    $cutoff = date('Y-m-d', strtotime('-365 days'));
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name,
+        COUNT(*) obs_count, taxonomic_order, family
+        FROM observations
+        WHERE event_start_date >= :cutoff
+          AND vernacular_name IS NOT NULL
+          AND scientific_name LIKE '% %'
+          AND vernacular_name NOT LIKE '% x %'
+          AND vernacular_name NOT LIKE '%/%'
+          AND vernacular_name NOT LIKE '%, % morf'
+        GROUP BY taxon_id ORDER BY obs_count DESC LIMIT 15");
+    $stmt->bindValue(':cutoff', $cutoff, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    $species = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $species[] = [
+            'taxon_id' => intval($row['taxon_id']),
+            'name' => $row['vernacular_name'],
+            'scientific' => $row['scientific_name'],
+            'obs_count' => intval($row['obs_count']),
+            'bird_group' => getBirdGroup($row['taxonomic_order'] ?? '', $row['family'] ?? ''),
+        ];
+    }
+    jsonOut(['species' => $species, 'cutoff' => $cutoff]);
 }
 
 // ── Species detail ──

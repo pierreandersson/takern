@@ -188,6 +188,8 @@
   <script>
     // ── State ──
     let speciesCache = null;
+    let weeklyTopCache = null;
+    let yearlyTopCache = null;
     let currentChart1 = null;
     let currentChart2 = null;
     let currentChart3 = null;
@@ -245,7 +247,7 @@
         return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
       });
 
-      const topBtn = `<button class="group-btn active" id="top-btn">Mest observerade</button>`;
+      const topBtn = `<button class="group-btn active" id="top-btn">Senaste</button>`;
       filtersEl.innerHTML = topBtn + sortedGroups.map(g =>
         `<button class="group-btn" data-group="${g}">${g} <span class="group-count">${groups[g].length}</span></button>`
       ).join("");
@@ -273,30 +275,50 @@
 
     function renderSpeciesList(group) {
       const container = document.getElementById("species-list-container");
-      let items, title;
 
       if (group) {
-        items = speciesCache.filter(s => s.bird_group === group);
-        title = `${group} · ${items.length} arter`;
+        const items = speciesCache.filter(s => s.bird_group === group);
+        container.innerHTML = `
+          <div class="chart-section">
+            <h2>${group} <span style="font-weight:400;color:var(--muted);font-size:0.9rem">· ${items.length} arter</span></h2>
+            <div class="species-list">
+              ${items.map(s => `
+                <a class="species-item" href="arter.html?art=${toSlug(s.name)}" data-taxon="${s.taxon_id}" data-name="${s.name}" data-sci="${s.scientific}">
+                  <div>
+                    <span class="name">${s.name}</span>
+                    <span class="sci">${s.scientific}</span>
+                  </div>
+                  <span class="obs-count">${s.obs_count.toLocaleString("sv")} obs</span>
+                </a>
+              `).join("")}
+            </div>
+          </div>
+        `;
       } else {
-        items = speciesCache.slice(0, 15);
-        title = "Mest observerade arter";
+        const weeklyItems = weeklyTopCache || speciesCache.slice(0, 15);
+        const yearlyItems = yearlyTopCache || [];
+        const speciesListHtml = items => items.map(s => `
+          <a class="species-item" href="arter.html?art=${toSlug(s.name)}" data-taxon="${s.taxon_id}" data-name="${s.name}" data-sci="${s.scientific}">
+            <div>
+              <span class="name">${s.name}</span>
+              <span class="sci">${s.scientific}</span>
+            </div>
+            <span class="obs-count">${s.obs_count.toLocaleString("sv")} obs</span>
+          </a>
+        `).join("");
+        container.innerHTML = `
+          <div class="chart-section">
+            <h2>De mest observerade arterna den senaste veckan</h2>
+            <div class="species-list">${speciesListHtml(weeklyItems)}</div>
+          </div>
+          ${yearlyItems.length ? `
+            <div class="chart-section">
+              <h2>De mest observerade arterna det senaste året</h2>
+              <div class="species-list">${speciesListHtml(yearlyItems)}</div>
+            </div>
+          ` : ""}
+        `;
       }
-
-      container.innerHTML = `
-        <div class="species-list-title">${title}</div>
-        <div class="species-list">
-          ${items.map(s => `
-            <a class="species-item" href="arter.html?art=${toSlug(s.name)}" data-taxon="${s.taxon_id}" data-name="${s.name}" data-sci="${s.scientific}">
-              <div>
-                <span class="name">${s.name}</span>
-                <span class="sci">${s.scientific}</span>
-              </div>
-              <span class="obs-count">${s.obs_count.toLocaleString("sv")} obs</span>
-            </a>
-          `).join("")}
-        </div>
-      `;
 
       container.querySelectorAll(".species-item").forEach(el => {
         el.addEventListener("click", e => {
@@ -974,9 +996,19 @@
 
     // ── Init ──
     async function init() {
-      const resp = await fetch("stats-api.php?q=species");
-      const data = await resp.json();
-      speciesCache = data.species;
+      const [speciesResp, weeklyResp, yearlyResp] = await Promise.all([
+        fetch("stats-api.php?q=species"),
+        fetch("stats-api.php?q=top_weekly"),
+        fetch("stats-api.php?q=top_yearly"),
+      ]);
+      const [speciesData, weeklyData, yearlyData] = await Promise.all([
+        speciesResp.json(),
+        weeklyResp.json(),
+        yearlyResp.json(),
+      ]);
+      speciesCache = speciesData.species;
+      weeklyTopCache = weeklyData.species || null;
+      yearlyTopCache = yearlyData.species || null;
 
       document.getElementById("header-desc").textContent = `${speciesCache.length} arter observerade vid Tåkern sedan 2006`;
 
