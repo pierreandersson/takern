@@ -1,5 +1,14 @@
 /* Tåkern Fågelobs – Shared utilities */
 
+// ── Mobile hamburger menu ──
+document.addEventListener("DOMContentLoaded", function() {
+  const btn = document.querySelector(".hamburger");
+  const nav = document.querySelector("header nav");
+  if (btn && nav) {
+    btn.addEventListener("click", function() { nav.classList.toggle("open"); });
+  }
+});
+
 // ── Heatmap configuration ──
 
 const HEATMAP_GRADIENT = {

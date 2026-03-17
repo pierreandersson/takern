@@ -215,8 +215,69 @@ footer {
   text-align: center;
 }
 
+/* === Mobile nav bar (hidden on desktop) === */
+.nav-bar {
+  display: none;
+}
+
+.hamburger {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
+  header { padding: 1rem 1.25rem 0.75rem; }
+  header h1 { font-size: 1.25rem; }
+
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .current-page {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: white;
+  }
+
+  header nav {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 0.75rem;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  header nav.open { display: flex; }
+
+  header nav a {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 1rem;
+  }
+
+  header nav a:last-child { border-bottom: none; }
+
+  header nav a.active {
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 0.75rem 0.75rem;
+    border-bottom: none;
+  }
+
+  .section-nav { display: none !important; }
+
   .summary { grid-template-columns: 1fr 1fr; }
   .summary-card .value { font-size: 1.5rem; }
   .chart-container { height: 220px; }
