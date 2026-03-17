@@ -238,14 +238,25 @@
         const withCoords = localitiesCache.filter(l => l.lat && l.lng);
         withCoords.forEach(l => {
           const r = Math.min(8, Math.max(3, Math.sqrt(l.obs / 50)));
-          const marker = L.circleMarker([l.lat, l.lng], {
+          const popup = `<strong><a href="#" class="browse-map-link" data-name="${l.name}" style="color:var(--accent);text-decoration:none">${l.name}</a></strong><br>${l.obs.toLocaleString("sv")} obs · ${l.species} arter`;
+          // Visual marker (small, styled)
+          L.circleMarker([l.lat, l.lng], {
             radius: r,
             fillColor: "#2d6a4f",
             color: "#1b4332",
             weight: 1,
             fillOpacity: 0.7,
+            interactive: false,
           }).addTo(browseMap);
-          marker.bindPopup(`<strong><a href="#" class="browse-map-link" data-name="${l.name}" style="color:var(--accent);text-decoration:none">${l.name}</a></strong><br>${l.obs.toLocaleString("sv")} obs · ${l.species} arter`);
+          // Invisible hit area (≥44px diameter for touch targets per Apple HIG)
+          const marker = L.circleMarker([l.lat, l.lng], {
+            radius: Math.max(22, r + 8),
+            fillColor: "transparent",
+            color: "transparent",
+            weight: 0,
+            fillOpacity: 0,
+          }).addTo(browseMap);
+          marker.bindPopup(popup);
           marker.on("click", () => marker.openPopup());
         });
 
