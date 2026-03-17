@@ -38,6 +38,7 @@ Gemensamma CSS-komponenter i style.css:
 - **`.top-list` / `.top-item`** – Rankade listor med `.top-item-name`, `.top-item-sub`, `.top-item-count`
 - **`.search-box`** – Sökfält med dropdown (lokaler, arter)
 - **`.badge-*`** – Statusmärken (red, orange, green, blue, purple)
+- **`.ap-link`** – Länkchip till Artportalen ("Artportalen ↗"), grön kantlinje med hover-bakgrund
 
 ### Render-funktioner (utils.js)
 Delade render-funktioner producerar konsekvent HTML som matchar CSS-komponenterna:

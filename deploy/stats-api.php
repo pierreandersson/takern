@@ -503,6 +503,7 @@ if ($q === 'localities') {
             'obs' => intval($row['obs_count']),
             'species' => intval($row['species_count']),
             'recent_obs' => intval($row['recent_obs']),
+            'last_obs' => $row['last_obs'],
         ];
     }
     jsonOut(['localities' => $localities]);

@@ -411,6 +411,13 @@ $countAfter = $db->querySingle("SELECT COUNT(*) FROM observations");
 $netNew = $countAfter - $countBefore;
 logMsg("Download complete: $netNew new observations (total: $countAfter)");
 
+// ── Ensure indexes exist (idempotent) ──
+$db->exec("CREATE INDEX IF NOT EXISTS idx_obs_locality_date ON observations(locality, event_start_date DESC, start_time DESC)");
+$db->exec("CREATE INDEX IF NOT EXISTS idx_obs_locality ON observations(locality)");
+$db->exec("CREATE INDEX IF NOT EXISTS idx_obs_date ON observations(event_start_date)");
+$db->exec("CREATE INDEX IF NOT EXISTS idx_obs_taxon_id ON observations(taxon_id)");
+$db->exec("CREATE INDEX IF NOT EXISTS idx_obs_taxon_date ON observations(taxon_id, event_start_date)");
+
 $db->close();
 
 // ── Clear stats-api cache so fresh data is served ──
