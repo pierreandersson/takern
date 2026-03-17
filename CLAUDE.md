@@ -51,6 +51,13 @@ Delade render-funktioner producerar konsekvent HTML som matchar CSS-komponentern
 
 Övriga utils.js-funktioner: `toSlug()`, `speciesLink()`, `localityLink()`, `formatDateSwedish()`, `formatDateTimeSv()`, `redlistBadgeHtml()`, `initMap()`, `createHeatLayer()`, `addLocalityMarkers()`, `addRadiusCircle()`
 
+## Lokal utveckling
+- Alla redigerbara filer ligger i `deploy/`
+- PHP-server: `php -S localhost:8090 -t deploy` (se `.claude/launch.json`)
+- Lokalt: `http://localhost:8090/index.html` = `deploy/index.html`
+- Prod: `https://pierrea.se/takern/index.html`
+- Verifiera alltid i preview/Chrome – aldrig med WebFetch
+
 ## Deploy-flöde
 1. Push till main med ändringar i deploy/ eller .github/workflows/ → GitHub Actions FTP-deploy
 2. Före FTP: sed lägger till `?v=<git-hash>` på lokala assets (utils.js, style.css) i HTML-filer → cache-busting
