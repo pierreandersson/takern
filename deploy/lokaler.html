@@ -254,8 +254,13 @@
 
     <!-- Browse view -->
     <div id="browse-view">
-      <div id="locality-list-container">
-        <div class="loading">Laddar lokaler...</div>
+      <div id="sec-browse-karta" style="scroll-margin-top:3rem">
+        <div id="browse-map" style="height:450px;border-radius:10px;border:1px solid var(--border);margin-bottom:1.5rem"></div>
+      </div>
+      <div id="sec-browse-lokaler" style="scroll-margin-top:3rem">
+        <div id="locality-list-container">
+          <div class="loading">Laddar lokaler...</div>
+        </div>
       </div>
     </div>
 
@@ -269,6 +274,7 @@
     let localitiesCache = null;
     let currentChart = null;
     let currentMap = null;
+    let browseMap = null;
 
     function toSlug(name) {
       return name.toLowerCase()
@@ -287,6 +293,11 @@
       { id: "sec-arter", label: "Arter" },
       { id: "sec-sasong", label: "Säsong" },
       { id: "sec-rapportorer", label: "Rapportörer" },
+    ];
+
+    const BROWSE_SECTIONS = [
+      { id: "sec-browse-karta", label: "Karta" },
+      { id: "sec-browse-lokaler", label: "Lokaler" },
     ];
 
     let sectionObserver = null;
@@ -354,6 +365,36 @@
           loadLocality(el.dataset.name);
         });
       });
+
+      // Section nav for browse
+      updateSectionNav(BROWSE_SECTIONS);
+
+      // Initialize browse map with all localities
+      if (!browseMap) {
+        browseMap = initMap("browse-map", 11);
+        const withCoords = localitiesCache.filter(l => l.lat && l.lng);
+        withCoords.forEach(l => {
+          const r = Math.min(8, Math.max(3, Math.sqrt(l.obs / 50)));
+          const marker = L.circleMarker([l.lat, l.lng], {
+            radius: r,
+            fillColor: "#2d6a4f",
+            color: "#1b4332",
+            weight: 1,
+            fillOpacity: 0.7,
+          }).addTo(browseMap);
+          marker.bindPopup(`<strong><a href="#" class="browse-map-link" data-name="${l.name}" style="color:var(--accent);text-decoration:none">${l.name}</a></strong><br>${l.obs.toLocaleString("sv")} obs · ${l.species} arter`);
+          marker.on("click", () => marker.openPopup());
+        });
+
+        // Delegated click handler for popup links
+        browseMap.getContainer().addEventListener("click", e => {
+          const link = e.target.closest(".browse-map-link");
+          if (link) {
+            e.preventDefault();
+            loadLocality(link.dataset.name);
+          }
+        });
+      }
     }
 
     // ── Search ──
@@ -410,7 +451,8 @@
       document.getElementById("locality-search").value = "";
       if (currentChart) { currentChart.destroy(); currentChart = null; }
       if (currentMap) { currentMap.remove(); currentMap = null; }
-      updateSectionNav(null);
+      if (browseMap) setTimeout(() => browseMap.invalidateSize(), 50);
+      updateSectionNav(BROWSE_SECTIONS);
       document.title = "Tåkern – Lokaler";
       document.getElementById("header-desc").textContent = "Lokaler vid Tåkern";
       history.pushState({}, "", "lokaler.html");
@@ -466,6 +508,13 @@
         <h2>${data.name}</h2>
       </div>`;
 
+      // Map (at the top)
+      if (data.lat && data.lng) {
+        html += `<div class="chart-section" id="sec-karta">
+          <div id="localityMap" style="height:350px;border-radius:8px;border:1px solid var(--border)"></div>
+        </div>`;
+      }
+
       // Stats cards
       html += `<div class="locality-stats">
         <div class="stat-card"><div class="stat-value">${data.obs_count.toLocaleString("sv")}</div><div class="stat-label">Observationer</div></div>
@@ -473,14 +522,6 @@
         <div class="stat-card"><div class="stat-value">${data.observer_count}</div><div class="stat-label">Rapportörer</div></div>
         <div class="stat-card"><div class="stat-value">${data.first_obs ? data.first_obs.substring(0, 4) : "–"}</div><div class="stat-label">Första obs</div></div>
       </div>`;
-
-      // Map
-      if (data.lat && data.lng) {
-        html += `<div class="chart-section" id="sec-karta">
-          <h2>Karta</h2>
-          <div id="localityMap" style="height:300px;border-radius:8px;border:1px solid var(--border)"></div>
-        </div>`;
-      }
 
       // Top species
       if (data.top_species && data.top_species.length > 0) {
@@ -539,6 +580,7 @@
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 18,
         }).addTo(currentMap);
+        addRadiusCircle(currentMap);
         L.marker([data.lat, data.lng]).addTo(currentMap)
           .bindPopup(`<strong>${data.name}</strong>`).openPopup();
       }
