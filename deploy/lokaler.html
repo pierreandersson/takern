@@ -220,8 +220,50 @@
     }
     .reporter-item:last-child { border-bottom: none; }
 
+    /* Map + nearby grid */
+    .map-nearby-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .map-nearby-grid .map-col {
+      min-height: 300px;
+    }
+
+    .map-nearby-grid #localityMap {
+      height: 100%;
+      min-height: 300px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .nearby-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .nearby-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nearby-item:hover { border-color: var(--accent); }
+    .nearby-item .name { font-weight: 600; }
+    .nearby-item .dist { color: var(--muted); font-size: 0.8rem; white-space: nowrap; margin-left: 0.75rem; }
+
     @media (max-width: 600px) {
       .locality-stats { grid-template-columns: 1fr 1fr; }
+      .map-nearby-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -494,6 +536,24 @@
       return `${d.getDate()} ${MONTHS_SV[d.getMonth()]}`;
     }
 
+    function getNearbyLocalities(name, lat, lng, count) {
+      if (!localitiesCache) return [];
+      const R = 6371;
+      const toRad = d => d * Math.PI / 180;
+      return localitiesCache
+        .filter(l => l.name !== name && l.lat && l.lng)
+        .map(l => {
+          const dLat = toRad(l.lat - lat);
+          const dLng = toRad(l.lng - lng);
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat)) * Math.cos(toRad(l.lat)) * Math.sin(dLng / 2) ** 2;
+          const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          const distStr = dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`;
+          return { ...l, dist, distStr };
+        })
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, count);
+    }
+
     function renderLocalityDetail(data) {
       const detail = document.getElementById("locality-detail");
       let html = "";
@@ -508,10 +568,24 @@
         <h2>${data.name}</h2>
       </div>`;
 
-      // Map (at the top)
+      // Map + nearby localities (two-column grid)
       if (data.lat && data.lng) {
-        html += `<div class="chart-section" id="sec-karta">
-          <div id="localityMap" style="height:350px;border-radius:8px;border:1px solid var(--border)"></div>
+        const nearby = getNearbyLocalities(data.name, data.lat, data.lng, 6);
+        html += `<div class="map-nearby-grid" id="sec-karta">
+          <div class="map-col">
+            <div id="localityMap"></div>
+          </div>
+          <div>
+            <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem">Närliggande lokaler</h3>
+            <div class="nearby-list">
+              ${nearby.length > 0 ? nearby.map(n => `
+                <div class="nearby-item" data-nearby-name="${n.name}">
+                  <span class="name">${n.name}</span>
+                  <span class="dist">${n.distStr} · ${n.species} arter</span>
+                </div>
+              `).join("") : '<div style="color:var(--muted);font-size:0.9rem">Inga närliggande lokaler</div>'}
+            </div>
+          </div>
         </div>`;
       }
 
@@ -573,7 +647,7 @@
         showBrowse();
       });
 
-      // Map
+      // Map with nearby localities
       if (data.lat && data.lng) {
         currentMap = L.map("localityMap").setView([data.lat, data.lng], 14);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -583,6 +657,14 @@
         addRadiusCircle(currentMap);
         L.marker([data.lat, data.lng]).addTo(currentMap)
           .bindPopup(`<strong>${data.name}</strong>`).openPopup();
+
+        // Add nearby localities as subtle markers
+        const nearby = getNearbyLocalities(data.name, data.lat, data.lng, 6);
+        nearby.forEach(n => {
+          L.circleMarker([n.lat, n.lng], {
+            radius: 5, fillColor: "#6b7280", color: "#4b5563", weight: 1, fillOpacity: 0.5,
+          }).addTo(currentMap).bindPopup(`<strong>${n.name}</strong><br>${n.distStr}`);
+        });
       }
 
       // Season chart
@@ -623,6 +705,13 @@
           if (name) {
             window.location.href = `arter.html?art=${toSlug(name)}`;
           }
+        });
+      });
+
+      // Wire up nearby locality clicks
+      detail.querySelectorAll("[data-nearby-name]").forEach(el => {
+        el.addEventListener("click", () => {
+          loadLocality(el.dataset.nearbyName);
         });
       });
 
