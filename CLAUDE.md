@@ -1,7 +1,7 @@
 # Tåkern Fågelobs – Projektkontext
 
 ## Vad detta är
-Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. Tre sidor: index.html (senaste obs), veckorapport.html ("Tåkern i veckan" – veckoöversikt med artackumulering, artfördelning, höjdpunkter, heatmap), statistik.html (20 års historik med artsidor).
+Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. Sex sidor: index.html (senaste obs), veckorapport.html ("Tåkern i veckan"), arter.html (artbrowser + artsidor), lokaler.html (lokalbrowser + lokalsidor), statistik.html (20 års historik), om.html.
 
 ## Tech stack
 - **Frontend:** Vanilla HTML/CSS/JS, Leaflet för kartor, Chart.js för grafer
@@ -24,6 +24,31 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 - **cron-update.php:** Daglig datainhämtning + cache-rensning. Skyddad med nyckel i cron_secret.txt
 - **api.php:** Hybrid-proxy för index.html: live SOS-API (idag+igår) + SQLite (äldre dagar, days ≥ 2). Fast 15 km radie.
 - **?q=init:** Batch-endpoint som returnerar overview+geo+localities+species från cache
+
+## Delat designsystem
+
+### CSS (style.css)
+Gemensam CSS i style.css, sidspecifik CSS i inline `<style>`. CSS-variabler:
+- `--accent-bg: rgba(45,106,79,0.08)` – subtil grön bakgrund
+- Designtokens: `border-radius` 4px (badges) / 8px (kort) / 10px (sektioner), liten text `0.85rem`, kort-padding `0.75rem 1rem` (listobjekt) / `1.25rem` (sektionskort)
+
+Gemensamma CSS-komponenter i style.css:
+- **`.section-nav`** – Sticky tab-navigation (lokaler, arter, statistik, veckorapport)
+- **`.obs-card`** – Observationskort med `.obs-header`, `.obs-species`, `.obs-scientific`, `.obs-count`, `.obs-meta`
+- **`.top-list` / `.top-item`** – Rankade listor med `.top-item-name`, `.top-item-sub`, `.top-item-count`
+- **`.search-box`** – Sökfält med dropdown (lokaler, arter)
+- **`.badge-*`** – Statusmärken (red, orange, green, blue, purple)
+
+### Render-funktioner (utils.js)
+Delade render-funktioner producerar konsekvent HTML som matchar CSS-komponenterna:
+- **`renderObsItem(obs, options)`** – Renderar `.obs-card`. Options: `showSpecies`, `showSpeciesLink`, `showLocalityLink`, `badges`, `highlight`, `showRemarks`
+- **`renderSpeciesItem(species, options)`** – Renderar `.top-item` för artlistor. Options: `showLink`, `showCount`, `countLabel`, `showRedlist`
+- **`renderReporterItem(reporter)`** – Renderar `.top-item` för rapportörlistor
+- **`normalizeSosObs(obs)`** – SOS API-format → kanoniskt obs-format
+- **`normalizeDbObs(r)`** – DB/cache-format → kanoniskt obs-format
+- **`updateSectionNav(sections)`** – Bygger sticky section-nav med IntersectionObserver
+
+Övriga utils.js-funktioner: `toSlug()`, `speciesLink()`, `localityLink()`, `formatDateSwedish()`, `formatDateTimeSv()`, `redlistBadgeHtml()`, `initMap()`, `createHeatLayer()`, `addLocalityMarkers()`, `addRadiusCircle()`
 
 ## Deploy-flöde
 1. Push till main med ändringar i deploy/ eller .github/workflows/ → GitHub Actions FTP-deploy

@@ -108,64 +108,6 @@
       gap: 0.5rem;
     }
 
-    .obs-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .obs-card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    }
-
-    .obs-card.highlight {
-      border-left: 4px solid var(--red);
-    }
-
-    .obs-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-
-    .obs-species {
-      font-weight: 600;
-      font-size: 1rem;
-    }
-    .obs-species a {
-      color: inherit;
-      text-decoration: none;
-    }
-    .obs-species a:hover {
-      text-decoration: underline;
-    }
-
-    .obs-scientific {
-      font-style: italic;
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-
-    .obs-count {
-      font-weight: 700;
-      font-size: 1.1rem;
-      white-space: nowrap;
-    }
-
-    .obs-meta {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 0.25rem;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
     .group-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -400,24 +342,6 @@
       return `<div class="obs-meta" style="margin-top:0.3rem;color:#1d4ed8">&#x1f4c5; ${info}</div>`;
     }
 
-    function formatDate(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      const datePart = d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
-      const timePart = d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
-      return timePart !== "00:00" ? `${datePart} ${timePart}` : datePart;
-    }
-
-    function toSlug(name) {
-      return name.toLowerCase()
-        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
-        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    }
-
-    function speciesLink(name) {
-      return `<a href="statistik.html?art=${toSlug(name)}" target="_blank">${name}</a>`;
-    }
-
     // ── Rendering ──
     let allObs = [];
 
@@ -431,50 +355,29 @@
       }
 
       list.innerHTML = observations.map((obs, i) => {
-        const name = obs.taxon?.vernacularName || obs.taxon?.scientificName || "Okänd art";
-        const sci = obs.taxon?.scientificName || "";
-        const count = getCount(obs);
-        const date = formatDate(obs.event?.startDate);
-        const loc = obs.location?.locality || "";
-        const observer = obs.occurrence?.recordedBy || "";
-        const remarks = obs.occurrence?.occurrenceRemarks || "";
-        const badge = redlistBadge(obs) + phenologyBadge(obs) + rarityBadge(obs);
         const score = notableScore(obs);
-        const highlight = score >= 80 ? " highlight" : "";
+        const badges = redlistBadge(obs) + phenologyBadge(obs) + rarityBadge(obs);
 
         // Add map marker
         const lat = obs.location?.decimalLatitude;
         const lng = obs.location?.decimalLongitude;
         if (lat && lng) {
+          const name = obs.taxon?.vernacularName || obs.taxon?.scientificName || "";
+          const count = getCount(obs) || 1;
           const color = score >= 150 ? "#b91c1c" : score >= 80 ? "#b45309" : "#2d6a4f";
-          const marker = L.circleMarker([lat, lng], {
-            radius: Math.min(4 + (count || 1) * 0.02, 12),
-            color: color,
-            fillColor: color,
-            fillOpacity: 0.7,
-            weight: 1,
-          }).bindPopup(`<strong>${name}</strong><br>${sci}<br>${count ? count + " ex" : ""}${date ? "<br>" + date : ""}${loc ? "<br>" + loc : ""}${observer ? "<br><small>" + observer + "</small>" : ""}`);
-          marker.obsIndex = i;
-          markers.addLayer(marker);
+          L.circleMarker([lat, lng], {
+            radius: Math.min(4 + count * 0.02, 12),
+            color, fillColor: color, fillOpacity: 0.7, weight: 1,
+          }).bindPopup(`<strong>${name}</strong><br>${obs.taxon?.scientificName || ""}<br>${count > 1 ? count + " ex" : ""}`)
+            .addTo(markers);
         }
 
-        return `
-          <div class="obs-card${highlight}" data-index="${i}" data-lat="${lat}" data-lng="${lng}">
-            <div class="obs-header">
-              <div>
-                <div class="obs-species">${speciesLink(name)} ${badge}</div>
-                <div class="obs-scientific">${sci}</div>
-              </div>
-              ${count ? `<div class="obs-count">${count} ex</div>` : ""}
-            </div>
-            <div class="obs-meta">
-              ${date ? `<span>${date}</span>` : ""}
-              ${loc ? `<span>${localityLink(loc)}</span>` : ""}
-              ${observer ? `<span>${observer}</span>` : ""}
-            </div>
-            ${remarks ? `<div class="obs-meta" style="margin-top:0.25rem;font-style:italic">Kommentar: ${remarks}</div>` : ""}
-          </div>
-        `;
+        const canonical = normalizeSosObs(obs);
+        return renderObsItem(canonical, {
+          badges,
+          highlight: score >= 80,
+          showRemarks: true,
+        });
       }).join("");
 
       // Click cards to fly to marker
@@ -487,18 +390,6 @@
           }
         });
       });
-
-      // Prevent species links from triggering card fly-to
-      list.querySelectorAll(".obs-species a").forEach(a => {
-        a.addEventListener("click", e => e.stopPropagation());
-      });
-    }
-
-    function obsUrl(obs) {
-      const id = obs.occurrence?.occurrenceId || "";
-      const match = id.match(/:sighting:(\d+)$/);
-      if (match) return `https://www.artportalen.se/sighting/${match[1]}`;
-      return null;
     }
 
     // ── Grouped rendering (used by "Mest noterbara" and "Art A–Ö") ──
@@ -555,29 +446,13 @@
         const highlight = score >= 80 ? " highlight" : "";
         const totalCount = obs.reduce((s, o) => s + getCount(o), 0);
         const obsCount = obs.length;
-        const latestDate = formatDate(obs.sort((a, b) =>
+        const latestDate = formatDateTimeSv(obs.sort((a, b) =>
           new Date(b.event?.startDate || 0) - new Date(a.event?.startDate || 0)
         )[0].event?.startDate);
 
-        const detailCards = obs.map(o => {
-          const date = formatDate(o.event?.startDate);
-          const loc = o.location?.locality || "";
-          const observer = o.occurrence?.recordedBy || "";
-          const count = getCount(o);
-          const remarks = o.occurrence?.occurrenceRemarks || "";
-          const lat = o.location?.decimalLatitude;
-          const lng = o.location?.decimalLongitude;
-          const url = obsUrl(o);
-          const linkStart = url ? `<a href="${url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" onclick="event.stopPropagation()">` : "";
-          const linkEnd = url ? "</a>" : "";
-          return `<div class="obs-card" data-lat="${lat}" data-lng="${lng}">
-            <div class="obs-header">
-              <div class="obs-meta" style="margin:0">${date ? `<span>${date}</span>` : ""}${loc ? `<span>${localityLink(loc)}</span>` : ""}${observer ? `<span>${observer}</span>` : ""}${url ? `<span>${linkStart}&#x1f517;${linkEnd}</span>` : ""}</div>
-              ${count ? `<div class="obs-count">${count} ex</div>` : ""}
-            </div>
-            ${remarks ? `<div class="obs-meta" style="font-style:italic">Kommentar: ${remarks}</div>` : ""}
-          </div>`;
-        }).join("");
+        const detailCards = obs.map(o =>
+          renderObsItem(normalizeSosObs(o), { showSpecies: false, showRemarks: true })
+        ).join("");
 
         return `
           <div class="group-card${highlight}" data-group="${gi}">
@@ -605,11 +480,6 @@
             ? toggle.innerHTML.replace("\u25B6", "\u25BC")
             : toggle.innerHTML.replace("\u25BC", "\u25B6");
         });
-      });
-
-      // Prevent species links from triggering expand/collapse
-      list.querySelectorAll(".obs-species a").forEach(a => {
-        a.addEventListener("click", e => e.stopPropagation());
       });
 
       // Click detail cards to fly to marker
@@ -659,18 +529,21 @@
     // ── Fetch data ──
     async function loadData() {
       try {
-        // Fetch phenology data (once, then cached in variable)
-        if (!Object.keys(phenologyData).length) {
-          try {
-            const phResp = await fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`);
-            const ctx = await phResp.json();
-            phenologyData = ctx.phenology || {};
-            rarityData = ctx.rarity || {};
-            yearFirstsData = ctx.year_firsts || {};
-          } catch (e) { /* phenology & rarity are optional */ }
+        // Fetch phenology context and live observations in parallel
+        const needsContext = !Object.keys(phenologyData).length;
+        const contextPromise = needsContext
+          ? fetch(`stats-api.php?q=week_context&year=${new Date().getFullYear()}`)
+              .then(r => r.json()).catch(() => null)
+          : Promise.resolve(null);
+        const obsPromise = fetch(`api.php?days=${currentDays}`).then(r => r.json());
+
+        const [ctx, data] = await Promise.all([contextPromise, obsPromise]);
+
+        if (ctx) {
+          phenologyData = ctx.phenology || {};
+          rarityData = ctx.rarity || {};
+          yearFirstsData = ctx.year_firsts || {};
         }
-        const resp = await fetch(`api.php?days=${currentDays}`);
-        const data = await resp.json();
 
         if (data.error) {
           document.getElementById("obs-list").innerHTML =

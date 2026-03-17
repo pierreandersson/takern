@@ -14,80 +14,9 @@
   <meta property="og:url" content="https://pierrea.se/takern/statistik.html">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="sv_SE">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Section nav */
-    .section-nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      padding: 0 1rem;
-      gap: 0;
-      min-height: 0;
-      transition: min-height 0.2s;
-    }
-    .section-nav:empty { border-bottom: none; }
-    .section-nav::-webkit-scrollbar { display: none; }
-    .section-nav a {
-      padding: 0.55rem 0.75rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-decoration: none;
-      white-space: nowrap;
-      border-bottom: 2px solid transparent;
-      transition: color 0.15s, border-color 0.15s;
-      flex-shrink: 0;
-    }
-    .section-nav a:hover { color: var(--accent); }
-    .section-nav a.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-      font-weight: 600;
-    }
-    [id^="sec-"] { scroll-margin-top: 3rem; }
-
-    /* Top species list */
-    .top-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      margin-bottom: 2rem;
-    }
-
-    .top-item {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.6rem 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-
-    .top-item:hover { border-color: var(--accent); }
-
-    .top-item .rank {
-      color: var(--muted);
-      font-size: 0.85rem;
-      width: 2rem;
-    }
-
-    .top-item .name { font-weight: 600; flex: 1; min-width: 0; }
-    .top-item .sci { font-style: italic; color: var(--muted); font-size: 0.85rem; margin-left: 0.5rem; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .top-item .obs-count { color: var(--muted); font-size: 0.9rem; margin-left: 1rem; white-space: nowrap; flex-shrink: 0; }
-
     /* Record counts */
     .record-list {
       display: flex;
@@ -310,16 +239,13 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="utils.js"></script>
   <script>
     // ── State ──
     let speciesCache = null;
-
-    function toSlug(name) {
-      return name.toLowerCase()
-        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
-        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    }
 
     // ── Section navigation ──
     const OVERVIEW_SECTIONS = [
@@ -333,53 +259,6 @@
       { id: "sec-aktivitet", label: "Aktivitet" },
       { id: "sec-observatorer", label: "Observatörer" },
     ];
-    let sectionObserver = null;
-
-    function updateSectionNav(sections) {
-      const nav = document.getElementById("section-nav");
-      nav.innerHTML = sections.map(s =>
-        `<a href="#${s.id}" data-sec="${s.id}">${s.label}</a>`
-      ).join("");
-
-      // Smooth scroll on click
-      nav.querySelectorAll("a").forEach(a => {
-        a.addEventListener("click", e => {
-          e.preventDefault();
-          const el = document.getElementById(a.dataset.sec);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      });
-
-      // Observe sections for active highlighting
-      if (sectionObserver) sectionObserver.disconnect();
-      const navLinks = nav.querySelectorAll("a");
-      sectionObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          const link = nav.querySelector(`[data-sec="${entry.target.id}"]`);
-          if (link) {
-            if (entry.isIntersecting) link.classList.add("active");
-            else link.classList.remove("active");
-          }
-        });
-        // If none active, activate first visible
-        if (!nav.querySelector("a.active")) {
-          const first = sections.find(s => {
-            const el = document.getElementById(s.id);
-            return el && el.getBoundingClientRect().bottom > 0;
-          });
-          if (first) nav.querySelector(`[data-sec="${first.id}"]`)?.classList.add("active");
-        }
-        // Auto-scroll nav to show active item
-        const active = nav.querySelector("a.active");
-        if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      }, { rootMargin: "-50px 0px -60% 0px", threshold: 0 });
-
-      sections.forEach(s => {
-        const el = document.getElementById(s.id);
-        if (el) sectionObserver.observe(el);
-      });
-    }
-
     // ── Load overview ──
 
     async function loadOverview() {
@@ -422,14 +301,9 @@
       // 3. Top 20 species
       html += `<div class="section-title" id="sec-arter">De mest rapporterade arterna 2006–2026</div>
       <div class="top-list">
-        ${overview.top_species.map((s, i) => `
-          <div class="top-item" data-taxon="${s.taxon_id}">
-            <span class="rank">${i + 1}.</span>
-            <span class="name">${s.name}</span>
-            <span class="sci">${s.scientific}</span>
-            <span class="obs-count">${s.count.toLocaleString("sv")} obs</span>
-          </div>
-        `).join("")}
+        ${overview.top_species.map(s =>
+          renderSpeciesItem(s, { showLink: true, showCount: true, countLabel: "obs" })
+        ).join("")}
       </div>`;
 
       // 4. Species richness per month
@@ -526,12 +400,7 @@
             ${obsYears.map(y => `
               <div style="margin-bottom:0.75rem">
                 <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.3rem">${y}</div>
-                ${overview.top_observers[y].map((o, i) => `
-                  <div class="locality-item">
-                    <span>${i + 1}. ${o.name}</span>
-                    <span style="color:var(--muted)">${o.count.toLocaleString("sv")} obs</span>
-                  </div>
-                `).join("")}
+                ${overview.top_observers[y].map(o => renderReporterItem(o)).join("")}
               </div>
             `).join("")}
           </div>

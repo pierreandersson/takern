@@ -7,6 +7,7 @@
   --muted: #6b7280;
   --accent: #2d6a4f;
   --accent-light: #d8f3dc;
+  --accent-bg: rgba(45,106,79,0.08);
   --red: #b91c1c;
   --red-light: #fee2e2;
   --orange: #b45309;
@@ -214,6 +215,169 @@ footer {
   color: var(--muted);
   text-align: center;
 }
+
+/* === Section navigation (sticky tabs) === */
+.section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 1rem;
+}
+.section-nav:empty { border-bottom: none; }
+.section-nav::-webkit-scrollbar { display: none; }
+.section-nav a {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.section-nav a:hover { color: var(--accent); }
+.section-nav a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+[id^="sec-"] { scroll-margin-top: 3rem; }
+
+/* === Observation cards (shared by index, lokaler, arter) === */
+.obs-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.obs-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.obs-card.highlight {
+  border-left: 4px solid var(--red);
+}
+.obs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.obs-species { font-weight: 600; font-size: 1rem; }
+.obs-species a { color: inherit; text-decoration: none; }
+.obs-species a:hover { text-decoration: underline; }
+.obs-scientific { font-style: italic; color: var(--muted); font-size: 0.85rem; }
+.obs-count { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
+.obs-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.obs-remarks { font-style: italic; }
+.ap-link {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: #2d6a4f;
+  text-decoration: none;
+  padding: 0.1em 0.45em;
+  border: 1px solid rgba(45,106,79,0.35);
+  border-radius: 3px;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.ap-link:hover {
+  background: rgba(45,106,79,0.1);
+  border-color: #2d6a4f;
+}
+
+/* === Top lists (species, reporters) === */
+.top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 2rem;
+}
+.top-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.15s;
+}
+.top-item:hover { border-color: var(--accent); }
+.top-item-name { font-weight: 600; }
+.top-item-name a { color: inherit; text-decoration: none; }
+.top-item-name a:hover { text-decoration: underline; }
+.top-item-sub { font-style: italic; color: var(--muted); font-size: 0.85rem; }
+.top-item-count { color: var(--muted); font-size: 0.85rem; white-space: nowrap; margin-left: 1rem; flex-shrink: 0; }
+
+/* === Search box === */
+.search-box {
+  position: relative;
+  margin-bottom: 1.5rem;
+  z-index: 10000;
+}
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  background: var(--card);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-box input:focus { border-color: var(--accent); }
+.search-box::before {
+  content: "\1F50D";
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+}
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+.search-results.open { display: block; }
+.search-result {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.search-result:last-child { border-bottom: none; }
+.search-result:hover { background: var(--accent-light); }
+.search-result .name { font-weight: 600; }
+.search-result .count { color: var(--muted); font-size: 0.85rem; }
 
 /* === Mobile nav bar (hidden on desktop) === */
 .nav-bar {

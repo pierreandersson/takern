@@ -14,73 +14,9 @@
   <meta property="og:url" content="https://pierrea.se/takern/lokaler.html">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="sv_SE">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Search */
-    .search-box {
-      position: relative;
-      margin-bottom: 1.5rem;
-      z-index: 10000;
-    }
-
-    .search-box input {
-      width: 100%;
-      padding: 0.75rem 1rem 0.75rem 2.5rem;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 1rem;
-      background: var(--card);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .search-box input:focus { border-color: var(--accent); }
-
-    .search-box::before {
-      content: "\1F50D";
-      position: absolute;
-      left: 0.85rem;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 1rem;
-    }
-
-    .search-results {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-height: 400px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-
-    .search-results.open { display: block; }
-
-    .search-result {
-      padding: 0.6rem 1rem;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.1s;
-    }
-
-    .search-result:last-child { border-bottom: none; }
-    .search-result:hover { background: var(--accent-light); }
-
-    .search-result .name { font-weight: 600; }
-    .search-result .count { color: var(--muted); font-size: 0.85rem; }
-
     /* Locality list */
     .locality-list-page {
       display: flex;
@@ -110,42 +46,6 @@
       margin-bottom: 0.5rem;
       font-weight: 600;
     }
-
-    /* Section nav */
-    .section-nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      padding: 0 1rem;
-      gap: 0;
-      min-height: 0;
-      transition: min-height 0.2s;
-    }
-    .section-nav:empty { border-bottom: none; }
-    .section-nav::-webkit-scrollbar { display: none; }
-    .section-nav a {
-      padding: 0.55rem 0.75rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-decoration: none;
-      white-space: nowrap;
-      border-bottom: 2px solid transparent;
-      transition: color 0.15s, border-color 0.15s;
-      flex-shrink: 0;
-    }
-    .section-nav a:hover { color: var(--accent); }
-    .section-nav a.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-      font-weight: 600;
-    }
-    [id^="sec-"] { scroll-margin-top: 3rem; }
 
     /* Detail view */
     .locality-detail { display: none; }
@@ -178,47 +78,6 @@
 
     .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
     .stat-card .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
-
-    /* Top list in detail */
-    .top-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      margin-bottom: 2rem;
-    }
-
-    .top-item {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.6rem 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-
-    .top-item:hover { border-color: var(--accent); }
-
-    .top-item .rank {
-      color: var(--muted);
-      font-size: 0.85rem;
-      width: 2rem;
-    }
-
-    .top-item .name { font-weight: 600; flex: 1; min-width: 0; }
-    .top-item .sci { font-style: italic; color: var(--muted); font-size: 0.85rem; margin-left: 0.5rem; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .top-item .obs-count { color: var(--muted); font-size: 0.9rem; margin-left: 1rem; white-space: nowrap; flex-shrink: 0; }
-
-    .reporter-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.9rem;
-    }
-    .reporter-item:last-child { border-bottom: none; }
 
     /* Map section with nearby */
     .map-section {
@@ -259,43 +118,11 @@
     .nearby-chip:hover { border-color: var(--accent); }
     .nearby-chip .dist { color: var(--muted); margin-left: 0.25rem; }
 
-    /* Recent reports – index.html style */
     .recent-reports {
       display: flex;
       flex-direction: column;
       gap: 0.4rem;
       margin-bottom: 2rem;
-    }
-    .obs-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .obs-card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    }
-    .obs-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-    .obs-species { font-weight: 600; font-size: 1rem; }
-    .obs-species a { color: inherit; text-decoration: none; }
-    .obs-species a:hover { text-decoration: underline; }
-    .obs-scientific { font-style: italic; color: var(--muted); font-size: 0.85rem; }
-    .obs-count { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
-    .obs-meta {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 0.25rem;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
     }
 
     @media (max-width: 600px) {
@@ -350,6 +177,8 @@
     <div class="locality-detail" id="locality-detail"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="utils.js"></script>
   <script>
     // ── State ──
@@ -357,12 +186,6 @@
     let currentChart = null;
     let currentMap = null;
     let browseMap = null;
-
-    function toSlug(name) {
-      return name.toLowerCase()
-        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
-        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    }
 
     function findLocalityBySlug(slug) {
       if (!localitiesCache) return null;
@@ -382,49 +205,6 @@
       { id: "sec-browse-karta", label: "Karta" },
       { id: "sec-browse-lokaler", label: "Lokaler" },
     ];
-
-    let sectionObserver = null;
-
-    function updateSectionNav(sections) {
-      const nav = document.getElementById("section-nav");
-      if (!sections) { nav.innerHTML = ""; return; }
-      nav.innerHTML = sections.map(s =>
-        `<a href="#${s.id}" data-sec="${s.id}">${s.label}</a>`
-      ).join("");
-
-      nav.querySelectorAll("a").forEach(a => {
-        a.addEventListener("click", e => {
-          e.preventDefault();
-          const el = document.getElementById(a.dataset.sec);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      });
-
-      if (sectionObserver) sectionObserver.disconnect();
-      sectionObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          const link = nav.querySelector(`[data-sec="${entry.target.id}"]`);
-          if (link) {
-            if (entry.isIntersecting) link.classList.add("active");
-            else link.classList.remove("active");
-          }
-        });
-        if (!nav.querySelector("a.active")) {
-          const first = sections.find(s => {
-            const el = document.getElementById(s.id);
-            return el && el.getBoundingClientRect().bottom > 0;
-          });
-          if (first) nav.querySelector(`[data-sec="${first.id}"]`)?.classList.add("active");
-        }
-        const active = nav.querySelector("a.active");
-        if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      }, { rootMargin: "-50px 0px -60% 0px", threshold: 0 });
-
-      sections.forEach(s => {
-        const el = document.getElementById(s.id);
-        if (el) sectionObserver.observe(el);
-      });
-    }
 
     // ── Render browse view ──
     function renderBrowseView() {
@@ -542,6 +322,30 @@
     }
 
     // ── Load and show locality detail ──
+    // Live data cache with 2-minute TTL
+    let liveDataCache = { data: null, ts: 0 };
+    const LIVE_CACHE_TTL = 2 * 60 * 1000;
+
+    function localityHasRecentObs(name) {
+      if (!localitiesCache) return true; // assume yes if we don't know
+      const loc = localitiesCache.find(l => l.name === name);
+      if (!loc) return true;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 3);
+      return loc.last_obs >= cutoff.toISOString().substring(0, 10);
+    }
+
+    async function fetchLiveData() {
+      const now = Date.now();
+      if (liveDataCache.data && (now - liveDataCache.ts) < LIVE_CACHE_TTL) {
+        return liveDataCache.data;
+      }
+      const resp = await fetch(`api.php?days=3`);
+      const data = await resp.json();
+      liveDataCache = { data, ts: Date.now() };
+      return data;
+    }
+
     async function loadLocality(name) {
       const slug = toSlug(name);
       history.pushState({ locality: name }, "", `lokaler.html?lokal=${slug}`);
@@ -557,13 +361,14 @@
       if (currentMap) { currentMap.remove(); currentMap = null; }
 
       try {
-        // Fetch locality stats and live observations in parallel
-        const [statsResp, liveResp] = await Promise.all([
-          fetch(`stats-api.php?q=locality&name=${encodeURIComponent(name)}`),
-          fetch(`api.php?days=3`),
-        ]);
+        const needsLive = localityHasRecentObs(name);
+
+        // Fetch locality stats (always) and live observations (only if recent activity)
+        const statsPromise = fetch(`stats-api.php?q=locality&name=${encodeURIComponent(name)}`);
+        const livePromise = needsLive ? fetchLiveData() : Promise.resolve(null);
+
+        const [statsResp, liveData] = await Promise.all([statsPromise, livePromise]);
         const data = await statsResp.json();
-        const liveData = await liveResp.json();
 
         if (data.error) {
           detail.innerHTML = `<div class="error">${data.error}</div>`;
@@ -571,7 +376,7 @@
         }
 
         // Merge live data with database reports (live takes priority for recent days)
-        if (liveData.records) {
+        if (liveData && liveData.records) {
           const liveReports = liveData.records
             .filter(r => (r.location?.locality || "") === name)
             .map(r => {
@@ -579,7 +384,8 @@
               const date = startDate.substring(0, 10);
               const time = startDate.length > 10 ? startDate.substring(11, 16) : "";
               const occId = r.occurrence?.occurrenceId || "";
-              const url = occId && !isNaN(occId) ? `https://www.artportalen.se/Sighting/${occId}` : "";
+              const occMatch = occId.match(/:sighting:(\d+)$/);
+              const url = occMatch ? `https://www.artportalen.se/sighting/${occMatch[1]}` : "";
               return {
                 taxon_id: r.taxon?.id,
                 name: r.taxon?.vernacularName || "",
@@ -683,29 +489,9 @@
       if (data.recent_reports && data.recent_reports.length > 0) {
         html += `<div class="section-title" id="sec-senaste">De senaste rapporterna från lokalen</div>
         <div class="recent-reports">
-          ${data.recent_reports.map(r => {
-            const date = formatDate(r.date);
-            const time = r.time ? r.time.substring(0, 5) : "";
-            const url = r.url;
-            const linkStart = url ? `<a href="${url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" onclick="event.stopPropagation()">` : "";
-            const linkEnd = url ? "</a>" : "";
-            return `
-            <div class="obs-card" data-taxon="${r.taxon_id}" data-name="${r.name}">
-              <div class="obs-header">
-                <div>
-                  <div class="obs-species">${r.name}</div>
-                  <div class="obs-scientific">${r.scientific}</div>
-                </div>
-                ${r.count ? `<div class="obs-count">${r.count} ex</div>` : ""}
-              </div>
-              <div class="obs-meta">
-                ${date ? `<span>${date}</span>` : ""}
-                ${time ? `<span>${time}</span>` : ""}
-                ${r.observer ? `<span>${r.observer}</span>` : ""}
-                ${url ? `<span>${linkStart}&#x1f517;${linkEnd}</span>` : ""}
-              </div>
-            </div>`;
-          }).join("")}
+          ${data.recent_reports.map(r =>
+            renderObsItem(normalizeDbObs(r), { showSpeciesLink: true, showLocalityLink: false })
+          ).join("")}
         </div>`;
       }
 
@@ -722,14 +508,9 @@
       if (data.top_species && data.top_species.length > 0) {
         html += `<div class="section-title" id="sec-arter">Mest rapporterade arter</div>
         <div class="top-list">
-          ${data.top_species.map((s, i) => `
-            <div class="top-item" data-taxon="${s.taxon_id}" data-name="${s.name}">
-              <span class="rank">${i + 1}.</span>
-              <span class="name">${s.name}</span>
-              <span class="sci">${s.scientific}</span>
-              <span class="obs-count">${s.count.toLocaleString("sv")} obs</span>
-            </div>
-          `).join("")}
+          ${data.top_species.map(s =>
+            renderSpeciesItem(s, { showLink: true, showCount: true, countLabel: "obs" })
+          ).join("")}
         </div>`;
       }
 
@@ -737,12 +518,9 @@
       if (data.top_reporters && data.top_reporters.length > 0) {
         html += `<div class="chart-section" id="sec-rapportorer">
           <h2>Mest aktiva rapportörer</h2>
-          ${data.top_reporters.map((r, i) => `
-            <div class="reporter-item">
-              <span>${i + 1}. ${r.name}</span>
-              <span style="color:var(--muted)">${r.count.toLocaleString("sv")} obs</span>
-            </div>
-          `).join("")}
+          <div class="top-list">
+            ${data.top_reporters.map(r => renderReporterItem(r)).join("")}
+          </div>
         </div>`;
       }
 

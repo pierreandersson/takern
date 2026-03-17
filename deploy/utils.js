@@ -9,6 +9,56 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
+// ── Section navigation ──
+
+let _sectionObserver = null;
+
+/**
+ * Update the section-nav bar with links and intersection observer.
+ * sections: array of { id, label } or null to clear.
+ */
+function updateSectionNav(sections) {
+  const nav = document.getElementById("section-nav");
+  if (!nav) return;
+  if (!sections) { nav.innerHTML = ""; return; }
+  nav.innerHTML = sections.map(s =>
+    `<a href="#${s.id}" data-sec="${s.id}">${s.label}</a>`
+  ).join("");
+
+  nav.querySelectorAll("a").forEach(a => {
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      const el = document.getElementById(a.dataset.sec);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  if (_sectionObserver) _sectionObserver.disconnect();
+  _sectionObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const link = nav.querySelector(`[data-sec="${entry.target.id}"]`);
+      if (link) {
+        if (entry.isIntersecting) link.classList.add("active");
+        else link.classList.remove("active");
+      }
+    });
+    if (!nav.querySelector("a.active")) {
+      const first = sections.find(s => {
+        const el = document.getElementById(s.id);
+        return el && el.getBoundingClientRect().bottom > 0;
+      });
+      if (first) nav.querySelector(`[data-sec="${first.id}"]`)?.classList.add("active");
+    }
+    const active = nav.querySelector("a.active");
+    if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, { rootMargin: "-50px 0px -60% 0px", threshold: 0 });
+
+  sections.forEach(s => {
+    const el = document.getElementById(s.id);
+    if (el) _sectionObserver.observe(el);
+  });
+}
+
 // ── Heatmap configuration ──
 
 const HEATMAP_GRADIENT = {
@@ -122,4 +172,160 @@ function redlistBadgeHtml(cat) {
   if (!cat || cat === "LC") return "";
   const colors = { CR: "red", EN: "red", VU: "orange", NT: "orange" };
   return `<span class="badge badge-${colors[cat] || "blue"}">${cat}</span>`;
+}
+
+// ── Slugs & links ──
+
+function toSlug(name) {
+  return name.toLowerCase()
+    .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function speciesLink(name) {
+  return `<a href="statistik.html?art=${toSlug(name)}" class="species-link" onclick="event.stopPropagation()">${name}</a>`;
+}
+
+// ── Data normalizers ──
+
+/**
+ * Normalize a SOS API observation record to canonical format.
+ */
+function normalizeSosObs(obs) {
+  const startDate = obs.event?.startDate || "";
+  const date = startDate.substring(0, 10);
+  const timePart = startDate.length > 10 ? startDate.substring(11, 16) : "";
+  const time = timePart && timePart !== "00:00" ? timePart : "";
+  const occId = obs.occurrence?.occurrenceId || "";
+  const match = occId.match(/:sighting:(\d+)$/);
+  const url = match ? `https://www.artportalen.se/sighting/${match[1]}` : "";
+  const count = obs.occurrence?.individualCount;
+  return {
+    name: obs.taxon?.vernacularName || "",
+    scientific: obs.taxon?.scientificName || "",
+    taxonId: obs.taxon?.id,
+    count: count != null ? parseInt(count) || null : null,
+    date,
+    time,
+    locality: obs.location?.locality || "",
+    observer: obs.occurrence?.recordedBy || "",
+    url,
+    lat: obs.location?.decimalLatitude,
+    lng: obs.location?.decimalLongitude,
+    remarks: obs.occurrence?.occurrenceRemarks || "",
+    redlist: obs.taxon?.attributes?.redlistCategory || "",
+  };
+}
+
+/**
+ * Normalize a database/cached observation record to canonical format.
+ */
+function normalizeDbObs(r) {
+  return {
+    name: r.name || r.vernacular_name || "",
+    scientific: r.scientific || r.scientific_name || "",
+    taxonId: r.taxon_id,
+    count: r.count != null ? parseInt(r.count) || null : null,
+    date: r.date || "",
+    time: r.time && r.time !== "00:00" ? r.time.substring(0, 5) : "",
+    locality: r.locality || "",
+    observer: r.observer || r.recorded_by || "",
+    url: r.url || "",
+    lat: r.lat,
+    lng: r.lng,
+    remarks: r.remarks || "",
+    redlist: r.redlist || "",
+  };
+}
+
+// ── Shared render functions ──
+
+/**
+ * Render a single observation item.
+ * obs: canonical format from normalizeSosObs/normalizeDbObs
+ * options: { showSpeciesLink, showLocalityLink, badges, highlight, showRemarks }
+ */
+function renderObsItem(obs, options = {}) {
+  const {
+    showSpecies = true,
+    showSpeciesLink = true,
+    showLocalityLink = true,
+    badges = "",
+    highlight = false,
+    showRemarks = false,
+  } = options;
+
+  const nameHtml = showSpecies
+    ? (showSpeciesLink && obs.name ? speciesLink(obs.name) : (obs.name || ""))
+    : "";
+  const countHtml = obs.count ? `<div class="obs-count">${obs.count} ex</div>` : "";
+  const hasSpeciesBlock = nameHtml || badges;
+
+  const datePart = obs.date ? formatDateSwedish(obs.date) : "";
+  const timePart = obs.time || "";
+  const dateTimeStr = timePart ? `${datePart} ${timePart}` : datePart;
+
+  const metaParts = [];
+  if (dateTimeStr) metaParts.push(`<span>${dateTimeStr}</span>`);
+  if (obs.locality && showLocalityLink) metaParts.push(`<span>${localityLink(obs.locality)}</span>`);
+  else if (obs.locality) metaParts.push(`<span>${obs.locality}</span>`);
+  if (obs.observer) metaParts.push(`<span>${obs.observer}</span>`);
+  if (obs.url) metaParts.push(`<a href="${obs.url}" target="_blank" rel="noopener" class="ap-link" onclick="event.stopPropagation()">Artportalen ↗</a>`);
+
+  const remarksHtml = showRemarks && obs.remarks
+    ? `<div class="obs-meta obs-remarks">${obs.remarks}</div>` : "";
+
+  const speciesBlock = hasSpeciesBlock
+    ? `<div class="obs-header">
+    <div>
+      <div class="obs-species">${nameHtml} ${badges}</div>
+      ${obs.scientific ? `<div class="obs-scientific">${obs.scientific}</div>` : ""}
+    </div>
+    ${countHtml}
+  </div>` : (countHtml ? `<div class="obs-header">${countHtml}</div>` : "");
+
+  return `<div class="obs-card${highlight ? " highlight" : ""}"${obs.lat ? ` data-lat="${obs.lat}" data-lng="${obs.lng}"` : ""}>
+  ${speciesBlock}
+  ${metaParts.length ? `<div class="obs-meta">${metaParts.join("")}</div>` : ""}
+  ${remarksHtml}
+</div>`;
+}
+
+/**
+ * Render a species list item.
+ * species: { name, scientific, taxonId, count, redlist }
+ * options: { showLink, showCount, countLabel, showRedlist }
+ */
+function renderSpeciesItem(species, options = {}) {
+  const {
+    showLink = true,
+    showCount = true,
+    countLabel = "",
+    showRedlist = false,
+  } = options;
+
+  const nameHtml = showLink && species.name ? speciesLink(species.name) : (species.name || "");
+  const badge = showRedlist ? redlistBadgeHtml(species.redlist) : "";
+  const countStr = showCount && species.count != null
+    ? `<span class="top-item-count">${species.count.toLocaleString("sv")}${countLabel ? ` ${countLabel}` : ""}</span>`
+    : "";
+
+  return `<div class="top-item">
+  <div>
+    <div class="top-item-name">${nameHtml} ${badge}</div>
+    ${species.scientific ? `<div class="top-item-sub">${species.scientific}</div>` : ""}
+  </div>
+  ${countStr}
+</div>`;
+}
+
+/**
+ * Render a reporter list item.
+ * reporter: { name, count }
+ */
+function renderReporterItem(reporter) {
+  return `<div class="top-item">
+  <div><div class="top-item-name">${reporter.name}</div></div>
+  <span class="top-item-count">${reporter.count.toLocaleString("sv")}</span>
+</div>`;
 }

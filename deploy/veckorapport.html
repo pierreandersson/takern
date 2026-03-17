@@ -14,44 +14,9 @@
   <meta property="og:url" content="https://pierrea.se/takern/veckorapport.html">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="sv_SE">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Section nav */
-    .section-nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      padding: 0 1rem;
-    }
-    .section-nav:empty { border-bottom: none; }
-    .section-nav::-webkit-scrollbar { display: none; }
-    .section-nav a {
-      padding: 0.55rem 0.75rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-decoration: none;
-      white-space: nowrap;
-      border-bottom: 2px solid transparent;
-      transition: color 0.15s, border-color 0.15s;
-      flex-shrink: 0;
-    }
-    .section-nav a:hover { color: var(--accent); }
-    .section-nav a.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-      font-weight: 600;
-    }
-    [id^="sec-"] { scroll-margin-top: 3rem; }
-
     /* Page-specific styles */
 
     .compare {
@@ -247,6 +212,8 @@
     <div class="loading" id="loading">Hämtar observationer...</div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="utils.js"></script>
