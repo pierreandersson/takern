@@ -251,9 +251,9 @@
     <nav>
       <a href="index.html">Senaste</a>
       <a href="veckorapport.html">Denna vecka</a>
-      <a href="statistik.html">Statistik</a>
       <a href="arter.html" class="active" id="nav-arter">Arter</a>
       <a href="lokaler.html">Lokaler</a>
+      <a href="statistik.html">Statistik</a>
       <a href="om.html">Om</a>
     </nav>
   </header>
@@ -539,7 +539,7 @@
         const link = o.url ? `<a href="${o.url}" target="_blank" rel="noopener" style="color:var(--accent);margin-left:0.3rem">↗</a>` : "";
         const src = o.source ? `<span style="font-size:0.75rem;color:var(--muted);background:var(--border);padding:0.1rem 0.4rem;border-radius:3px;margin-left:0.3rem">${o.source}</span>` : "";
         return `<div style="font-size:0.9rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
-          ${loc}${loc && obs ? " · " : ""}${obs}${src}
+          ${loc ? localityLink(loc) : ""}${loc && obs ? " · " : ""}${obs}${src}
           <span style="color:var(--muted);float:right">${date}${time}${link}</span>
         </div>`;
       }).join("");
@@ -864,7 +864,7 @@
           <div class="locality-list">
             ${sp.top_localities.map(l => `
               <div class="locality-item">
-                <span>${l.name}</span>
+                <span>${localityLink(l.name)}</span>
                 <span style="color:var(--muted)">${l.count.toLocaleString("sv")} obs</span>
               </div>
             `).join("")}

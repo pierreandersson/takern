@@ -89,6 +89,16 @@ function formatDateSwedish(dateStr) {
   return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
 }
 
+function localitySlug(name) {
+  return name.toLowerCase()
+    .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function localityLink(name) {
+  return `<a href="lokaler.html?lokal=${localitySlug(name)}" class="locality-link" onclick="event.stopPropagation()">${name}</a>`;
+}
+
 function formatDateTimeSv(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);

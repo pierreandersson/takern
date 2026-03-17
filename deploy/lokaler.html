@@ -220,50 +220,86 @@
     }
     .reporter-item:last-child { border-bottom: none; }
 
-    /* Map + nearby grid */
-    .map-nearby-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+    /* Map section with nearby */
+    .map-section {
       margin-bottom: 1.5rem;
     }
-
-    .map-nearby-grid .map-col {
-      min-height: 300px;
-    }
-
-    .map-nearby-grid #localityMap {
-      height: 100%;
-      min-height: 300px;
-      border-radius: 8px;
+    #localityMap {
+      height: 300px;
+      border-radius: 8px 8px 0 0;
       border: 1px solid var(--border);
+      border-bottom: none;
     }
+    .nearby-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0 0 8px 8px;
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nearby-bar .nearby-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-right: 0.2rem;
+    }
+    .nearby-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+    .nearby-chip:hover { border-color: var(--accent); }
+    .nearby-chip .dist { color: var(--muted); margin-left: 0.25rem; }
 
-    .nearby-list {
+    /* Recent reports – index.html style */
+    .recent-reports {
       display: flex;
       flex-direction: column;
       gap: 0.4rem;
+      margin-bottom: 2rem;
     }
-
-    .nearby-item {
+    .obs-card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 0.6rem 1rem;
+      padding: 0.75rem 1rem;
       cursor: pointer;
-      transition: border-color 0.15s;
+      transition: all 0.15s;
+    }
+    .obs-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .obs-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+      gap: 0.5rem;
     }
-
-    .nearby-item:hover { border-color: var(--accent); }
-    .nearby-item .name { font-weight: 600; }
-    .nearby-item .dist { color: var(--muted); font-size: 0.8rem; white-space: nowrap; margin-left: 0.75rem; }
+    .obs-species { font-weight: 600; font-size: 1rem; }
+    .obs-species a { color: inherit; text-decoration: none; }
+    .obs-species a:hover { text-decoration: underline; }
+    .obs-scientific { font-style: italic; color: var(--muted); font-size: 0.85rem; }
+    .obs-count { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
+    .obs-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
 
     @media (max-width: 600px) {
       .locality-stats { grid-template-columns: 1fr 1fr; }
-      .map-nearby-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -278,9 +314,9 @@
     <nav>
       <a href="index.html">Senaste</a>
       <a href="veckorapport.html">Denna vecka</a>
-      <a href="statistik.html">Statistik</a>
       <a href="arter.html">Arter</a>
       <a href="lokaler.html" class="active" id="nav-lokaler">Lokaler</a>
+      <a href="statistik.html">Statistik</a>
       <a href="om.html">Om</a>
     </nav>
   </header>
@@ -332,8 +368,9 @@
     // ── Section navigation ──
     const DETAIL_SECTIONS = [
       { id: "sec-karta", label: "Karta" },
-      { id: "sec-arter", label: "Arter" },
+      { id: "sec-senaste", label: "Senaste" },
       { id: "sec-sasong", label: "Säsong" },
+      { id: "sec-arter", label: "Arter" },
       { id: "sec-rapportorer", label: "Rapportörer" },
     ];
 
@@ -389,14 +426,14 @@
     function renderBrowseView() {
       if (!localitiesCache) return;
       const container = document.getElementById("locality-list-container");
-      const top = localitiesCache.slice(0, 30);
+      const top = localitiesCache.slice(0, 10);
       container.innerHTML = `
-        <div class="list-title">Mest rapporterade lokaler · ${localitiesCache.length} lokaler</div>
+        <div class="list-title">Lokaler med flest rapporter under de senaste 12 månaderna</div>
         <div class="locality-list-page">
           ${top.map(l => `
             <div class="loc-item" data-name="${l.name}">
               <span class="name">${l.name}</span>
-              <span class="meta">${l.obs.toLocaleString("sv")} obs · ${l.species} arter</span>
+              <span class="meta">${(l.recent_obs || l.obs).toLocaleString("sv")} obs senaste året · ${l.species} arter</span>
             </div>
           `).join("")}
         </div>
@@ -554,6 +591,12 @@
         .slice(0, count);
     }
 
+    function formatDate(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      return `${d.getDate()} ${MONTHS_SV[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
     function renderLocalityDetail(data) {
       const detail = document.getElementById("locality-detail");
       let html = "";
@@ -568,34 +611,68 @@
         <h2>${data.name}</h2>
       </div>`;
 
-      // Map + nearby localities (two-column grid)
+      // Stats cards (above map)
+      html += `<div class="locality-stats">
+        <div class="stat-card"><div class="stat-value">${data.last_obs ? formatDate(data.last_obs) : "–"}</div><div class="stat-label">Senaste obs</div></div>
+        <div class="stat-card"><div class="stat-value">${data.obs_count.toLocaleString("sv")}</div><div class="stat-label">observationer sedan ${data.first_obs ? data.first_obs.substring(0, 4) : "–"}</div></div>
+        <div class="stat-card"><div class="stat-value">${data.species_count}</div><div class="stat-label">olika arter rapporterade</div></div>
+        <div class="stat-card"><div class="stat-value">${data.observer_count}</div><div class="stat-label">Rapportörer</div></div>
+      </div>`;
+
+      // Map + nearby localities bar
       if (data.lat && data.lng) {
-        const nearby = getNearbyLocalities(data.name, data.lat, data.lng, 6);
-        html += `<div class="map-nearby-grid" id="sec-karta">
-          <div class="map-col">
-            <div id="localityMap"></div>
-          </div>
-          <div>
-            <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem">Närliggande lokaler</h3>
-            <div class="nearby-list">
-              ${nearby.length > 0 ? nearby.map(n => `
-                <div class="nearby-item" data-nearby-name="${n.name}">
-                  <span class="name">${n.name}</span>
-                  <span class="dist">${n.distStr} · ${n.species} arter</span>
-                </div>
-              `).join("") : '<div style="color:var(--muted);font-size:0.9rem">Inga närliggande lokaler</div>'}
-            </div>
-          </div>
+        const nearby = getNearbyLocalities(data.name, data.lat, data.lng, 8);
+        html += `<div class="map-section" id="sec-karta">
+          <div id="localityMap"></div>
+          ${nearby.length > 0 ? `<div class="nearby-bar">
+            <span class="nearby-label">Närliggande:</span>
+            ${nearby.map(n => `
+              <div class="nearby-chip" data-nearby-name="${n.name}">
+                ${n.name}<span class="dist">${n.distStr}</span>
+              </div>
+            `).join("")}
+          </div>` : ''}
         </div>`;
       }
 
-      // Stats cards
-      html += `<div class="locality-stats">
-        <div class="stat-card"><div class="stat-value">${data.obs_count.toLocaleString("sv")}</div><div class="stat-label">Observationer</div></div>
-        <div class="stat-card"><div class="stat-value">${data.species_count}</div><div class="stat-label">Arter</div></div>
-        <div class="stat-card"><div class="stat-value">${data.observer_count}</div><div class="stat-label">Rapportörer</div></div>
-        <div class="stat-card"><div class="stat-value">${data.first_obs ? data.first_obs.substring(0, 4) : "–"}</div><div class="stat-label">Första obs</div></div>
-      </div>`;
+      // Recent reports
+      if (data.recent_reports && data.recent_reports.length > 0) {
+        html += `<div class="section-title" id="sec-senaste">De senaste rapporterna från lokalen</div>
+        <div class="recent-reports">
+          ${data.recent_reports.map(r => {
+            const date = formatDate(r.date);
+            const time = r.time ? r.time.substring(0, 5) : "";
+            const url = r.url;
+            const linkStart = url ? `<a href="${url}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" onclick="event.stopPropagation()">` : "";
+            const linkEnd = url ? "</a>" : "";
+            return `
+            <div class="obs-card" data-taxon="${r.taxon_id}" data-name="${r.name}">
+              <div class="obs-header">
+                <div>
+                  <div class="obs-species">${r.name}</div>
+                  <div class="obs-scientific">${r.scientific}</div>
+                </div>
+                ${r.count ? `<div class="obs-count">${r.count} ex</div>` : ""}
+              </div>
+              <div class="obs-meta">
+                ${date ? `<span>${date}</span>` : ""}
+                ${time ? `<span>${time}</span>` : ""}
+                ${r.observer ? `<span>${r.observer}</span>` : ""}
+                ${url ? `<span>${linkStart}&#x1f517;${linkEnd}</span>` : ""}
+              </div>
+            </div>`;
+          }).join("")}
+        </div>`;
+      }
+
+      // Season curve
+      if (data.season_curve && Object.keys(data.season_curve).length > 0) {
+        html += `<div class="chart-section" id="sec-sasong">
+          <h2>Säsongsvariation</h2>
+          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem">Genomsnittligt antal rapporter per vecka</p>
+          <div class="chart-container"><canvas id="seasonChart"></canvas></div>
+        </div>`;
+      }
 
       // Top species
       if (data.top_species && data.top_species.length > 0) {
@@ -609,15 +686,6 @@
               <span class="obs-count">${s.count.toLocaleString("sv")} obs</span>
             </div>
           `).join("")}
-        </div>`;
-      }
-
-      // Season curve
-      if (data.season_curve && Object.keys(data.season_curve).length > 0) {
-        html += `<div class="chart-section" id="sec-sasong">
-          <h2>Säsongsvariation</h2>
-          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem">Genomsnittligt antal rapporter per vecka</p>
-          <div class="chart-container"><canvas id="seasonChart"></canvas></div>
         </div>`;
       }
 
@@ -659,7 +727,7 @@
           .bindPopup(`<strong>${data.name}</strong>`).openPopup();
 
         // Add nearby localities as subtle markers
-        const nearby = getNearbyLocalities(data.name, data.lat, data.lng, 6);
+        const nearby = getNearbyLocalities(data.name, data.lat, data.lng, 8);
         nearby.forEach(n => {
           L.circleMarker([n.lat, n.lng], {
             radius: 5, fillColor: "#6b7280", color: "#4b5563", weight: 1, fillOpacity: 0.5,
@@ -674,16 +742,19 @@
         const labels = weeks.map(w => weekToDate(w));
 
         currentChart = new Chart(document.getElementById("seasonChart"), {
-          type: "bar",
+          type: "line",
           data: {
             labels: labels,
             datasets: [{
               label: "Snitt rapporter",
               data: vals,
-              backgroundColor: "rgba(45, 106, 79, 0.6)",
+              backgroundColor: "rgba(45, 106, 79, 0.1)",
               borderColor: "#2d6a4f",
-              borderWidth: 1,
-              borderRadius: 3,
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 0,
+              pointHoverRadius: 4,
             }],
           },
           options: {

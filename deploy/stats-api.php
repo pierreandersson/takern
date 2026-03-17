@@ -484,12 +484,15 @@ if ($q === 'geo') {
 // ── Localities ──
 if ($q === 'localities') {
     $localities = [];
+    $oneYearAgo = date('Y-m-d', strtotime('-1 year'));
     $sql = "SELECT locality, ROUND(AVG(latitude),5) lat, ROUND(AVG(longitude),5) lng,
-        COUNT(*) obs_count, COUNT(DISTINCT taxon_id) species_count
+        COUNT(*) obs_count, COUNT(DISTINCT taxon_id) species_count,
+        MAX(event_start_date) last_obs,
+        SUM(CASE WHEN event_start_date >= '$oneYearAgo' THEN 1 ELSE 0 END) recent_obs
         FROM observations
         WHERE locality IS NOT NULL AND locality != '' AND latitude IS NOT NULL";
     if ($id) $sql .= " AND taxon_id = $id";
-    $sql .= " GROUP BY locality HAVING obs_count >= 5 ORDER BY obs_count DESC LIMIT 500";
+    $sql .= " GROUP BY locality HAVING obs_count >= 10 AND last_obs >= '$oneYearAgo' ORDER BY recent_obs DESC LIMIT 500";
 
     $res = $db->query($sql);
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
@@ -499,6 +502,7 @@ if ($q === 'localities') {
             'lng' => floatval($row['lng']),
             'obs' => intval($row['obs_count']),
             'species' => intval($row['species_count']),
+            'recent_obs' => intval($row['recent_obs']),
         ];
     }
     jsonOut(['localities' => $localities]);
@@ -566,6 +570,32 @@ if ($q === 'locality' && isset($_GET['name'])) {
         $topReporters[] = ['name' => $row['recorded_by'], 'count' => intval($row['n'])];
     }
 
+    // Recent reports: last 20 unique date+species observations at this locality
+    $recentReports = [];
+    $seen = [];
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name,
+        event_start_date, start_time, individual_count, recorded_by, url, dataset_name
+        FROM observations WHERE locality = :name AND vernacular_name IS NOT NULL
+        ORDER BY event_start_date DESC, start_time DESC LIMIT 100");
+    $stmt->bindValue(':name', $locName, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $key = $row['event_start_date'] . '|' . $row['vernacular_name'];
+        if (isset($seen[$key])) continue;
+        $seen[$key] = true;
+        $recentReports[] = [
+            'taxon_id' => intval($row['taxon_id']),
+            'name' => $row['vernacular_name'],
+            'scientific' => $row['scientific_name'],
+            'date' => $row['event_start_date'],
+            'time' => $row['start_time'],
+            'count' => $row['individual_count'] ? intval($row['individual_count']) : null,
+            'observer' => $row['recorded_by'],
+            'url' => $row['url'],
+        ];
+        if (count($recentReports) >= 20) break;
+    }
+
     jsonOut([
         'name' => $locName,
         'obs_count' => intval($info['obs_count']),
@@ -576,6 +606,7 @@ if ($q === 'locality' && isset($_GET['name'])) {
         'lat' => $info['lat'] ? floatval($info['lat']) : null,
         'lng' => $info['lng'] ? floatval($info['lng']) : null,
         'top_species' => $topSpecies,
+        'recent_reports' => $recentReports,
         'season_curve' => $seasonCurve,
         'top_reporters' => $topReporters,
     ]);

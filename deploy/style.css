@@ -183,6 +183,15 @@ nav a.active { color: white; font-weight: 600; border-bottom: 2px solid white; p
 
 .locality-item:last-child { border-bottom: none; }
 
+/* Locality links (match species link style: underline on hover only) */
+a.locality-link {
+  color: inherit;
+  text-decoration: none;
+}
+a.locality-link:hover {
+  text-decoration: underline;
+}
+
 /* Loading & error */
 .loading {
   text-align: center;

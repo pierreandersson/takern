@@ -280,9 +280,9 @@
     <nav>
       <a href="index.html">Senaste</a>
       <a href="veckorapport.html">Denna vecka</a>
-      <a href="statistik.html" class="active">Statistik</a>
       <a href="arter.html">Arter</a>
       <a href="lokaler.html">Lokaler</a>
+      <a href="statistik.html" class="active">Statistik</a>
       <a href="om.html">Om</a>
     </nav>
   </header>
@@ -404,7 +404,7 @@
           <div class="locality-list">
             ${overview.top_localities.map(l => `
               <div class="locality-item">
-                <span>${l.name}</span>
+                <span>${localityLink(l.name)}</span>
                 <span style="color:var(--muted)">${l.count.toLocaleString("sv")} obs</span>
               </div>
             `).join("")}

@@ -246,9 +246,9 @@
     <nav>
       <a href="index.html" class="active">Senaste</a>
       <a href="veckorapport.html">Denna vecka</a>
-      <a href="statistik.html">Statistik</a>
       <a href="arter.html">Arter</a>
       <a href="lokaler.html">Lokaler</a>
+      <a href="statistik.html">Statistik</a>
       <a href="om.html">Om</a>
     </nav>
   </header>
@@ -465,7 +465,7 @@
             </div>
             <div class="obs-meta">
               ${date ? `<span>${date}</span>` : ""}
-              ${loc ? `<span>${loc}</span>` : ""}
+              ${loc ? `<span>${localityLink(loc)}</span>` : ""}
               ${observer ? `<span>${observer}</span>` : ""}
             </div>
             ${remarks ? `<div class="obs-meta" style="margin-top:0.25rem;font-style:italic">Kommentar: ${remarks}</div>` : ""}
@@ -568,7 +568,7 @@
           const linkEnd = url ? "</a>" : "";
           return `<div class="obs-card" data-lat="${lat}" data-lng="${lng}">
             <div class="obs-header">
-              <div class="obs-meta" style="margin:0">${date ? `<span>${date}</span>` : ""}${loc ? `<span>${loc}</span>` : ""}${observer ? `<span>${observer}</span>` : ""}${url ? `<span>${linkStart}&#x1f517;${linkEnd}</span>` : ""}</div>
+              <div class="obs-meta" style="margin:0">${date ? `<span>${date}</span>` : ""}${loc ? `<span>${localityLink(loc)}</span>` : ""}${observer ? `<span>${observer}</span>` : ""}${url ? `<span>${linkStart}&#x1f517;${linkEnd}</span>` : ""}</div>
               ${count ? `<div class="obs-count">${count} ex</div>` : ""}
             </div>
             ${remarks ? `<div class="obs-meta" style="font-style:italic">Kommentar: ${remarks}</div>` : ""}
