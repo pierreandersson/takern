@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tåkern – Lokaler</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2d6a4f">
+  <meta name="description" content="Lokaler vid Tåkern – de mest rapporterade fågellokalerna med artlistor och statistik.">
+  <meta property="og:title" content="Tåkern – Lokaler">
+  <meta property="og:description" content="Lokaler vid Tåkern – de mest rapporterade fågellokalerna med artlistor och statistik.">
+  <meta property="og:image" content="https://pierrea.se/takern/og-image.jpg">
+  <meta property="og:url" content="https://pierrea.se/takern/lokaler.html">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="sv_SE">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Search */
+    .search-box {
+      position: relative;
+      margin-bottom: 1.5rem;
+      z-index: 10000;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      background: var(--card);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-box input:focus { border-color: var(--accent); }
+
+    .search-box::before {
+      content: "\1F50D";
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+    }
+
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-height: 400px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .search-results.open { display: block; }
+
+    .search-result {
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    .search-result:last-child { border-bottom: none; }
+    .search-result:hover { background: var(--accent-light); }
+
+    .search-result .name { font-weight: 600; }
+    .search-result .count { color: var(--muted); font-size: 0.85rem; }
+
+    /* Locality list */
+    .locality-list-page {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .loc-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .loc-item:hover { border-color: var(--accent); }
+    .loc-item .name { font-weight: 600; }
+    .loc-item .meta { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+
+    .list-title {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    /* Section nav */
+    .section-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 1rem;
+      gap: 0;
+      min-height: 0;
+      transition: min-height 0.2s;
+    }
+    .section-nav:empty { border-bottom: none; }
+    .section-nav::-webkit-scrollbar { display: none; }
+    .section-nav a {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .section-nav a:hover { color: var(--accent); }
+    .section-nav a.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+    [id^="sec-"] { scroll-margin-top: 3rem; }
+
+    /* Detail view */
+    .locality-detail { display: none; }
+    .locality-detail.active { display: block; }
+
+    .locality-header {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .locality-header h2 { font-size: 1.5rem; font-weight: 700; }
+
+    .locality-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+    .stat-card .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* Top list in detail */
+    .top-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 2rem;
+    }
+
+    .top-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .top-item:hover { border-color: var(--accent); }
+
+    .top-item .rank {
+      color: var(--muted);
+      font-size: 0.85rem;
+      width: 2rem;
+    }
+
+    .top-item .name { font-weight: 600; flex: 1; min-width: 0; }
+    .top-item .sci { font-style: italic; color: var(--muted); font-size: 0.85rem; margin-left: 0.5rem; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top-item .obs-count { color: var(--muted); font-size: 0.9rem; margin-left: 1rem; white-space: nowrap; flex-shrink: 0; }
+
+    .reporter-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .reporter-item:last-child { border-bottom: none; }
+
+    @media (max-width: 600px) {
+      .locality-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div>
+        <h1><a href="index.html">Fågelobservationer vid Tåkern</a></h1>
+        <p id="header-desc">Lokaler vid Tåkern</p>
+      </div>
+    </div>
+    <nav>
+      <a href="index.html">Senaste</a>
+      <a href="veckorapport.html">Denna vecka</a>
+      <a href="statistik.html">Statistik</a>
+      <a href="arter.html">Arter</a>
+      <a href="lokaler.html" class="active" id="nav-lokaler">Lokaler</a>
+      <a href="om.html">Om</a>
+    </nav>
+  </header>
+
+  <nav class="section-nav" id="section-nav"></nav>
+
+  <div class="container">
+    <!-- Search -->
+    <div class="search-box">
+      <input type="text" id="locality-search" placeholder="Sök lokal..." autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <!-- Browse view -->
+    <div id="browse-view">
+      <div id="locality-list-container">
+        <div class="loading">Laddar lokaler...</div>
+      </div>
+    </div>
+
+    <!-- Detail view (hidden until selected) -->
+    <div class="locality-detail" id="locality-detail"></div>
+  </div>
+
+  <script src="utils.js"></script>
+  <script>
+    // ── State ──
+    let localitiesCache = null;
+    let currentChart = null;
+    let currentMap = null;
+
+    function toSlug(name) {
+      return name.toLowerCase()
+        .replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    }
+
+    function findLocalityBySlug(slug) {
+      if (!localitiesCache) return null;
+      return localitiesCache.find(l => toSlug(l.name) === slug);
+    }
+
+    // ── Section navigation ──
+    const DETAIL_SECTIONS = [
+      { id: "sec-karta", label: "Karta" },
+      { id: "sec-arter", label: "Arter" },
+      { id: "sec-sasong", label: "Säsong" },
+      { id: "sec-rapportorer", label: "Rapportörer" },
+    ];
+
+    let sectionObserver = null;
+
+    function updateSectionNav(sections) {
+      const nav = document.getElementById("section-nav");
+      if (!sections) { nav.innerHTML = ""; return; }
+      nav.innerHTML = sections.map(s =>
+        `<a href="#${s.id}" data-sec="${s.id}">${s.label}</a>`
+      ).join("");
+
+      nav.querySelectorAll("a").forEach(a => {
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          const el = document.getElementById(a.dataset.sec);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      if (sectionObserver) sectionObserver.disconnect();
+      sectionObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const link = nav.querySelector(`[data-sec="${entry.target.id}"]`);
+          if (link) {
+            if (entry.isIntersecting) link.classList.add("active");
+            else link.classList.remove("active");
+          }
+        });
+        if (!nav.querySelector("a.active")) {
+          const first = sections.find(s => {
+            const el = document.getElementById(s.id);
+            return el && el.getBoundingClientRect().bottom > 0;
+          });
+          if (first) nav.querySelector(`[data-sec="${first.id}"]`)?.classList.add("active");
+        }
+        const active = nav.querySelector("a.active");
+        if (active) active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }, { rootMargin: "-50px 0px -60% 0px", threshold: 0 });
+
+      sections.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (el) sectionObserver.observe(el);
+      });
+    }
+
+    // ── Render browse view ──
+    function renderBrowseView() {
+      if (!localitiesCache) return;
+      const container = document.getElementById("locality-list-container");
+      const top = localitiesCache.slice(0, 30);
+      container.innerHTML = `
+        <div class="list-title">Mest rapporterade lokaler · ${localitiesCache.length} lokaler</div>
+        <div class="locality-list-page">
+          ${top.map(l => `
+            <div class="loc-item" data-name="${l.name}">
+              <span class="name">${l.name}</span>
+              <span class="meta">${l.obs.toLocaleString("sv")} obs · ${l.species} arter</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      container.querySelectorAll(".loc-item").forEach(el => {
+        el.addEventListener("click", () => {
+          loadLocality(el.dataset.name);
+        });
+      });
+    }
+
+    // ── Search ──
+    function setupSearch() {
+      const input = document.getElementById("locality-search");
+      const results = document.getElementById("search-results");
+
+      input.addEventListener("input", () => {
+        const q = input.value.trim().toLowerCase();
+        if (q.length < 2) {
+          results.classList.remove("open");
+          return;
+        }
+
+        const matches = localitiesCache
+          .filter(l => l.name.toLowerCase().includes(q))
+          .slice(0, 15);
+
+        if (matches.length === 0) {
+          results.innerHTML = '<div style="padding:0.75rem 1rem;color:var(--muted)">Inga lokaler hittade</div>';
+        } else {
+          results.innerHTML = matches.map(l => `
+            <div class="search-result" data-name="${l.name}">
+              <span class="name">${l.name}</span>
+              <span class="count">${l.obs.toLocaleString("sv")} obs</span>
+            </div>
+          `).join("");
+        }
+
+        results.classList.add("open");
+
+        results.querySelectorAll(".search-result").forEach(el => {
+          el.addEventListener("click", () => {
+            results.classList.remove("open");
+            input.value = "";
+            loadLocality(el.dataset.name);
+          });
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search-box")) {
+          results.classList.remove("open");
+        }
+      });
+    }
+
+    // ── Show browse view ──
+    function showBrowse() {
+      const detail = document.getElementById("locality-detail");
+      detail.classList.remove("active");
+      detail.innerHTML = "";
+      document.getElementById("browse-view").style.display = "";
+      document.getElementById("locality-search").value = "";
+      if (currentChart) { currentChart.destroy(); currentChart = null; }
+      if (currentMap) { currentMap.remove(); currentMap = null; }
+      updateSectionNav(null);
+      document.title = "Tåkern – Lokaler";
+      document.getElementById("header-desc").textContent = "Lokaler vid Tåkern";
+      history.pushState({}, "", "lokaler.html");
+    }
+
+    // ── Load and show locality detail ──
+    async function loadLocality(name) {
+      const slug = toSlug(name);
+      history.pushState({ locality: name }, "", `lokaler.html?lokal=${slug}`);
+      document.title = `${name} – Tåkern`;
+      document.getElementById("header-desc").textContent = name;
+      document.getElementById("browse-view").style.display = "none";
+
+      const detail = document.getElementById("locality-detail");
+      detail.classList.add("active");
+      detail.innerHTML = '<div class="loading">Laddar lokaldata...</div>';
+
+      if (currentChart) { currentChart.destroy(); currentChart = null; }
+      if (currentMap) { currentMap.remove(); currentMap = null; }
+
+      try {
+        const resp = await fetch(`stats-api.php?q=locality&name=${encodeURIComponent(name)}`);
+        const data = await resp.json();
+
+        if (data.error) {
+          detail.innerHTML = `<div class="error">${data.error}</div>`;
+          return;
+        }
+
+        renderLocalityDetail(data);
+      } catch (err) {
+        detail.innerHTML = `<div class="error">Kunde inte ladda data: ${err.message}</div>`;
+      }
+    }
+
+    function weekToDate(week) {
+      const d = new Date(2024, 0, 1);
+      d.setDate(d.getDate() + week * 7);
+      return `${d.getDate()} ${MONTHS_SV[d.getMonth()]}`;
+    }
+
+    function renderLocalityDetail(data) {
+      const detail = document.getElementById("locality-detail");
+      let html = "";
+
+      // Back link
+      html += `<div style="margin-bottom:1rem">
+        <a href="#" id="back-link" style="color:var(--accent);text-decoration:none;font-size:0.9rem">&larr; Alla lokaler</a>
+      </div>`;
+
+      // Header
+      html += `<div class="locality-header">
+        <h2>${data.name}</h2>
+      </div>`;
+
+      // Stats cards
+      html += `<div class="locality-stats">
+        <div class="stat-card"><div class="stat-value">${data.obs_count.toLocaleString("sv")}</div><div class="stat-label">Observationer</div></div>
+        <div class="stat-card"><div class="stat-value">${data.species_count}</div><div class="stat-label">Arter</div></div>
+        <div class="stat-card"><div class="stat-value">${data.observer_count}</div><div class="stat-label">Rapportörer</div></div>
+        <div class="stat-card"><div class="stat-value">${data.first_obs ? data.first_obs.substring(0, 4) : "–"}</div><div class="stat-label">Första obs</div></div>
+      </div>`;
+
+      // Map
+      if (data.lat && data.lng) {
+        html += `<div class="chart-section" id="sec-karta">
+          <h2>Karta</h2>
+          <div id="localityMap" style="height:300px;border-radius:8px;border:1px solid var(--border)"></div>
+        </div>`;
+      }
+
+      // Top species
+      if (data.top_species && data.top_species.length > 0) {
+        html += `<div class="section-title" id="sec-arter">Mest rapporterade arter</div>
+        <div class="top-list">
+          ${data.top_species.map((s, i) => `
+            <div class="top-item" data-taxon="${s.taxon_id}" data-name="${s.name}">
+              <span class="rank">${i + 1}.</span>
+              <span class="name">${s.name}</span>
+              <span class="sci">${s.scientific}</span>
+              <span class="obs-count">${s.count.toLocaleString("sv")} obs</span>
+            </div>
+          `).join("")}
+        </div>`;
+      }
+
+      // Season curve
+      if (data.season_curve && Object.keys(data.season_curve).length > 0) {
+        html += `<div class="chart-section" id="sec-sasong">
+          <h2>Säsongsvariation</h2>
+          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem">Genomsnittligt antal rapporter per vecka</p>
+          <div class="chart-container"><canvas id="seasonChart"></canvas></div>
+        </div>`;
+      }
+
+      // Top reporters
+      if (data.top_reporters && data.top_reporters.length > 0) {
+        html += `<div class="chart-section" id="sec-rapportorer">
+          <h2>Mest aktiva rapportörer</h2>
+          ${data.top_reporters.map((r, i) => `
+            <div class="reporter-item">
+              <span>${i + 1}. ${r.name}</span>
+              <span style="color:var(--muted)">${r.count.toLocaleString("sv")} obs</span>
+            </div>
+          `).join("")}
+        </div>`;
+      }
+
+      // Footer
+      html += `<footer>
+        Data från <a href="https://www.artportalen.se">Artportalen</a>, Ringmärkningscentralen, Svensk Fågeltaxering m.fl. via <a href="https://www.artdatabanken.se">SLU Artdatabanken</a>
+      </footer>`;
+
+      detail.innerHTML = html;
+
+      // Back link handler
+      document.getElementById("back-link").addEventListener("click", e => {
+        e.preventDefault();
+        showBrowse();
+      });
+
+      // Map
+      if (data.lat && data.lng) {
+        currentMap = L.map("localityMap").setView([data.lat, data.lng], 14);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 18,
+        }).addTo(currentMap);
+        L.marker([data.lat, data.lng]).addTo(currentMap)
+          .bindPopup(`<strong>${data.name}</strong>`).openPopup();
+      }
+
+      // Season chart
+      if (data.season_curve && Object.keys(data.season_curve).length > 0) {
+        const weeks = Array.from({ length: 53 }, (_, i) => i);
+        const vals = weeks.map(w => data.season_curve[w] || 0);
+        const labels = weeks.map(w => weekToDate(w));
+
+        currentChart = new Chart(document.getElementById("seasonChart"), {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "Snitt rapporter",
+              data: vals,
+              backgroundColor: "rgba(45, 106, 79, 0.6)",
+              borderColor: "#2d6a4f",
+              borderWidth: 1,
+              borderRadius: 3,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { maxTicksLimit: 12 } },
+              y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+            },
+          },
+        });
+      }
+
+      // Wire up species clicks → navigate to arter.html
+      detail.querySelectorAll("[data-taxon]").forEach(el => {
+        el.addEventListener("click", () => {
+          const name = el.dataset.name || el.querySelector(".name")?.textContent;
+          if (name) {
+            window.location.href = `arter.html?art=${toSlug(name)}`;
+          }
+        });
+      });
+
+      // Section nav
+      updateSectionNav(DETAIL_SECTIONS.filter(s => document.getElementById(s.id)));
+    }
+
+    // ── Browser back/forward ──
+    window.addEventListener("popstate", () => {
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("lokal");
+      if (slug && localitiesCache) {
+        const loc = findLocalityBySlug(slug);
+        if (loc) {
+          loadLocality(loc.name);
+          return;
+        }
+      }
+      showBrowse();
+    });
+
+    // ── Init ──
+    async function init() {
+      try {
+        const resp = await fetch("stats-api.php?q=localities");
+        const data = await resp.json();
+        localitiesCache = data.localities || [];
+
+        renderBrowseView();
+        setupSearch();
+
+        // Check for deep-link
+        const params = new URLSearchParams(window.location.search);
+        const slug = params.get("lokal");
+        if (slug) {
+          const loc = findLocalityBySlug(slug);
+          if (loc) {
+            loadLocality(loc.name);
+          }
+        }
+      } catch (err) {
+        document.getElementById("locality-list-container").innerHTML =
+          `<div class="error">Kunde inte ladda lokaler: ${err.message}</div>`;
+      }
+    }
+    init();
+  </script>
+</body>
+</html>

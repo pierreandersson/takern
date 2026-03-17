@@ -26,6 +26,7 @@ if (!is_dir($CACHE_DIR)) mkdir($CACHE_DIR, 0755, true);
 $cacheKey = $q;
 if ($id !== null) $cacheKey .= "_$id";
 if (isset($_GET['year'])) $cacheKey .= "_y" . intval($_GET['year']);
+if (isset($_GET['name'])) $cacheKey .= "_n" . md5($_GET['name']);
 $cacheFile = "$CACHE_DIR/$cacheKey.json";
 
 if (file_exists($cacheFile)) {
@@ -501,6 +502,83 @@ if ($q === 'localities') {
         ];
     }
     jsonOut(['localities' => $localities]);
+}
+
+// ── Locality detail ──
+if ($q === 'locality' && isset($_GET['name'])) {
+    $locName = $_GET['name'];
+
+    // Basic info
+    $stmt = $db->prepare("SELECT COUNT(*) obs_count, COUNT(DISTINCT taxon_id) species_count,
+        COUNT(DISTINCT recorded_by) observer_count,
+        MIN(event_start_date) first_obs, MAX(event_start_date) last_obs,
+        ROUND(AVG(latitude),5) lat, ROUND(AVG(longitude),5) lng
+        FROM observations WHERE locality = :name");
+    $stmt->bindValue(':name', $locName, SQLITE3_TEXT);
+    $info = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
+
+    if (!$info || intval($info['obs_count']) === 0) {
+        jsonOut(['error' => 'Locality not found']);
+    }
+
+    // Top 10 species
+    $topSpecies = [];
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, COUNT(*) n
+        FROM observations WHERE locality = :name AND vernacular_name IS NOT NULL
+        GROUP BY taxon_id ORDER BY n DESC LIMIT 10");
+    $stmt->bindValue(':name', $locName, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $topSpecies[] = ['taxon_id' => intval($row['taxon_id']), 'name' => $row['vernacular_name'],
+            'scientific' => $row['scientific_name'], 'count' => intval($row['n'])];
+    }
+
+    // Season curve: average reports per week
+    $stmt = $db->prepare("SELECT SUBSTR(event_start_date,1,4) y,
+        CAST(STRFTIME('%W', event_start_date) AS INTEGER) w, COUNT(*) n
+        FROM observations WHERE locality = :name GROUP BY y, w");
+    $stmt->bindValue(':name', $locName, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    $weekCounts = [];
+    $locYears = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $w = intval($row['w']);
+        if (!isset($weekCounts[$w])) $weekCounts[$w] = [];
+        $weekCounts[$w][] = intval($row['n']);
+        $locYears[$row['y']] = true;
+    }
+    $numYears = count($locYears);
+    $seasonCurve = [];
+    for ($w = 0; $w < 53; $w++) {
+        $vals = $weekCounts[$w] ?? [];
+        $avg = $numYears > 0 ? array_sum($vals) / $numYears : 0;
+        if ($avg > 0) $seasonCurve[$w] = round($avg, 1);
+    }
+
+    // Top 10 reporters
+    $topReporters = [];
+    $stmt = $db->prepare("SELECT recorded_by, COUNT(*) n FROM observations
+        WHERE locality = :name AND recorded_by IS NOT NULL
+        GROUP BY recorded_by ORDER BY n DESC LIMIT 10");
+    $stmt->bindValue(':name', $locName, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $topReporters[] = ['name' => $row['recorded_by'], 'count' => intval($row['n'])];
+    }
+
+    jsonOut([
+        'name' => $locName,
+        'obs_count' => intval($info['obs_count']),
+        'species_count' => intval($info['species_count']),
+        'observer_count' => intval($info['observer_count']),
+        'first_obs' => $info['first_obs'],
+        'last_obs' => $info['last_obs'],
+        'lat' => $info['lat'] ? floatval($info['lat']) : null,
+        'lng' => $info['lng'] ? floatval($info['lng']) : null,
+        'top_species' => $topSpecies,
+        'season_curve' => $seasonCurve,
+        'top_reporters' => $topReporters,
+    ]);
 }
 
 // ── Week context (for weekly report) ──
@@ -1116,7 +1194,7 @@ if ($q === 'init') {
 }
 
 // ── Unknown endpoint ──
-echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=week_context, ?q=accumulation, or ?q=init']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=locality&name=X, ?q=week_context, ?q=accumulation, or ?q=init']);
 
 } catch (Throwable $e) {
     http_response_code(500);
