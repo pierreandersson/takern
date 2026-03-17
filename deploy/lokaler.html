@@ -553,12 +553,52 @@
       if (currentMap) { currentMap.remove(); currentMap = null; }
 
       try {
-        const resp = await fetch(`stats-api.php?q=locality&name=${encodeURIComponent(name)}`);
-        const data = await resp.json();
+        // Fetch locality stats and live observations in parallel
+        const [statsResp, liveResp] = await Promise.all([
+          fetch(`stats-api.php?q=locality&name=${encodeURIComponent(name)}`),
+          fetch(`api.php?days=3`),
+        ]);
+        const data = await statsResp.json();
+        const liveData = await liveResp.json();
 
         if (data.error) {
           detail.innerHTML = `<div class="error">${data.error}</div>`;
           return;
+        }
+
+        // Merge live data with database reports (live takes priority for recent days)
+        if (liveData.records) {
+          const liveReports = liveData.records
+            .filter(r => (r.location?.locality || "") === name)
+            .map(r => {
+              const startDate = r.event?.startDate || "";
+              const date = startDate.substring(0, 10);
+              const time = startDate.length > 10 ? startDate.substring(11, 16) : "";
+              const occId = r.occurrence?.occurrenceId || "";
+              const url = occId && !isNaN(occId) ? `https://www.artportalen.se/Sighting/${occId}` : "";
+              return {
+                taxon_id: r.taxon?.id,
+                name: r.taxon?.vernacularName || "",
+                scientific: r.taxon?.scientificName || "",
+                date,
+                time: time !== "00:00" ? time : "",
+                count: r.occurrence?.individualCount,
+                observer: r.occurrence?.recordedBy || "",
+                url,
+                _live: true,
+              };
+            });
+          // Merge: live reports + older database reports, dedup by date|species
+          const dbReports = (data.recent_reports || []).map(r => ({ ...r, _live: false }));
+          const merged = [...liveReports, ...dbReports];
+          merged.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.time || "").localeCompare(a.time || ""));
+          const seen = new Set();
+          data.recent_reports = merged.filter(r => {
+            const key = `${r.date}|${r.name}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          }).slice(0, 20);
         }
 
         renderLocalityDetail(data);
