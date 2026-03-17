@@ -189,6 +189,7 @@
       margin: 0.5rem 0 0;
     }
 
+
     @media (max-width: 700px) {
       .trends-columns { grid-template-columns: 1fr; }
       .trend-sparkline { width: 48px; height: 20px; }
@@ -251,6 +252,7 @@
     const OVERVIEW_SECTIONS = [
       { id: "sec-karta", label: "Karta" },
       { id: "trends-container", label: "Trender" },
+      { id: "sec-stabilitet", label: "Stabilitet" },
       { id: "sec-arter", label: "Arter" },
       { id: "sec-artrikedom", label: "Artrikedom" },
       { id: "sec-nyaarter", label: "Nya arter" },
@@ -298,6 +300,10 @@
       // 2. Trends placeholder (filled async)
       html += `<div id="trends-container"></div>`;
 
+      // 2b. Stability placeholder (filled async)
+      html += `<div id="sec-stabilitet"></div>`;
+
+
       // 3. Top 20 species
       html += `<div class="section-title" id="sec-arter">De mest rapporterade arterna 2006–2026</div>
       <div class="top-list">
@@ -305,6 +311,7 @@
           renderSpeciesItem(s, { showLink: true, showCount: true, countLabel: "obs" })
         ).join("")}
       </div>`;
+
 
       // 4. Species richness per month
       if (overview.richness_per_month) {
@@ -557,6 +564,9 @@
         });
       }
 
+      // Stability – loaded async
+      loadStability();
+
       // Wire up click handlers – navigate to arter.html
       document.querySelectorAll("[data-taxon]").forEach(el => {
         el.style.cursor = "pointer";
@@ -571,6 +581,70 @@
 
       // Section nav for overview
       updateSectionNav(OVERVIEW_SECTIONS);
+    }
+
+    // ── Stability / Volatility ──
+
+    async function loadStability() {
+      const container = document.getElementById("sec-stabilitet");
+      if (!container) return;
+      let data;
+      try {
+        const resp = await fetch("stats-api.php?q=stability");
+        data = await resp.json();
+      } catch (e) { return; }
+
+      function itemHtml(item, isStable) {
+        const color = isStable ? "rgba(45,106,79,1)" : "rgba(192,57,43,1)";
+        const pct = item.mean_rate_pct < 1
+          ? item.mean_rate_pct.toFixed(1)
+          : Math.round(item.mean_rate_pct);
+        const cvPct = Math.round(item.cv * 100);
+        const label = isStable ? `CV ${cvPct} %` : `CV ${cvPct} %`;
+        return `<div class="trend-item" data-taxon="${item.taxon_id}">
+          <div class="trend-info">
+            <div class="trend-name">${item.name}</div>
+            <div class="trend-rates">${pct} % snitt · ${label}</div>
+          </div>
+          <canvas class="trend-sparkline"
+            data-spark='${JSON.stringify(item.sparkline)}'
+            data-color="${color}"></canvas>
+        </div>`;
+      }
+
+      const yearRange = data.years[0] + "–" + data.years[data.years.length - 1];
+      container.innerHTML = `<div class="trends-section">
+        <h2>Stabilitet vs volatilitet</h2>
+        <div class="trends-subtitle">Variationskoefficient (CV) för rapportfrekvens ${yearRange} · lägre CV = mer förutsägbar närvaro</div>
+        <div class="trends-columns">
+          <div class="trends-col">
+            <h3><span style="color:#2d6a4f">◆</span> Mest stabila</h3>
+            ${data.stable.map(item => itemHtml(item, true)).join("")}
+          </div>
+          <div class="trends-col">
+            <h3><span style="color:#c0392b">◆</span> Mest volatila</h3>
+            ${data.volatile.map(item => itemHtml(item, false)).join("")}
+          </div>
+        </div>
+        <details class="trends-method">
+          <summary>Hur vi mäter stabilitet</summary>
+          <p>Stabilitet mäts med variationskoefficienten (CV) – standardavvikelsen delat med medelvärdet av rapportfrekvensen per år. Låg CV innebär att arten rapporteras ungefär lika ofta varje år (typiskt stamhäckare och resident). Hög CV innebär stor variation år för år – arten kan vara talrik ett år och nästan frånvarande nästa. Endast arter med minst 0,5 % genomsnittlig rapportfrekvens inkluderas.</p>
+        </details>
+      </div>`;
+
+      container.querySelectorAll(".trend-sparkline").forEach(canvas => {
+        const vals = JSON.parse(canvas.dataset.spark);
+        const color = canvas.dataset.color;
+        requestAnimationFrame(() => drawSparkline(canvas, vals, color));
+      });
+
+      container.querySelectorAll("[data-taxon]").forEach(el => {
+        el.style.cursor = "pointer";
+        el.addEventListener("click", () => {
+          const name = el.querySelector(".trend-name")?.textContent;
+          if (name) window.location.href = `arter.html?art=${toSlug(name)}`;
+        });
+      });
     }
 
     // ── Trends: "Tåkerns fågelfauna i förändring" ──

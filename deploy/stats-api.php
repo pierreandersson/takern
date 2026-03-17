@@ -275,6 +275,91 @@ if ($q === 'top_yearly') {
     jsonOut(['species' => $species, 'cutoff' => $cutoff]);
 }
 
+// ── Historical species rankings per year ──
+if ($q === 'ranking') {
+    $maxYear = intval(date('Y')) - 1; // exclude current (incomplete) year
+    $res = $db->query("SELECT SUBSTR(event_start_date,1,4) y, taxon_id, vernacular_name, scientific_name, COUNT(*) n
+        FROM observations
+        WHERE vernacular_name IS NOT NULL
+          AND scientific_name LIKE '% %'
+          AND vernacular_name NOT LIKE '% x %'
+          AND vernacular_name NOT LIKE '%/%'
+          AND vernacular_name NOT LIKE '%, % morf'
+          AND SUBSTR(event_start_date,1,4) BETWEEN '2006' AND '$maxYear'
+        GROUP BY y, taxon_id
+        ORDER BY y, n DESC");
+
+    // Group by year, already sorted by count DESC
+    $byYear = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $y = $row['y'];
+        if (!isset($byYear[$y])) $byYear[$y] = [];
+        $byYear[$y][] = [
+            'taxon_id' => intval($row['taxon_id']),
+            'name'     => $row['vernacular_name'],
+            'sci'      => $row['scientific_name'],
+            'count'    => intval($row['n']),
+        ];
+    }
+
+    $years = array_keys($byYear);
+    sort($years);
+
+    $topN    = 25; // ranks to store per year (wide net to avoid line gaps)
+    $trackN  = 5;  // only visualise species that reached top 5
+
+    $trackedIds = [];
+    $meta       = []; // taxon_id → name/sci
+    $yearRanks  = []; // taxon_id → [year => [rank, count]]
+
+    foreach ($byYear as $y => $species) {
+        foreach ($species as $i => $sp) {
+            $rank = $i + 1;
+            if ($rank > $topN) break;
+            $tid = $sp['taxon_id'];
+            if ($rank <= $trackN) $trackedIds[$tid] = true;
+            if (!isset($meta[$tid])) $meta[$tid] = ['name' => $sp['name'], 'sci' => $sp['sci']];
+            if (!isset($yearRanks[$tid])) $yearRanks[$tid] = [];
+            $yearRanks[$tid][$y] = ['rank' => $rank, 'count' => $sp['count']];
+        }
+    }
+
+    $speciesOut = [];
+    foreach ($trackedIds as $tid => $_) {
+        $ranks  = [];
+        $counts = [];
+        foreach ($years as $y) {
+            if (isset($yearRanks[$tid][$y])) {
+                $ranks[]  = $yearRanks[$tid][$y]['rank'];
+                $counts[] = $yearRanks[$tid][$y]['count'];
+            } else {
+                $ranks[]  = null;
+                $counts[] = null;
+            }
+        }
+        $speciesOut[] = [
+            'taxon_id'  => $tid,
+            'name'      => $meta[$tid]['name'],
+            'scientific'=> $meta[$tid]['sci'],
+            'ranks'     => $ranks,
+            'counts'    => $counts,
+        ];
+    }
+
+    // Sort by best (lowest) average rank across all years present
+    usort($speciesOut, function($a, $b) {
+        $aRanks = array_filter($a['ranks'], fn($r) => $r !== null);
+        $bRanks = array_filter($b['ranks'], fn($r) => $r !== null);
+        $aAvg = count($aRanks) ? array_sum($aRanks) / count($aRanks) : 99;
+        $bAvg = count($bRanks) ? array_sum($bRanks) / count($bRanks) : 99;
+        return $aAvg <=> $bAvg;
+    });
+
+    $speciesOut = array_slice($speciesOut, 0, 12);
+
+    jsonOut(['years' => array_map('intval', $years), 'species' => $speciesOut]);
+}
+
 // ── Species detail ──
 if ($q === 'species' && $id !== null) {
     // Check which columns exist (server DB may lack newer columns)
@@ -1045,6 +1130,185 @@ if ($q === 'accumulation') {
         'year' => $year,
         'avg_range' => ($year - 5) . '–' . ($year - 1),
     ]);
+}
+
+// ── Group trends: average encounter rate per bird group per year ──
+if ($q === 'group_trends') {
+    $currentYear = date('Y');
+
+    // Total field visits per year
+    $totalVisits = [];
+    $res = $db->query("SELECT strftime('%Y', event_start_date) AS yr,
+        COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations WHERE event_start_date >= '2006-01-01' GROUP BY yr");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $totalVisits[$row['yr']] = intval($row['visits']);
+    }
+    $years = array_keys($totalVisits);
+    sort($years);
+    $completeYears = array_values(array_filter($years, fn($yr) => $yr != $currentYear));
+
+    // Per-species visits per year
+    $res = $db->query("SELECT taxon_id, taxonomic_order, family,
+        strftime('%Y', event_start_date) AS yr,
+        COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations
+        WHERE event_start_date >= '2006-01-01'
+          AND scientific_name LIKE '% %'
+          AND scientific_name NOT LIKE '% x %'
+          AND vernacular_name NOT LIKE '%/%'
+          AND vernacular_name NOT LIKE '%morf%'
+        GROUP BY taxon_id, yr");
+
+    // group → species_id → year → encounter rate
+    $groupData = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $group = getBirdGroup($row['taxonomic_order'] ?? '', $row['family'] ?? '');
+        $tid = $row['taxon_id'];
+        $yr  = $row['yr'];
+        $tv  = $totalVisits[$yr] ?? 0;
+        $rate = $tv > 0 ? intval($row['visits']) / $tv : 0;
+        if (!isset($groupData[$group][$tid])) $groupData[$group][$tid] = [];
+        $groupData[$group][$tid][$yr] = $rate;
+    }
+
+    // Compute average encounter rate per group per year
+    $result = [];
+    foreach ($groupData as $group => $speciesData) {
+        if (count($speciesData) < 3) continue; // skip tiny groups
+        $ratesByYear = [];
+        $speciesCount = count($speciesData);
+        foreach ($completeYears as $yr) {
+            $vals = [];
+            foreach ($speciesData as $tid => $yearRates) {
+                if (isset($yearRates[$yr])) $vals[] = $yearRates[$yr];
+            }
+            $ratesByYear[$yr] = count($vals) > 0 ? array_sum($vals) / count($vals) : null;
+        }
+
+        // Simple trend: mean first 5 vs mean last 5 years
+        $first5 = array_slice($completeYears, 0, 5);
+        $last5  = array_slice($completeYears, -5);
+        $avg = fn($ys) => array_sum(array_filter(array_map(fn($y) => $ratesByYear[$y] ?? null, $ys), fn($v) => $v !== null)) /
+               max(1, count(array_filter(array_map(fn($y) => $ratesByYear[$y] ?? null, $ys), fn($v) => $v !== null)));
+        $meanFirst = $avg($first5);
+        $meanLast  = $avg($last5);
+        $relChange = $meanFirst > 0 ? ($meanLast - $meanFirst) / $meanFirst : 0;
+
+        $result[] = [
+            'group'      => $group,
+            'species_n'  => $speciesCount,
+            'rates'      => array_map(fn($yr) => $ratesByYear[$yr] !== null ? round($ratesByYear[$yr] * 100, 3) : null, $completeYears),
+            'rel_change' => round($relChange, 3),
+            'mean_first5'=> round($meanFirst * 100, 3),
+            'mean_last5' => round($meanLast  * 100, 3),
+        ];
+    }
+
+    // Sort by absolute relative change (most dramatic first)
+    usort($result, fn($a, $b) => abs($b['rel_change']) <=> abs($a['rel_change']));
+
+    jsonOut(['years' => $completeYears, 'groups' => $result]);
+}
+
+// ── Stability: CV (coefficient of variation) per species ──
+if ($q === 'stability') {
+    $currentYear = date('Y');
+
+    $totalVisits = [];
+    $res = $db->query("SELECT strftime('%Y', event_start_date) AS yr,
+        COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations WHERE event_start_date >= '2006-01-01' GROUP BY yr");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $totalVisits[$row['yr']] = intval($row['visits']);
+    }
+    $years = array_keys($totalVisits);
+    sort($years);
+    $completeYears = array_values(array_filter($years, fn($yr) => $yr != $currentYear));
+
+    $speciesVisits = [];
+    $speciesInfo = [];
+    $res = $db->query("SELECT taxon_id, vernacular_name, scientific_name,
+        strftime('%Y', event_start_date) AS yr,
+        COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations
+        WHERE event_start_date >= '2006-01-01'
+          AND scientific_name LIKE '% %'
+          AND scientific_name NOT LIKE '% x %'
+          AND vernacular_name NOT LIKE '%/%'
+          AND vernacular_name NOT LIKE '%morf%'
+        GROUP BY taxon_id, yr");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $tid = $row['taxon_id'];
+        $yr  = $row['yr'];
+        if (!isset($speciesVisits[$tid])) $speciesVisits[$tid] = [];
+        $speciesVisits[$tid][$yr] = intval($row['visits']);
+        if (!isset($speciesInfo[$tid])) {
+            $speciesInfo[$tid] = ['name' => $row['vernacular_name'], 'sci' => $row['scientific_name']];
+        }
+    }
+
+    // Merge taxonomic splits (same as trends endpoint)
+    // Sädgås: skogsgås (232125) + tundragås (205924) → merge into sädgås (100009)
+    $mergeGroups = [100009 => [232125, 205924]];
+    foreach ($mergeGroups as $targetId => $sourceIds) {
+        if (!isset($speciesVisits[$targetId])) continue;
+        $idList = implode(',', array_merge([$targetId], $sourceIds));
+        $mergeRes = $db->query("SELECT strftime('%Y', event_start_date) AS yr,
+            COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+            FROM observations WHERE taxon_id IN ($idList) AND event_start_date >= '2006-01-01'
+            GROUP BY yr");
+        $speciesVisits[$targetId] = [];
+        while ($row = $mergeRes->fetchArray(SQLITE3_ASSOC)) {
+            $speciesVisits[$targetId][$row['yr']] = intval($row['visits']);
+        }
+        foreach ($sourceIds as $sid) {
+            unset($speciesVisits[$sid]);
+            unset($speciesInfo[$sid]);
+        }
+    }
+
+    $minMeanRate = 0.005; // ≥ 0.5 % mean encounter rate
+    $minYears    = 10;
+
+    $results = [];
+    foreach ($speciesVisits as $tid => $yrVisits) {
+        $rateValues = [];
+        foreach ($completeYears as $yr) {
+            $tv = $totalVisits[$yr] ?? 0;
+            $rateValues[] = $tv > 0 ? ($yrVisits[$yr] ?? 0) / $tv : 0;
+        }
+        if (count($rateValues) < $minYears) continue;
+
+        $mean = array_sum($rateValues) / count($rateValues);
+        if ($mean < $minMeanRate) continue;
+
+        $variance = array_sum(array_map(fn($r) => ($r - $mean) ** 2, $rateValues)) / count($rateValues);
+        $stdDev   = sqrt($variance);
+        $cv       = $mean > 0 ? $stdDev / $mean : 0;
+
+        $mn = min($rateValues); $mx = max($rateValues); $range = $mx - $mn;
+        $sparkline = $range > 0
+            ? array_map(fn($r) => round(($r - $mn) / $range, 3), $rateValues)
+            : array_fill(0, count($rateValues), 0.5);
+
+        $results[$tid] = [
+            'taxon_id'      => intval($tid),
+            'name'          => $speciesInfo[$tid]['name'],
+            'scientific'    => $speciesInfo[$tid]['sci'],
+            'mean_rate_pct' => round($mean * 100, 2),
+            'cv'            => round($cv, 3),
+            'sparkline'     => $sparkline,
+        ];
+    }
+
+    uasort($results, fn($a, $b) => $a['cv'] <=> $b['cv']);
+    $stable = array_slice(array_values($results), 0, 10);
+
+    uasort($results, fn($a, $b) => $b['cv'] <=> $a['cv']);
+    $volatile = array_slice(array_values($results), 0, 10);
+
+    jsonOut(['years' => $completeYears, 'stable' => $stable, 'volatile' => $volatile]);
 }
 
 // ── Trends: encounter rate + Theil-Sen regression ──
