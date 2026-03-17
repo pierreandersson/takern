@@ -750,6 +750,8 @@
 
         if (data.overview) {
           loadOverviewFromData(data.overview, data.geo, data.localities);
+        } else {
+          loadOverview();
         }
         if (data.species) {
           speciesCache = data.species.species;
