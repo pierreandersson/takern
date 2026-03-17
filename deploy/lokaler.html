@@ -559,12 +559,25 @@
         L.marker([data.lat, data.lng]).addTo(currentMap)
           .bindPopup(`<strong>${data.name}</strong>`).openPopup();
 
-        // Add nearby localities as subtle markers
-        const nearby = getNearbyLocalities(data.name, data.lat, data.lng, 8);
-        nearby.forEach(n => {
-          L.circleMarker([n.lat, n.lng], {
-            radius: 5, fillColor: "#6b7280", color: "#4b5563", weight: 1, fillOpacity: 0.5,
-          }).addTo(currentMap).bindPopup(`<strong>${n.name}</strong><br>${n.distStr}`);
+        // Add all other localities as clickable markers (same pattern as browse map)
+        const allOthers = localitiesCache.filter(l => l.name !== data.name && l.lat && l.lng);
+        allOthers.forEach(l => {
+          const r = Math.min(8, Math.max(3, Math.sqrt(l.obs / 50)));
+          const popup = `<strong><a href="#" class="detail-map-link" data-name="${l.name}" style="color:var(--accent);text-decoration:none">${l.name}</a></strong><br>${l.obs.toLocaleString("sv")} obs · ${l.species} arter`;
+          L.circleMarker([l.lat, l.lng], {
+            radius: r, fillColor: "#2d6a4f", color: "#1b4332",
+            weight: 1, fillOpacity: 0.7, interactive: false,
+          }).addTo(currentMap);
+          const marker = L.circleMarker([l.lat, l.lng], {
+            radius: Math.max(22, r + 8),
+            fillColor: "transparent", color: "transparent",
+            weight: 0, fillOpacity: 0,
+          }).addTo(currentMap);
+          marker.bindPopup(popup);
+        });
+        currentMap.getContainer().addEventListener("click", e => {
+          const link = e.target.closest(".detail-map-link");
+          if (link) { e.preventDefault(); loadLocality(link.dataset.name); }
         });
       }
 
