@@ -149,26 +149,17 @@ function downloadCsv($dateFrom, $dateTo) {
         $csvData = substr($csvData, 3);
     }
 
-    // Parse tab-separated CSV
-    $lines = explode("\n", $csvData);
-    $headers = str_getcsv(array_shift($lines), "\t");
+    // Parse tab-separated CSV using fgetcsv (handles multi-line quoted fields)
+    $csvTmp = tempnam(sys_get_temp_dir(), 'csv_');
+    file_put_contents($csvTmp, $csvData);
+    $fh = fopen($csvTmp, 'r');
+    $headers = fgetcsv($fh, 0, "\t");
 
     logMsg("  CSV headers (" . count($headers) . "): " . implode(' | ', array_slice($headers, 0, 5)) . " ...");
 
-    // Detect separator: check if header line has more semicolons or commas than tabs
-    $headerLine = $lines ? $lines[0] : '';
-    $tabCount = substr_count($headerLine, "\t");
-    $semiCount = substr_count($headerLine, ";");
-    $commaCount = substr_count($headerLine, ",");
-    logMsg("  First data line separators: tabs=$tabCount, semicolons=$semiCount, commas=$commaCount");
-    logMsg("  First data line (" . strlen($headerLine) . " chars): " . substr($headerLine, 0, 200));
-
     $rows = [];
     $skipped = 0;
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '') continue;
-        $fields = str_getcsv($line, "\t");
+    while (($fields = fgetcsv($fh, 0, "\t")) !== false) {
         if (count($fields) === count($headers)) {
             $rows[] = array_combine($headers, $fields);
         } else {
@@ -176,6 +167,8 @@ function downloadCsv($dateFrom, $dateTo) {
             $skipped++;
         }
     }
+    fclose($fh);
+    unlink($csvTmp);
     if ($skipped > 0) logMsg("  Skipped $skipped rows (field count mismatch, expected " . count($headers) . ")");
 
     return [$rows, $headers];
