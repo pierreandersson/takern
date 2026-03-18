@@ -1094,8 +1094,13 @@ if ($q === 'accumulation') {
         ksort($allDoys);
 
         $nYears = count($yearCurves);
+        // For current year, cap average line at yesterday
+        $maxDoy = ($year == intval(date('Y')))
+            ? intval(date('z', strtotime('-1 day'))) + 1  // date('z') is 0-based
+            : 366;
         $result = [];
         foreach (array_keys($allDoys) as $doy) {
+            if ($doy > $maxDoy) break;
             $sum = 0;
             foreach ($yearCurves as $curve) {
                 // Find the cumulative value at or before this DOY
