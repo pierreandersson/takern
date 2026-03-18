@@ -345,9 +345,15 @@
         dateCounts[d] = (dateCounts[d] || 0) + 1;
       }
 
+      // Default to most recent observation date
+      if (allObs.length) {
+        selectedDate = allObs[0].date.substring(0, 10);
+      }
+
       renderStats(data);
       renderYearLinks(data.per_year);
       initFlatpickr();
+      updateDiaryHeading();
       renderMap(data.top_localities || []);
       renderTopLocalities(data.top_localities || []);
       renderDiary();
