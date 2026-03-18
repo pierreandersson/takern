@@ -125,6 +125,11 @@ function downloadCsv($dateFrom, $dateTo) {
             $name = $zip->getNameIndex($i);
             if (str_ends_with($name, '.csv')) {
                 $csvData = $zip->getFromIndex($i);
+                if ($csvData === false) {
+                    logMsg("  getFromIndex($i) returned false");
+                } else {
+                    logMsg("  CSV extracted: " . strlen($csvData) . " bytes");
+                }
                 break;
             }
         }
@@ -134,7 +139,7 @@ function downloadCsv($dateFrom, $dateTo) {
         logMsg("  Not a ZIP. Raw preview: " . substr($raw, 0, 500));
     }
 
-    if ($csvData === null) {
+    if ($csvData === null || $csvData === false) {
         $csvData = $raw;
     }
     unlink($tmpFile);
@@ -148,15 +153,21 @@ function downloadCsv($dateFrom, $dateTo) {
     $lines = explode("\n", $csvData);
     $headers = str_getcsv(array_shift($lines), "\t");
 
+    logMsg("  CSV headers (" . count($headers) . "): " . implode(' | ', array_slice($headers, 0, 5)) . " ...");
+
     $rows = [];
+    $skipped = 0;
     foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '') continue;
         $fields = str_getcsv($line, "\t");
         if (count($fields) === count($headers)) {
             $rows[] = array_combine($headers, $fields);
+        } else {
+            $skipped++;
         }
     }
+    if ($skipped > 0) logMsg("  Skipped $skipped rows (field count mismatch, expected " . count($headers) . ")");
 
     return [$rows, $headers];
 }
