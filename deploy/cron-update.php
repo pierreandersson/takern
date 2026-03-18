@@ -235,8 +235,12 @@ function insertRows($db, $rows) {
         $data = extractRow($rec);
         if (empty($data['occurrence_id'])) continue;
 
-        $stmt->execute($data);
-        if ($stmt->rowCount() > 0) $inserted++;
+        $stmt->reset();
+        foreach ($data as $key => $value) {
+            $stmt->bindValue(":$key", $value);
+        }
+        $stmt->execute();
+        if ($db->changes() > 0) $inserted++;
     }
 
     return $inserted;
