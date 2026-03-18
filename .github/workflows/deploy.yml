@@ -36,6 +36,8 @@ jobs:
             **/takern_api_key.txt
             **/cron_secret.txt
             **/takern_observations.db
+            **/takern_observations.db-shm
+            **/takern_observations.db-wal
             **/cron-update.log
 
       - name: Clear and warm cache
