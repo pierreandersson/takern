@@ -102,6 +102,13 @@ function downloadCsv($dateFrom, $dateTo) {
 
     $raw = apiPost('/Exports/Download/Csv', $body, 'application/octet-stream', 300);
 
+    if (empty($raw)) {
+        logMsg("  WARNING: Empty raw response from /Exports/Download/Csv");
+        return [[], []];
+    }
+
+    logMsg("  Raw response: " . strlen($raw) . " bytes, starts with: " . bin2hex(substr($raw, 0, 8)));
+
     // Response may be a ZIP containing a CSV
     $tmpFile = tempnam(sys_get_temp_dir(), 'sos_');
     file_put_contents($tmpFile, $raw);
@@ -117,6 +124,9 @@ function downloadCsv($dateFrom, $dateTo) {
             }
         }
         $zip->close();
+    } else {
+        // Not a ZIP – log first 500 chars to diagnose unexpected formats
+        logMsg("  Not a ZIP. Raw preview: " . substr($raw, 0, 500));
     }
 
     if ($csvData === null) {
