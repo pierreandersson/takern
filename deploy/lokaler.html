@@ -318,6 +318,7 @@
 
     // ── Show browse view ──
     function showBrowse() {
+      document.title = "Tåkern – Lokaler";
       const detail = document.getElementById("locality-detail");
       detail.classList.remove("active");
       detail.innerHTML = "";
@@ -360,7 +361,7 @@
     async function loadLocality(name) {
       const slug = toSlug(name);
       history.pushState({ locality: name }, "", `lokaler.html?lokal=${slug}`);
-      document.title = `${name} – Tåkern`;
+      document.title = `Tåkern – ${name}`;
       document.getElementById("header-desc").textContent = name;
       document.getElementById("browse-view").style.display = "none";
 

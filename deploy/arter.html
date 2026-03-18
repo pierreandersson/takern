@@ -388,6 +388,7 @@
 
     // ── Show browse view ──
     function showBrowse() {
+      document.title = "Tåkern – Arter";
       const detail = document.getElementById("species-detail");
       detail.classList.remove("active");
       detail.innerHTML = "";
@@ -479,6 +480,7 @@
         if (cached) hint = { name: cached.name, scientific: cached.scientific };
       }
 
+      if (hint && hint.name) document.title = `Tåkern – ${hint.name.charAt(0).toUpperCase() + hint.name.slice(1)}`;
       detail.innerHTML = `
         <div class="species-header">
           <div>
@@ -500,6 +502,7 @@
       const sp = await resp.json();
 
       if (sp.error) { showBrowse(); return; }
+      document.title = `Tåkern – ${sp.name.charAt(0).toUpperCase() + sp.name.slice(1)}`;
 
       if (!skipPush) {
         const slug = toSlug(sp.name);
