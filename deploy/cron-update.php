@@ -367,8 +367,8 @@ $countBefore = $db->querySingle("SELECT COUNT(*) FROM observations");
 
 try {
     $inserted = downloadPeriod($db, $overlapDate, $today);
-} catch (Exception $e) {
-    logMsg("ERROR during download: " . $e->getMessage());
+} catch (Throwable $e) {
+    logMsg("ERROR during download: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
     $db->close();
     exit(1);
 }
