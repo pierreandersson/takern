@@ -285,20 +285,20 @@
     <div class="tech-details" id="tech-details">
 
       <!-- Notable scoring -->
-      <div class="about-section">
+      <div class="about-section" id="noterbarhet">
         <h2>Noterbarhet – poängsättning</h2>
-        <p>På sidan <em>Senaste observationer</em> sorteras arter efter en poängsumma som speglar hur noterbara de är just nu. Observationer med 80 poäng eller mer markeras med en röd markering. Poängen baseras på tre huvudfaktorer:</p>
+        <p>På sidan <em>Senaste observationer</em> sorteras arter efter en poängsumma som speglar hur noterbara de är just nu. Observationer med 80 poäng eller mer markeras med en röd kantlinje. Poängen baseras på tre huvudfaktorer:</p>
 
         <h3>1. Fenologi – tidig ankomst</h3>
-        <p>Arter som anländer före sin historiska ankomsttid får en bonus baserat på hur många dagar före snittet de är. Historiskt snitt beräknas som medelvärdet av årets första observation de senaste fem åren. Tidigaste kända datum (earliest) hämtas som minimum av dag-på-året över hela 20-årsperioden, med januarifilter för arter som normalt inte är vinterfåglar.</p>
+        <p>Arter som anländer före eller nära sin historiska ankomsttid får en bonus. Historiskt snitt beräknas som medelvärdet av årets första observation de senaste fem åren. Tidigaste kända datum hämtas som minimum av dag-på-året över hela 20-årsperioden, med januarifilter för att undvika övervintrade individer.</p>
 
         <div class="formula">
           <strong>Före earliest-datum (aldrig så tidigt):</strong> 300 + dagar tidigt &times; 5 (max 500 extra)<br>
           <strong>30+ dagar tidigt:</strong> 300 + dagar tidigt &times; 3<br>
           <strong>14–29 dagar tidigt:</strong> 200 + dagar tidigt &times; 2<br>
           <strong>0–13 dagar tidigt:</strong> 100 + dagar tidigt &times; 2<br>
-          <strong>Mer än 10 dagar sent:</strong> 0 poäng
-        </p>
+          <strong>Mer än 0 dagar efter historiskt snitt:</strong> 0 poäng
+        </div>
 
         <h3>2. Nyanlända arter</h3>
         <p>Arter med få observationer hittills i år (max 20) får en bonus. Ju färre rapporter, desto högre bonus – det belönar arter som nyss dykt upp för säsongen.</p>
@@ -325,6 +325,55 @@
 
         <h3>Vad som inte påverkar poängen</h3>
         <p>Rödlistestatus visas som badge (VU, NT etc.) men ingår <strong>inte</strong> i poängsättningen. Rödlistan speglar nationell hotbild – inte hur noteborthy en observation är vid Tåkern.</p>
+      </div>
+
+      <!-- Etiketter -->
+      <div class="about-section" id="etiketter">
+        <h2>Etiketter (badges)</h2>
+        <p>Observationskorten på <em>Senaste observationer</em> kan visa upp till tre typer av etiketter:</p>
+
+        <h3>Fenologi</h3>
+        <table>
+          <thead>
+            <tr><th>Etikett</th><th>Innebär</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Ovanligt tidig obs</strong></td><td>Observation före artens tidigaste kända ankomstdatum vid Tåkern</td></tr>
+            <tr><td><strong>Mycket tidig obs</strong></td><td>30 eller fler dagar före historiskt snitt (senaste 5 åren)</td></tr>
+            <tr><td><strong>Tidig obs</strong></td><td>0–29 dagar före historiskt snitt</td></tr>
+            <tr><td><strong>Bland årets första</strong></td><td>En av de tio första observationerna av arten detta år</td></tr>
+          </tbody>
+        </table>
+        <p>Fenologietiketter visas bara under vårens ankomstperiod. Historiskt snitt och tidigaste datum visas som kalenderinfo direkt under etiketten.</p>
+
+        <h3>Lokal sällsynthet</h3>
+        <table>
+          <thead>
+            <tr><th>Etikett</th><th>Innebär</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Sällsynt · X obs/år</strong></td><td>Färre än 2 obs/år i snitt vid Tåkern (20-årsperiod)</td></tr>
+            <tr><td><strong>Ovanlig · X obs/år</strong></td><td>Färre än 5 obs/år i snitt</td></tr>
+            <tr><td><strong>Fåtalig · X obs/år</strong></td><td>Färre än 10 obs/år i snitt</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Nationell rödlista</h3>
+        <table>
+          <thead>
+            <tr><th>Etikett</th><th>Kategori</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>CR</strong></td><td>Akut hotad (Critically Endangered)</td></tr>
+            <tr><td><strong>EN</strong></td><td>Starkt hotad (Endangered)</td></tr>
+            <tr><td><strong>VU</strong></td><td>Sårbar (Vulnerable)</td></tr>
+            <tr><td><strong>NT</strong></td><td>Nära hotad (Near Threatened)</td></tr>
+          </tbody>
+        </table>
+        <p>Rödlistestatus påverkar <strong>inte</strong> poängsättningen – den speglar nationell hotbild, inte hur noteworthy en observation är lokalt vid Tåkern.</p>
+
+        <h3>Röd kantlinje</h3>
+        <p>Observationer med en poängsumma på 80 eller mer markeras med en röd kantlinje till vänster. Det indikerar att observationen är noteberbar av minst ett skäl – tidig ankomst, sällsynthet, ny för säsongen, eller en kombination.</p>
       </div>
 
       <!-- Sällsynthetsfilter -->

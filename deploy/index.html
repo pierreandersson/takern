@@ -168,6 +168,55 @@
       border-left: none;
     }
 
+    .legend-toggle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      margin-left: auto;
+    }
+    .legend-toggle:hover { color: var(--text); }
+
+    .legend-panel {
+      display: none;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+    .legend-panel.open { display: block; }
+    .legend-panel dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 0.75rem;
+      align-items: baseline;
+    }
+    .legend-panel dt { white-space: nowrap; }
+    .legend-panel dd { margin: 0; color: var(--muted); }
+    .legend-panel .legend-divider {
+      grid-column: 1 / -1;
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0.4rem 0;
+    }
+    .legend-red-bar {
+      display: inline-block;
+      width: 3px;
+      height: 1em;
+      background: var(--red);
+      border-radius: 2px;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
     @media (max-width: 900px) {
       .layout {
         grid-template-columns: 1fr;
@@ -219,6 +268,34 @@
       <div class="status-row">
         <div class="status" id="status">Laddar...</div>
         <button id="reload-btn">&#x21bb; Uppdatera</button>
+        <button class="legend-toggle" id="legend-toggle" onclick="toggleLegend()">&#x2139; Etiketter</button>
+      </div>
+      <div class="legend-panel" id="legend-panel">
+        <dl>
+          <dt><span class="badge badge-blue">Ovanligt tidig obs</span></dt>
+          <dd>Tidigare än det tidigaste kända datumet för arten</dd>
+          <dt><span class="badge badge-blue">Mycket tidig obs</span></dt>
+          <dd>30+ dagar före historiskt snitt (senaste 5 åren)</dd>
+          <dt><span class="badge badge-blue">Tidig obs</span></dt>
+          <dd>0–29 dagar före historiskt snitt</dd>
+          <dt><span class="badge badge-blue">Bland årets första</span></dt>
+          <dd>En av de tio första observationerna av arten i år</dd>
+          <hr class="legend-divider">
+          <dt><span class="badge badge-orange">Sällsynt</span></dt>
+          <dd>Färre än 2 obs/år i snitt vid Tåkern (20-årsperiod)</dd>
+          <dt><span class="badge badge-green">Ovanlig</span></dt>
+          <dd>Färre än 5 obs/år i snitt</dd>
+          <dt><span class="badge badge-green">Fåtalig</span></dt>
+          <dd>Färre än 10 obs/år i snitt</dd>
+          <hr class="legend-divider">
+          <dt><span class="badge badge-red">CR</span> <span class="badge badge-red">EN</span></dt>
+          <dd>Akut/starkt hotad – nationell rödlista</dd>
+          <dt><span class="badge badge-orange">VU</span> <span class="badge badge-orange">NT</span></dt>
+          <dd>Sårbar/nära hotad – nationell rödlista</dd>
+          <hr class="legend-divider">
+          <dt><span class="legend-red-bar"></span>Röd kantlinje</dt>
+          <dd>Noteberbar observation (poäng ≥ 80) – mer om <a href="om.html#noterbarhet">poängsättning</a></dd>
+        </dl>
       </div>
       <div class="obs-list" id="obs-list">
         <div class="loading">Hämtar observationer...</div>
@@ -324,6 +401,13 @@
       return `<span class="badge badge-blue">${ph.label}</span>`;
     }
 
+    function yearFirstsBadge(obs) {
+      const tid = String(obs.taxon?.id || "");
+      const yf = yearFirstsData[tid];
+      if (yf && yf.obs_count <= 10) return `<span class="badge badge-blue">Bland årets första</span>`;
+      return "";
+    }
+
     function rarityBadge(obs) {
       const tid = String(obs.taxon?.id || "");
       const r = rarityData[tid];
@@ -356,7 +440,7 @@
 
       list.innerHTML = observations.map((obs, i) => {
         const score = notableScore(obs);
-        const badges = redlistBadge(obs) + phenologyBadge(obs) + rarityBadge(obs);
+        const badges = redlistBadge(obs) + phenologyBadge(obs) + yearFirstsBadge(obs) + rarityBadge(obs);
 
         // Add map marker
         const lat = obs.location?.decimalLatitude;
@@ -441,7 +525,7 @@
         const rep = obs[0];
         const name = rep.taxon?.vernacularName || sci;
         const pheno = phenologyBonus(rep);
-        const badge = redlistBadge(rep) + phenologyBadge(rep) + rarityBadge(rep);
+        const badge = redlistBadge(rep) + phenologyBadge(rep) + yearFirstsBadge(rep) + rarityBadge(rep);
         const score = Math.max(...obs.map(notableScore));
         const highlight = score >= 80 ? " highlight" : "";
         const totalCount = obs.reduce((s, o) => s + getCount(o), 0);
@@ -601,6 +685,10 @@
     });
 
     loadData();
+
+    function toggleLegend() {
+      document.getElementById("legend-panel").classList.toggle("open");
+    }
   </script>
 </body>
 </html>
