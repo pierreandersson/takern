@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mina rapporter från Tåkern</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2d6a4f">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hero {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+    }
+    .hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 60%;
+      display: block;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 55%;
+      background: linear-gradient(transparent, rgba(0,0,0,0.55));
+      pointer-events: none;
+    }
+    .hero-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1;
+    }
+    .hero-overlay-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 1.25rem;
+    }
+    .hero-overlay h1 {
+      padding-left: 8px; /* optisk justering mot kortkanter */
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0 0 0.15rem;
+      color: white;
+    }
+    .hero-overlay .subtitle {
+      padding-left: 8px; /* optisk justering mot kortkanter */
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.8);
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      text-align: center;
+    }
+    .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+    .stat-card .stat-value.sm { font-size: 1.15rem; }
+    .stat-card .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* Two-column layout */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 308px 1fr;
+      gap: 1.75rem;
+      align-items: start;
+    }
+
+    /* Left sidebar */
+    .sidebar h2 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Flatpickr overrides */
+    .flatpickr-calendar.inline {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: none;
+      background: var(--card);
+      font-family: inherit;
+      font-size: 0.85rem;
+      margin-bottom: 0;
+      top: 0;
+      width: 100%;
+    }
+    .flatpickr-months { background: var(--card); border-radius: 8px 8px 0 0; padding: 0.25rem 0; }
+    .flatpickr-months .flatpickr-month { background: var(--card); color: var(--text); }
+    .flatpickr-current-month { color: var(--text); font-size: 0.95rem; }
+    .flatpickr-current-month .flatpickr-monthDropdown-months { background: var(--card); color: var(--text); }
+    .flatpickr-current-month input.cur-year { color: var(--text); }
+    .flatpickr-months .flatpickr-prev-month,
+    .flatpickr-months .flatpickr-next-month { color: var(--muted); fill: var(--muted); }
+    .flatpickr-months .flatpickr-prev-month:hover,
+    .flatpickr-months .flatpickr-next-month:hover { color: var(--accent); fill: var(--accent); }
+    .flatpickr-weekdays { background: var(--card); }
+    span.flatpickr-weekday { background: var(--card); color: var(--muted); font-size: 0.75rem; }
+    .flatpickr-day { color: var(--text); border-radius: 50%; position: relative; }
+    .flatpickr-day:hover { background: var(--accent-bg); border-color: var(--border); }
+    .flatpickr-day.selected,
+    .flatpickr-day.selected:hover,
+    .flatpickr-day.selected:focus { background: var(--accent); border-color: var(--accent); color: white; }
+    .flatpickr-day.today { border-color: var(--border); }
+    .flatpickr-day.today:not(.selected) { font-weight: 600; }
+    .flatpickr-day.flatpickr-disabled,
+    .flatpickr-day.flatpickr-disabled:hover { color: var(--border); }
+    .flatpickr-innerContainer { border-color: var(--border); }
+    .flatpickr-day.has-obs { font-weight: 600; }
+    .flatpickr-day.has-obs::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .flatpickr-day.has-obs.selected::after { background: rgba(255,255,255,0.7); }
+
+    /* Year links */
+    .year-links {
+      margin-top: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .year-link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      font-size: 0.85rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 0.15s;
+      width: 100%;
+      text-align: left;
+    }
+    .year-link:hover { border-color: var(--accent); }
+    .year-link.active { border-color: var(--accent); background: var(--accent-bg); }
+    .year-link .yl-year { font-weight: 600; }
+    .year-link .yl-count { font-size: 0.78rem; color: var(--muted); }
+    .year-link.active .yl-count { color: var(--accent); }
+
+    /* Right column: diary */
+    .diary-col h2 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .diary { display: flex; flex-direction: column; gap: 0.5rem; }
+    .diary-day {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .diary-day-header {
+      padding: 0.4rem 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      background: var(--accent-bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .diary-day-date { font-weight: 600; font-size: 0.82rem; }
+    .diary-day-summary { font-size: 0.72rem; color: var(--muted); }
+
+    .diary-obs-row {
+      display: grid;
+      grid-template-columns: 1fr auto minmax(0, 0.9fr) auto;
+      gap: 0.3rem 0.75rem;
+      padding: 0.32rem 0.75rem;
+      align-items: center;
+      border-bottom: 1px dashed var(--border);
+      font-size: 0.82rem;
+    }
+    .diary-obs-row:last-child { border-bottom: none; }
+    .diary-obs-row:hover { background: var(--bg); }
+    .diary-obs-species { font-weight: 500; }
+    .diary-obs-species a { color: var(--text); text-decoration: none; }
+    .diary-obs-species a:hover { color: var(--accent); }
+    .diary-obs-count { color: var(--muted); white-space: nowrap; }
+    .diary-obs-locality { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .diary-obs-locality a { color: inherit; text-decoration: none; }
+    .diary-obs-locality a:hover { color: var(--accent); }
+    .diary-obs-link a {
+      font-size: 0.72rem; color: var(--accent); text-decoration: none;
+      border: 1px solid currentColor; border-radius: 4px;
+      padding: 0.08rem 0.35rem; white-space: nowrap;
+      opacity: 0.6; transition: opacity 0.15s;
+    }
+    .diary-obs-link a:hover { opacity: 1; }
+    .diary-remarks { grid-column: 1 / -1; font-size: 0.76rem; color: var(--muted); font-style: italic; display: none; }
+    .has-remarks .diary-remarks { display: block; }
+    .diary-empty { font-size: 0.88rem; color: var(--muted); padding: 2rem 0; text-align: center; }
+
+    /* Map section */
+    #my-map { height: 350px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 2rem; }
+
+    /* Top localities */
+    .top-localities { display: flex; flex-direction: column; gap: 0.3rem; }
+
+    section.full-width { margin-bottom: 2.5rem; }
+    section.full-width h2 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    @media (max-width: 700px) {
+      .main-layout { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .diary-obs-locality { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="topnav">
+    <a href="index.html" class="nav-logo">Tåkern</a>
+    <div class="nav-links">
+      <a href="index.html">Idag</a>
+      <a href="veckorapport.html">Veckan</a>
+      <a href="arter.html">Arter</a>
+      <a href="lokaler.html">Lokaler</a>
+      <a href="statistik.html">Statistik</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <img src="header-mina-obsar.jpg" alt="Tåkern i gryningsljus">
+    <div class="hero-overlay">
+      <div class="hero-overlay-inner">
+        <h1>Mina rapporter från Tåkern</h1>
+        <div class="subtitle">15 km radie</div>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card" style="height:72px"></div>
+      <div class="stat-card" style="height:72px"></div>
+      <div class="stat-card" style="height:72px"></div>
+      <div class="stat-card" style="height:72px"></div>
+    </div>
+
+    <div class="main-layout">
+      <!-- Left: calendar + year links -->
+      <div class="sidebar">
+        <h2>Välj period</h2>
+        <input id="fp-input" type="text" style="display:none">
+        <div class="year-links" id="year-links"></div>
+      </div>
+
+      <!-- Right: diary -->
+      <div class="diary-col">
+        <h2 id="diary-heading">Alla rapporter</h2>
+        <div class="diary" id="diary"></div>
+      </div>
+    </div>
+
+    <section class="full-width">
+      <h2>Mina lokaler</h2>
+      <div id="my-map"></div>
+    </section>
+
+    <section class="full-width">
+      <h2>Topplokaler</h2>
+      <div class="top-localities" id="top-localities"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/sv.js"></script>
+  <script src="utils.js"></script>
+  <script>
+    const REPORTER = 'Pierre Andersson';
+    const MONTHS_FULL = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+    const WEEKDAYS    = ['söndag','måndag','tisdag','onsdag','torsdag','fredag','lördag'];
+
+    let allObs = [];
+    let dateCounts = {};
+    let activeYear  = null;   // null = alla år
+    let selectedDate = null;  // null = ingen specifik dag
+    let fp = null;
+
+    function fmtKey(d) {
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    function diaryDate(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      return `${WEEKDAYS[d.getDay()].charAt(0).toUpperCase() + WEEKDAYS[d.getDay()].slice(1)} ${d.getDate()} ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    function shortLoc(loc) {
+      return loc ? loc.replace(/, Tåkern,?\s*Ög$/, '').replace(/, Tåkern$/, '') : '';
+    }
+
+    async function load() {
+      const res = await fetch(`stats-api.php?q=reporter&name=${encodeURIComponent(REPORTER)}`);
+      const data = await res.json();
+      if (data.error) { document.getElementById('diary').textContent = 'Fel: ' + data.error; return; }
+
+      allObs = data.observations || [];
+      for (const obs of allObs) {
+        const d = obs.date.substring(0, 10);
+        dateCounts[d] = (dateCounts[d] || 0) + 1;
+      }
+
+      renderStats(data);
+      renderYearLinks(data.per_year);
+      initFlatpickr();
+      renderMap(data.top_localities || []);
+      renderTopLocalities(data.top_localities || []);
+      renderDiary();
+    }
+
+    function renderStats(data) {
+      document.getElementById('stats-grid').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-value">${data.total_obs}</div>
+          <div class="stat-label">observationer</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${data.total_species}</div>
+          <div class="stat-label">arter</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${Object.keys(data.per_year).length}</div>
+          <div class="stat-label">aktiva år</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value sm">${data.obs_this_year > 0 ? '#' + data.rank_this_year : '–'}</div>
+          <div class="stat-label">av ${data.total_observers_this_year.toLocaleString('sv')} i år</div>
+        </div>`;
+    }
+
+    function renderYearLinks(perYear) {
+      const el = document.getElementById('year-links');
+      const entries = Object.entries(perYear).sort(([a], [b]) => b - a);
+      el.innerHTML = entries.map(([y, n]) =>
+        `<button class="year-link${activeYear === y ? ' active' : ''}" data-year="${y}">
+          <span class="yl-year">${y}</span>
+          <span class="yl-count">${n} obs</span>
+        </button>`
+      ).join('');
+
+      el.querySelectorAll('.year-link').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const y = btn.dataset.year;
+          if (activeYear === y) {
+            activeYear = null; // toggle off = alla år
+          } else {
+            activeYear = y;
+          }
+          selectedDate = null;
+          fp.clear();
+          // Jump calendar to most recent date in that year (or current date if all)
+          if (activeYear) {
+            const dates = Object.keys(dateCounts).filter(d => d.startsWith(activeYear)).sort();
+            if (dates.length) fp.jumpToDate(dates[dates.length - 1]);
+          }
+          renderYearLinks(Object.fromEntries(entries));
+          updateDiaryHeading();
+          renderDiary();
+        });
+      });
+    }
+
+    function updateDiaryHeading() {
+      const el = document.getElementById('diary-heading');
+      if (selectedDate) {
+        const d = new Date(selectedDate + 'T12:00:00');
+        el.textContent = `${d.getDate()} ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`;
+      } else if (activeYear) {
+        el.textContent = `${activeYear}`;
+      } else {
+        el.textContent = 'Alla rapporter';
+      }
+    }
+
+    function initFlatpickr() {
+      const mostRecent = allObs.length ? allObs[0].date.substring(0, 10) : new Date().toISOString().substring(0, 10);
+
+      fp = flatpickr('#fp-input', {
+        inline: true,
+        locale: 'sv',
+        defaultDate: mostRecent,
+        onDayCreate(dObj, dStr, fp, dayElem) {
+          if (dateCounts[fmtKey(dayElem.dateObj)]) {
+            dayElem.classList.add('has-obs');
+          }
+        },
+        onChange(dates) {
+          if (!dates.length) { selectedDate = null; updateDiaryHeading(); renderDiary(); return; }
+          const key = fmtKey(dates[0]);
+          if (selectedDate === key) {
+            selectedDate = null;
+            fp.clear();
+          } else {
+            selectedDate = key;
+            activeYear = null;
+            renderYearLinks(
+              Object.fromEntries(
+                Object.entries(
+                  allObs.reduce((acc, o) => {
+                    const y = o.date.substring(0,4);
+                    acc[y] = (acc[y]||0)+1; return acc;
+                  }, {})
+                ).sort(([a],[b]) => b-a)
+              )
+            );
+            updateDiaryHeading();
+            renderDiary();
+          }
+        }
+      });
+    }
+
+    function renderDiary() {
+      let filtered;
+      if (selectedDate) {
+        filtered = allObs.filter(o => o.date.substring(0, 10) === selectedDate);
+      } else if (activeYear) {
+        filtered = allObs.filter(o => o.date.substring(0, 4) === activeYear);
+      } else {
+        filtered = allObs;
+      }
+
+      if (!filtered.length) {
+        document.getElementById('diary').innerHTML = '<div class="diary-empty">Inga observationer.</div>';
+        return;
+      }
+
+      const byDate = {};
+      for (const obs of filtered) {
+        const d = obs.date.substring(0, 10);
+        if (!byDate[d]) byDate[d] = [];
+        byDate[d].push(obs);
+      }
+
+      document.getElementById('diary').innerHTML = Object.entries(byDate).map(([date, obs]) => {
+        const artCount = new Set(obs.map(o => o.taxon_id)).size;
+        const summary = `${obs.length} obs · ${artCount} art${artCount !== 1 ? 'er' : ''}`;
+
+        const rows = obs.map(o => {
+          const nameHtml = o.name ? `<a href="statistik.html?art=${toSlug(o.name)}">${o.name}</a>` : '–';
+          const loc = shortLoc(o.locality);
+          const locHtml = loc ? `<a href="lokaler.html?lokal=${localitySlug(loc)}" onclick="event.stopPropagation()">${loc}</a>` : '';
+          const linkHtml = o.url ? `<a href="${o.url}" target="_blank" rel="noopener">AP ↗</a>` : '';
+          return `<div class="diary-obs-row${o.remarks ? ' has-remarks' : ''}">
+            <div class="diary-obs-species">${nameHtml}</div>
+            <div class="diary-obs-count">${o.count ? o.count + '\u202fex' : ''}</div>
+            <div class="diary-obs-locality">${locHtml}</div>
+            <div class="diary-obs-link">${linkHtml}</div>
+            ${o.remarks ? `<div class="diary-remarks">${o.remarks}</div>` : ''}
+          </div>`;
+        }).join('');
+
+        return `<div class="diary-day">
+          <div class="diary-day-header">
+            <span class="diary-day-date">${diaryDate(date)}</span>
+            <span class="diary-day-summary">${summary}</span>
+          </div>
+          ${rows}
+        </div>`;
+      }).join('');
+    }
+
+    function renderMap(localities) {
+      const map = initMap('my-map', 12);
+      const maxCount = Math.max(...localities.map(l => l.count));
+      for (const loc of localities) {
+        const r = 5 + (loc.count / maxCount) * 18;
+        const name = shortLoc(loc.name);
+        L.circleMarker([loc.lat, loc.lng], {
+          radius: r,
+          fillColor: '#2d6a4f',
+          fillOpacity: 0.55,
+          color: '#fff',
+          weight: 1.5,
+        })
+        .bindPopup(`<strong>${name}</strong><br>${loc.count} obs`)
+        .addTo(map);
+      }
+    }
+
+    function renderTopLocalities(localities) {
+      document.getElementById('top-localities').innerHTML = localities.map(loc => {
+        const name = shortLoc(loc.name);
+        return `<div class="top-item">
+          <div><div class="top-item-name"><a href="lokaler.html?lokal=${localitySlug(name)}" style="color:inherit;text-decoration:none">${name}</a></div></div>
+          <span class="top-item-count">${loc.count} obs</span>
+        </div>`;
+      }).join('');
+    }
+
+    load();
+  </script>
+</body>
+</html>

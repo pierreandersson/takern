@@ -27,7 +27,7 @@ $cacheKey = $q;
 if ($id !== null) $cacheKey .= "_$id";
 if (isset($_GET['year'])) $cacheKey .= "_y" . intval($_GET['year']);
 if (isset($_GET['name'])) $cacheKey .= "_n" . md5($_GET['name']);
-if ($q === 'top_weekly' || $q === 'top_yearly') $cacheKey .= '_' . date('Y-m-d');
+if ($q === 'top_weekly' || $q === 'top_yearly' || $q === 'reporter') $cacheKey .= '_' . date('Y-m-d');
 $cacheFile = "$CACHE_DIR/$cacheKey.json";
 
 if (file_exists($cacheFile)) {
@@ -1559,8 +1559,83 @@ if ($q === 'init') {
     // If not all cached, fall through – client will use individual endpoints as fallback
 }
 
+// ── Reporter page ──
+if ($q === 'reporter') {
+    $name = isset($_GET['name']) ? trim($_GET['name']) : '';
+    if ($name === '') {
+        echo json_encode(['error' => 'name parameter required']);
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT COUNT(*) FROM observations WHERE recorded_by = :name");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $totalObs = intval($stmt->execute()->fetchArray()[0]);
+
+    $stmt = $db->prepare("SELECT COUNT(DISTINCT taxon_id) FROM observations WHERE recorded_by = :name");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $totalSpecies = intval($stmt->execute()->fetchArray()[0]);
+
+    $perYear = [];
+    $stmt = $db->prepare("SELECT SUBSTR(event_start_date,1,4) y, COUNT(*) n FROM observations WHERE recorded_by = :name GROUP BY y ORDER BY y");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) $perYear[$row['y']] = intval($row['n']);
+
+    $topSpecies = [];
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, COUNT(*) n FROM observations WHERE recorded_by = :name AND vernacular_name IS NOT NULL GROUP BY taxon_id ORDER BY n DESC LIMIT 20");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $topSpecies[] = ['taxon_id' => intval($row['taxon_id']), 'name' => $row['vernacular_name'], 'scientific' => $row['scientific_name'], 'count' => intval($row['n'])];
+    }
+
+    // Ranking this year
+    $currentYear = date('Y');
+    $myCountThisYear = intval($db->querySingle(
+        "SELECT COUNT(*) FROM observations WHERE SUBSTR(event_start_date,1,4) = '$currentYear' AND recorded_by = '" . SQLite3::escapeString($name) . "'"
+    ));
+    $rankStmt = $db->prepare(
+        "SELECT COUNT(*) + 1 FROM (SELECT recorded_by, COUNT(*) n FROM observations WHERE SUBSTR(event_start_date,1,4) = :year AND recorded_by IS NOT NULL GROUP BY recorded_by) WHERE n > :cnt"
+    );
+    $rankStmt->bindValue(':year', $currentYear, SQLITE3_TEXT);
+    $rankStmt->bindValue(':cnt', $myCountThisYear, SQLITE3_INTEGER);
+    $rankThisYear = intval($rankStmt->execute()->fetchArray()[0]);
+    $totalObserversThisYear = intval($db->querySingle(
+        "SELECT COUNT(DISTINCT recorded_by) FROM observations WHERE SUBSTR(event_start_date,1,4) = '$currentYear' AND recorded_by IS NOT NULL"
+    ));
+
+    $observations = [];
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, individual_count, event_start_date, start_time, locality, url, remarks, is_redlisted, redlist_category FROM observations WHERE recorded_by = :name ORDER BY event_start_date DESC, start_time DESC");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $observations[] = [
+            'taxon_id'  => intval($row['taxon_id']),
+            'name'      => $row['vernacular_name'],
+            'scientific'=> $row['scientific_name'],
+            'count'     => $row['individual_count'] ? intval($row['individual_count']) : null,
+            'date'      => $row['event_start_date'],
+            'time'      => $row['start_time'],
+            'locality'  => $row['locality'],
+            'url'       => $row['url'],
+            'remarks'   => $row['remarks'],
+            'redlist'   => $row['redlist_category'],
+        ];
+    }
+
+    $topLocalities = [];
+    $stmt = $db->prepare("SELECT locality, COUNT(*) n, AVG(latitude) lat, AVG(longitude) lng FROM observations WHERE recorded_by = :name AND locality IS NOT NULL AND latitude IS NOT NULL GROUP BY locality ORDER BY n DESC");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $topLocalities[] = ['name' => $row['locality'], 'count' => intval($row['n']), 'lat' => round(floatval($row['lat']), 5), 'lng' => round(floatval($row['lng']), 5)];
+    }
+
+    jsonOut(['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'rank_this_year' => $rankThisYear, 'obs_this_year' => $myCountThisYear, 'total_observers_this_year' => $totalObserversThisYear, 'rank_year' => $currentYear, 'top_localities' => $topLocalities]);
+}
+
 // ── Unknown endpoint ──
-echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=locality&name=X, ?q=week_context, ?q=accumulation, or ?q=init']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=locality&name=X, ?q=week_context, ?q=accumulation, ?q=reporter&name=X, or ?q=init']);
 
 } catch (Throwable $e) {
     http_response_code(500);
