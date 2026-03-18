@@ -31,6 +31,7 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 Gemensam CSS i style.css, sidspecifik CSS i inline `<style>`. CSS-variabler:
 - `--accent-bg: rgba(45,106,79,0.08)` – subtil grön bakgrund
 - Designtokens: `border-radius` 4px (badges) / 8px (kort) / 10px (sektioner), liten text `0.85rem`, kort-padding `0.75rem 1rem` (listobjekt) / `1.25rem` (sektionskort)
+- **Touch targets:** Minst 44×44 px klickyta på interaktiva element (knappar, kartmarkörer etc.). För Leaflet circle markers med liten visuell radie: lägg till en osynlig circleMarker med radie 22 bakom.
 
 Gemensamma CSS-komponenter i style.css:
 - **`.section-nav`** – Sticky tab-navigation (lokaler, arter, statistik, veckorapport)

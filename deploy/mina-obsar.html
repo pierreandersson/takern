@@ -544,7 +544,7 @@
       for (const loc of localities) {
         const r = 5 + (loc.count / maxCount) * 18;
         const name = shortLoc(loc.name);
-        const popup = `<strong>${name}</strong><br>${loc.count} obs`;
+        const popup = `<strong><a href="lokaler.html?lokal=${localitySlug(name)}" style="color:inherit">${name}</a></strong><br>${loc.count} obs`;
         // Invisible hit area for 44px minimum touch target
         if (r < 22) {
           L.circleMarker([loc.lat, loc.lng], {
