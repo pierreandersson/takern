@@ -155,6 +155,14 @@ function downloadCsv($dateFrom, $dateTo) {
 
     logMsg("  CSV headers (" . count($headers) . "): " . implode(' | ', array_slice($headers, 0, 5)) . " ...");
 
+    // Detect separator: check if header line has more semicolons or commas than tabs
+    $headerLine = $lines ? $lines[0] : '';
+    $tabCount = substr_count($headerLine, "\t");
+    $semiCount = substr_count($headerLine, ";");
+    $commaCount = substr_count($headerLine, ",");
+    logMsg("  First data line separators: tabs=$tabCount, semicolons=$semiCount, commas=$commaCount");
+    logMsg("  First data line (" . strlen($headerLine) . " chars): " . substr($headerLine, 0, 200));
+
     $rows = [];
     $skipped = 0;
     foreach ($lines as $line) {
@@ -164,6 +172,7 @@ function downloadCsv($dateFrom, $dateTo) {
         if (count($fields) === count($headers)) {
             $rows[] = array_combine($headers, $fields);
         } else {
+            if ($skipped === 0) logMsg("  First skipped row has " . count($fields) . " fields (expected " . count($headers) . ")");
             $skipped++;
         }
     }
