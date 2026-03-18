@@ -25,7 +25,6 @@ $TAKERN_LAT = 58.35;
 $TAKERN_LNG = 14.81;
 $RADIUS_M   = 15000;
 $OVERLAP_DAYS = 3;  // Re-fetch last N days to catch late reports
-$EXPORT_LIMIT = 25000;
 
 // ── Logging ──
 function logMsg($msg) {
@@ -88,182 +87,124 @@ function buildSearchFilter($dateFrom, $dateTo) {
     ];
 }
 
-function getCount($dateFrom, $dateTo) {
+
+// ── Fetch observations via JSON Search API (replaces CSV export) ──
+function searchObservations($dateFrom, $dateTo) {
     $body = buildSearchFilter($dateFrom, $dateTo);
-    $response = apiPost('/Observations/Count', $body);
-    return intval(json_decode($response, true));
+    $body['output'] = [
+        'fields' => [
+            'occurrence.occurrenceId',
+            'taxon.id',
+            'taxon.scientificName',
+            'taxon.vernacularName',
+            'occurrence.individualCount',
+            'event.startDate',
+            'event.endDate',
+            'event.plainStartTime',
+            'location.decimalLatitude',
+            'location.decimalLongitude',
+            'location.locality',
+            'location.municipality',
+            'location.parish',
+            'location.county',
+            'occurrence.recordedBy',
+            'occurrence.reportedBy',
+            'occurrence.occurrenceRemarks',
+            'occurrence.activity',
+            'occurrence.birdNestActivityId',
+            'occurrence.sex',
+            'occurrence.lifeStage',
+            'taxon.family',
+            'taxon.order',
+            'taxon.attributes.isRedlisted',
+            'taxon.attributes.redlistCategory',
+            'occurrence.verificationStatus',
+            'occurrence.url',
+            'datasetName',
+        ],
+    ];
+
+    $allRecords = [];
+    $skip = 0;
+    $take = 1000;
+
+    while (true) {
+        $raw = apiPost("/Observations/Search?skip=$skip&take=$take", $body);
+        $data = json_decode($raw, true);
+        $records = $data['records'] ?? [];
+
+        if (empty($records)) break;
+
+        $allRecords = array_merge($allRecords, $records);
+        logMsg("  Fetched " . count($records) . " records (total: " . count($allRecords) . ")");
+
+        if (count($records) < $take) break;
+        $skip += $take;
+        sleep(1);
+    }
+
+    return $allRecords;
 }
 
-function downloadCsv($dateFrom, $dateTo) {
-    $body = buildSearchFilter($dateFrom, $dateTo);
-    $body['output'] = ['fieldSet' => 'AllWithValues'];
-    $body['propertyLabelType'] = 'PropertyName';
-    $body['cultureCode'] = 'sv-SE';
+// ── Extract DB row from JSON record ──
+function extractRow($rec) {
+    $occ = $rec['occurrence'] ?? [];
+    $taxon = $rec['taxon'] ?? [];
+    $event = $rec['event'] ?? [];
+    $loc = $rec['location'] ?? [];
+    $attrs = $taxon['attributes'] ?? [];
 
-    $raw = apiPost('/Exports/Download/Csv', $body, 'application/octet-stream', 300);
+    $count = $occ['individualCount'] ?? null;
+    if ($count !== null) $count = intval($count);
 
-    if (empty($raw)) {
-        logMsg("  WARNING: Empty raw response from /Exports/Download/Csv");
-        return [[], []];
-    }
+    $redlisted = $attrs['isRedlisted'] ?? null;
+    if ($redlisted !== null) $redlisted = $redlisted ? 1 : 0;
 
-    logMsg("  Raw response: " . strlen($raw) . " bytes, starts with: " . bin2hex(substr($raw, 0, 8)));
+    $nestId = $occ['birdNestActivityId'] ?? null;
+    if ($nestId !== null && $nestId !== '') $nestId = intval($nestId);
+    else $nestId = null;
 
-    // Response may be a ZIP containing a CSV
-    $tmpFile = tempnam(sys_get_temp_dir(), 'sos_');
-    file_put_contents($tmpFile, $raw);
+    $lat = $loc['decimalLatitude'] ?? null;
+    $lng = $loc['decimalLongitude'] ?? null;
+    if ($lat !== null) $lat = floatval($lat);
+    if ($lng !== null) $lng = floatval($lng);
 
-    $csvData = null;
-    $zip = new ZipArchive();
-    if ($zip->open($tmpFile) === true) {
-        $zipFiles = [];
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $zipFiles[] = $zip->getNameIndex($i);
-        }
-        logMsg("  ZIP contains " . count($zipFiles) . " file(s): " . implode(', ', $zipFiles));
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $name = $zip->getNameIndex($i);
-            if (str_ends_with($name, '.csv')) {
-                $csvData = $zip->getFromIndex($i);
-                if ($csvData === false) {
-                    logMsg("  getFromIndex($i) returned false");
-                } else {
-                    logMsg("  CSV extracted: " . strlen($csvData) . " bytes");
-                }
-                break;
-            }
-        }
-        $zip->close();
-    } else {
-        // Not a ZIP – log first 500 chars to diagnose unexpected formats
-        logMsg("  Not a ZIP. Raw preview: " . substr($raw, 0, 500));
-    }
-
-    if ($csvData === null || $csvData === false) {
-        $csvData = $raw;
-    }
-    unlink($tmpFile);
-
-    // Remove UTF-8 BOM if present
-    if (substr($csvData, 0, 3) === "\xEF\xBB\xBF") {
-        $csvData = substr($csvData, 3);
-    }
-
-    // Parse tab-separated CSV – disable quote handling to avoid hanging on
-    // unbalanced quotes in SOS API data (enclosure=\x00 treats " as literal)
-    $csvTmp = tempnam(sys_get_temp_dir(), 'csv_');
-    file_put_contents($csvTmp, $csvData);
-    $fh = fopen($csvTmp, 'r');
-    $headers = fgetcsv($fh, 0, "\t", "\x00", "\x00");
-
-    logMsg("  CSV headers (" . count($headers) . "): " . implode(' | ', array_slice($headers, 0, 5)) . " ...");
-
-    $rows = [];
-    $skipped = 0;
-    while (($fields = fgetcsv($fh, 0, "\t", "\x00", "\x00")) !== false) {
-        if (count($fields) === count($headers)) {
-            $rows[] = array_combine($headers, $fields);
-        } else {
-            if ($skipped === 0) logMsg("  First skipped row has " . count($fields) . " fields (expected " . count($headers) . ")");
-            $skipped++;
-        }
-    }
-    fclose($fh);
-    unlink($csvTmp);
-    if ($skipped > 0) logMsg("  Skipped $skipped rows (field count mismatch, expected " . count($headers) . ")");
-
-    return [$rows, $headers];
-}
-
-// ── Column mapping (CSV column → DB column) ──
-$COLUMN_MAP = [
-    'occurrence_id'         => 'OccurrenceId',
-    'taxon_id'              => 'DyntaxaTaxonId',
-    'scientific_name'       => 'ScientificName',
-    'vernacular_name'       => 'VernacularName',
-    'individual_count'      => 'IndividualCount',
-    'event_start_date'      => 'StartDate',
-    'event_end_date'        => 'EndDate',
-    'start_time'            => 'PlainStartTime',
-    'latitude'              => 'DecimalLatitude',
-    'longitude'             => 'DecimalLongitude',
-    'locality'              => 'Locality',
-    'municipality'          => 'Municipality',
-    'parish'                => 'Parish',
-    'county'                => 'County',
-    'recorded_by'           => 'RecordedBy',
-    'reported_by'           => 'ReportedBy',
-    'remarks'               => 'OccurrenceRemarks',
-    'activity'              => 'Activity',
-    'bird_nest_activity_id' => 'BirdNestActivityId',
-    'sex'                   => 'Sex',
-    'life_stage'            => 'LifeStage',
-    'family'                => 'Family',
-    'taxonomic_order'       => 'Order',
-    'is_redlisted'          => 'TaxonIsRedlisted',
-    'redlist_category'      => 'RedlistCategory',
-    'verification_status'   => 'VerificationStatus',
-    'url'                   => 'Url',
-    'dataset_name'          => 'DatasetName',
-];
-
-function extractRow($csvRow) {
-    global $COLUMN_MAP;
-
-    $get = function($dbCol, $default = null) use ($csvRow, $COLUMN_MAP) {
-        $csvCol = $COLUMN_MAP[$dbCol] ?? null;
-        if ($csvCol && isset($csvRow[$csvCol]) && $csvRow[$csvCol] !== '') {
-            return $csvRow[$csvCol];
-        }
-        return $default;
-    };
-
-    // Parse individual count
-    $countRaw = $get('individual_count') ?? ($csvRow['OrganismQuantityInt'] ?? null);
-    $count = ($countRaw !== null && $countRaw !== '') ? intval($countRaw) : null;
-
-    // Parse redlisted
-    $redRaw = $get('is_redlisted');
-    $redlisted = ($redRaw !== null) ? (in_array(strtolower($redRaw), ['true', '1', 'yes']) ? 1 : 0) : null;
-
-    // Parse lat/lng
-    $lat = $get('latitude') !== null ? floatval($get('latitude')) : null;
-    $lng = $get('longitude') !== null ? floatval($get('longitude')) : null;
-
-    // Parse nest activity
-    $nestRaw = $get('bird_nest_activity_id');
-    $nestId = ($nestRaw !== null && $nestRaw !== '') ? intval($nestRaw) : null;
+    // Extract date portion from ISO datetime
+    $startDate = $event['startDate'] ?? null;
+    if ($startDate && strlen($startDate) > 10) $startDate = substr($startDate, 0, 10);
+    $endDate = $event['endDate'] ?? null;
+    if ($endDate && strlen($endDate) > 10) $endDate = substr($endDate, 0, 10);
 
     return [
-        'occurrence_id'         => $get('occurrence_id', ''),
-        'taxon_id'              => $get('taxon_id'),
-        'scientific_name'       => $get('scientific_name'),
-        'vernacular_name'       => $get('vernacular_name'),
+        'occurrence_id'         => $occ['occurrenceId'] ?? '',
+        'taxon_id'              => $taxon['id'] ?? null,
+        'scientific_name'       => $taxon['scientificName'] ?? null,
+        'vernacular_name'       => $taxon['vernacularName'] ?? null,
         'individual_count'      => $count,
-        'event_start_date'      => $get('event_start_date'),
-        'event_end_date'        => $get('event_end_date'),
-        'start_time'            => $get('start_time'),
+        'event_start_date'      => $startDate,
+        'event_end_date'        => $endDate,
+        'start_time'            => $event['plainStartTime'] ?? null,
         'latitude'              => $lat,
         'longitude'             => $lng,
-        'locality'              => $get('locality'),
-        'municipality'          => $get('municipality'),
-        'parish'                => $get('parish'),
-        'county'                => $get('county'),
-        'recorded_by'           => $get('recorded_by'),
-        'reported_by'           => $get('reported_by'),
-        'remarks'               => $get('remarks'),
-        'activity'              => $get('activity'),
+        'locality'              => $loc['locality'] ?? null,
+        'municipality'          => $loc['municipality'] ?? null,
+        'parish'                => $loc['parish'] ?? null,
+        'county'                => $loc['county'] ?? null,
+        'recorded_by'           => $occ['recordedBy'] ?? null,
+        'reported_by'           => $occ['reportedBy'] ?? null,
+        'remarks'               => $occ['occurrenceRemarks'] ?? null,
+        'activity'              => $occ['activity'] ?? null,
         'bird_nest_activity_id' => $nestId,
-        'sex'                   => $get('sex'),
-        'life_stage'            => $get('life_stage'),
-        'family'                => $get('family'),
-        'taxonomic_order'       => $get('taxonomic_order'),
+        'sex'                   => $occ['sex'] ?? null,
+        'life_stage'            => $occ['lifeStage'] ?? null,
+        'family'                => $taxon['family'] ?? null,
+        'taxonomic_order'       => $taxon['order'] ?? null,
         'is_redlisted'          => $redlisted,
-        'redlist_category'      => $get('redlist_category'),
-        'verification_status'   => $get('verification_status'),
-        'url'                   => $get('url'),
-        'dataset_name'          => $get('dataset_name'),
-        'raw_data'              => json_encode($csvRow, JSON_UNESCAPED_UNICODE),
+        'redlist_category'      => $attrs['redlistCategory'] ?? null,
+        'verification_status'   => $occ['verificationStatus'] ?? null,
+        'url'                   => $occ['url'] ?? null,
+        'dataset_name'          => $rec['datasetName'] ?? null,
+        'raw_data'              => json_encode($rec, JSON_UNESCAPED_UNICODE),
     ];
 }
 
@@ -290,8 +231,8 @@ function insertRows($db, $rows) {
     $stmt = $db->prepare($sql);
     $inserted = 0;
 
-    foreach ($rows as $csvRow) {
-        $data = extractRow($csvRow);
+    foreach ($rows as $rec) {
+        $data = extractRow($rec);
         if (empty($data['occurrence_id'])) continue;
 
         $stmt->execute($data);
@@ -301,44 +242,18 @@ function insertRows($db, $rows) {
     return $inserted;
 }
 
-function downloadPeriod($db, $dateFrom, $dateTo, $depth = 0) {
-    global $EXPORT_LIMIT;
-    $indent = str_repeat('  ', $depth);
+function downloadPeriod($db, $dateFrom, $dateTo) {
+    logMsg("Period: $dateFrom -> $dateTo");
 
-    logMsg("{$indent}Period: $dateFrom -> $dateTo");
+    $records = searchObservations($dateFrom, $dateTo);
 
-    $count = getCount($dateFrom, $dateTo);
-    logMsg("{$indent}  Count: $count");
-    sleep(1);
-
-    if ($count === 0) return 0;
-
-    if ($count > $EXPORT_LIMIT) {
-        logMsg("{$indent}  Exceeds limit, splitting...");
-        $d1 = new DateTime($dateFrom);
-        $d2 = new DateTime($dateTo);
-        $mid = clone $d1;
-        $diff = $d1->diff($d2);
-        $mid->modify('+' . intval($diff->days / 2) . ' days');
-        $midStr = $mid->format('Y-m-d');
-        $nextDay = (clone $mid)->modify('+1 day')->format('Y-m-d');
-
-        $n1 = downloadPeriod($db, $dateFrom, $midStr, $depth + 1);
-        $n2 = downloadPeriod($db, $nextDay, $dateTo, $depth + 1);
-        return $n1 + $n2;
-    }
-
-    logMsg("{$indent}  Downloading CSV...");
-    [$rows, $headers] = downloadCsv($dateFrom, $dateTo);
-
-    if (empty($rows)) {
-        logMsg("{$indent}  Empty response");
+    if (empty($records)) {
+        logMsg("  No records found");
         return 0;
     }
 
-    $inserted = insertRows($db, $rows);
-    logMsg("{$indent}  Got " . count($rows) . " rows, $inserted new");
-    sleep(1);
+    $inserted = insertRows($db, $records);
+    logMsg("  Got " . count($records) . " records, $inserted new");
 
     return $inserted;
 }
