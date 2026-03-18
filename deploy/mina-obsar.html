@@ -544,6 +544,13 @@
       for (const loc of localities) {
         const r = 5 + (loc.count / maxCount) * 18;
         const name = shortLoc(loc.name);
+        const popup = `<strong>${name}</strong><br>${loc.count} obs`;
+        // Invisible hit area for 44px minimum touch target
+        if (r < 22) {
+          L.circleMarker([loc.lat, loc.lng], {
+            radius: 22, fillOpacity: 0, opacity: 0, interactive: true,
+          }).bindPopup(popup).addTo(map);
+        }
         L.circleMarker([loc.lat, loc.lng], {
           radius: r,
           fillColor: '#2d6a4f',
@@ -551,7 +558,7 @@
           color: '#fff',
           weight: 1.5,
         })
-        .bindPopup(`<strong>${name}</strong><br>${loc.count} obs`)
+        .bindPopup(popup)
         .addTo(map);
       }
     }
