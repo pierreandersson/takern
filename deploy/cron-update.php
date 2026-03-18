@@ -116,6 +116,11 @@ function downloadCsv($dateFrom, $dateTo) {
     $csvData = null;
     $zip = new ZipArchive();
     if ($zip->open($tmpFile) === true) {
+        $zipFiles = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $zipFiles[] = $zip->getNameIndex($i);
+        }
+        logMsg("  ZIP contains " . count($zipFiles) . " file(s): " . implode(', ', $zipFiles));
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
             if (str_ends_with($name, '.csv')) {
