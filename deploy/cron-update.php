@@ -296,7 +296,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'clear-cache') {
     $warmed = 0;
     if ($warm) {
         $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
-        foreach (['overview', 'species', 'geo', 'localities', 'week_context&year=' . date('Y') . '&days=7'] as $ep) {
+        foreach (['overview', 'species', 'geo', 'localities', 'week_context&year=' . date('Y') . '&days=7', 'accumulation&year=' . date('Y')] as $ep) {
             @file_get_contents("$baseUrl/stats-api.php?q=$ep", false, stream_context_create(['http' => ['timeout' => 120]]));
             $warmed++;
         }
