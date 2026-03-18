@@ -194,6 +194,7 @@
     let currentChart2 = null;
     let currentChart3 = null;
     let currentChart4 = null;
+    let currentChart5 = null;
     let currentSpeciesMap = null;
     let activeGroup = null;
 
@@ -214,6 +215,7 @@
       { id: "sec-sp-karta", label: "Karta" },
       { id: "sec-sp-sasong", label: "Säsong" },
       { id: "sec-sp-frekvens", label: "Frekvens" },
+      { id: "sec-sp-rapporter", label: "Rapporter" },
       { id: "sec-sp-fenologi", label: "Fenologi" },
       { id: "sec-sp-antal", label: "Antal" },
       { id: "sec-sp-lokaler", label: "Lokaler" },
@@ -397,6 +399,7 @@
       if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
       if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
       if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
+      if (currentChart5) { currentChart5.destroy(); currentChart5 = null; }
       if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
       updateSectionNav(null);
     }
@@ -507,6 +510,7 @@
       if (currentChart2) { currentChart2.destroy(); currentChart2 = null; }
       if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
       if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
+      if (currentChart5) { currentChart5.destroy(); currentChart5 = null; }
       if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
 
       let html = "";
@@ -595,6 +599,18 @@
           <p style="color:var(--muted);font-size:0.85rem;margin:-0.5rem 0 0.75rem">Andel fältbesök som noterar arten – kompenserar för ökande rapportörsantal</p>
           ${trendText ? `<p style="font-size:0.9rem;margin-bottom:0.75rem">${trendText}</p>` : ''}
           <div class="chart-container"><canvas id="trendChart"></canvas></div>
+        </div>`;
+      }
+
+      // Observations per year
+      const obsPerYear = sp.observations_per_year || {};
+      const obsYears = Object.keys(obsPerYear).sort();
+      if (obsYears.length > 0) {
+        const totalObs = obsYears.reduce((s, y) => s + (obsPerYear[y] || 0), 0);
+        html += `<div class="chart-section" id="sec-sp-rapporter">
+          <h2>Antal rapporter per år</h2>
+          <p style="color:var(--muted);font-size:0.85rem;margin:-0.5rem 0 0.75rem">Totalt ${totalObs.toLocaleString("sv")} rapporter under ${obsYears.length} år</p>
+          <div class="chart-container"><canvas id="obsPerYearChart"></canvas></div>
         </div>`;
       }
 
@@ -897,6 +913,33 @@
                 const m = maxMeta[elements[0].index];
                 if (m.url) window.open(m.url, "_blank");
               }
+            },
+          },
+        });
+      }
+
+      // Observations per year chart
+      if (obsYears.length > 0) {
+        const obsData = obsYears.map(y => obsPerYear[y] || 0);
+        currentChart5 = new Chart(document.getElementById("obsPerYearChart"), {
+          type: "bar",
+          data: {
+            labels: obsYears,
+            datasets: [{
+              label: "Rapporter",
+              data: obsData,
+              backgroundColor: "rgba(45, 106, 79, 0.6)",
+              borderColor: "#2d6a4f",
+              borderWidth: 1,
+              borderRadius: 4,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { callback: v => v.toLocaleString("sv") } },
             },
           },
         });
