@@ -582,16 +582,33 @@
       if (erYears.length > 0) {
         const erTrend = sp.encounter_rate_trend;
         let trendText = '';
-        if (erTrend) {
-          const s = erTrend.slope_per_decade;
-          const abs = Math.abs(s).toFixed(1);
-          if (abs < 0.5) {
+        // Log-space Theil-Sen for trend label
+        const erVals = Object.values(erData);
+        const erNonZero = erVals.filter(v => v > 0);
+        if (erNonZero.length >= 5) {
+          const eps = Math.min(...erNonZero) / 2;
+          const pts = erYears.map(y => [parseInt(y), Math.log(erData[y] + eps)]);
+          const sl = [];
+          for (let i = 0; i < pts.length; i++)
+            for (let j = i + 1; j < pts.length; j++) {
+              const dx = pts[j][0] - pts[i][0];
+              if (dx !== 0) sl.push((pts[j][1] - pts[i][1]) / dx);
+            }
+          sl.sort((a, b) => a - b);
+          const logSlopePerYear = sl[Math.floor(sl.length / 2)];
+          // Total change from first to last year: (exp(slope*span) - 1) * 100
+          const firstYr = parseInt(erYears[0]);
+          const lastYr = parseInt(erYears[erYears.length - 1]);
+          const span = lastYr - firstYr;
+          const totalPct = (Math.exp(logSlopePerYear * span) - 1) * 100;
+          if (Math.abs(totalPct) < 5) {
             trendText = 'Stabil rapportfrekvens';
           } else {
-            const dir = s > 0 ? 'Ökande' : 'Minskande';
-            const arrow = s > 0 ? '▲' : '▼';
-            const color = s > 0 ? 'var(--accent)' : '#c0392b';
-            trendText = `<span style="color:${color}">${arrow} ${dir} med ${abs} procentenheter per decennium</span>`;
+            const dir = totalPct > 0 ? 'Ökning' : 'Minskning';
+            const arrow = totalPct > 0 ? '▲' : '▼';
+            const color = totalPct > 0 ? 'var(--accent)' : '#c0392b';
+            const absPct = Math.abs(Math.round(totalPct));
+            trendText = `<span style="color:${color}">${arrow} ${dir} ${absPct} % sedan ${firstYr}</span>`;
           }
         }
         html += `<div class="chart-section" id="sec-sp-frekvens">
@@ -599,6 +616,11 @@
           <p style="color:var(--muted);font-size:0.85rem;margin:-0.5rem 0 0.75rem">Andel fältbesök som noterar arten – kompenserar för ökande rapportörsantal</p>
           ${trendText ? `<p style="font-size:0.9rem;margin-bottom:0.75rem">${trendText}</p>` : ''}
           <div class="chart-container"><canvas id="trendChart"></canvas></div>
+          <details style="margin-top:0.75rem;font-size:0.85rem;color:var(--muted)">
+            <summary>Hur vi mäter rapportfrekvens</summary>
+            <p>Rapportfrekvens visar andelen fältbesök (unika kombinationer av datum och lokal) där arten noterats. Måttet kompenserar för att antalet rapportörer ökat kraftigt sedan 2006 – till skillnad från råa observationsantal påverkas det inte av att fler personer besöker Tåkern.</p>
+            <p>Trendlinjen beräknas med Theil–Sen-estimatorn på log-transformerade värden. Det ger en robust, icke-parametrisk trend som inte påverkas av enstaka extremår och som aldrig kan bli negativ. Procentförändringen anger den totala förändringen mellan första och sista året i tidsserien.</p>
+          </details>
         </div>`;
       }
 
@@ -834,17 +856,33 @@
           tension: 0.3,
         }];
 
-        const erTrend = sp.encounter_rate_trend;
-        if (erTrend) {
-          const slopePerYear = erTrend.slope_per_decade / 10 / 100;
+        // Theil-Sen on log-transformed rates (exponential trend, always positive)
+        const erValsRaw = erYears.map(y => erData[y]);
+        const nonZero = erValsRaw.filter(v => v > 0);
+        if (nonZero.length >= 5) {
+          const epsilon = Math.min(...nonZero) / 2;
+          const logPts = erYears.map((y, i) => [parseInt(y), Math.log(erValsRaw[i] + epsilon)]);
+          // Theil-Sen: median of pairwise slopes on log values
+          const slopes = [];
+          for (let i = 0; i < logPts.length; i++) {
+            for (let j = i + 1; j < logPts.length; j++) {
+              const dx = logPts[j][0] - logPts[i][0];
+              if (dx !== 0) slopes.push((logPts[j][1] - logPts[i][1]) / dx);
+            }
+          }
+          slopes.sort((a, b) => a - b);
+          const logSlope = slopes[Math.floor(slopes.length / 2)];
+          const intercepts = logPts.map(p => p[1] - logSlope * p[0]);
+          intercepts.sort((a, b) => a - b);
+          const logIntercept = intercepts[Math.floor(intercepts.length / 2)];
           const trendLine = erYears.map(y => {
-            const val = (erTrend.intercept + slopePerYear * parseInt(y)) * 100;
-            return Math.max(0, parseFloat(val.toFixed(2)));
+            return parseFloat((Math.exp(logIntercept + logSlope * parseInt(y)) - epsilon).toFixed(3));
           });
+          const trendColor = logSlope > 0 ? "rgba(45, 106, 79, 0.5)" : "rgba(192, 57, 43, 0.5)";
           datasets.push({
             label: "Trend",
             data: trendLine,
-            borderColor: erTrend.slope_per_decade > 0 ? "rgba(45, 106, 79, 0.5)" : "rgba(192, 57, 43, 0.5)",
+            borderColor: trendColor,
             borderWidth: 2,
             borderDash: [6, 4],
             pointRadius: 0,
@@ -864,7 +902,7 @@
               tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + ' %' } },
             },
             scales: {
-              y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { callback: v => v + ' %' } },
+              y: { min: 0, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { callback: v => v + ' %' } },
             },
           },
         });

@@ -407,6 +407,24 @@
         <p><strong>Beräkning:</strong> Antalet arter ur denna lista som redan observerats i år, dividerat med totala antalet förväntade arter. Tidigheten beräknas som medianen av skillnaden mellan faktiskt ankomstdatum och förväntat datum, med ett filter på &plusmn;30/+60 dagar för att utesluta övervintrade individer.</p>
       </div>
 
+      <!-- Rapportfrekvens -->
+      <div class="about-section">
+        <h2>Rapportfrekvens</h2>
+        <p>På varje artsida visas en graf över artens <strong>rapportfrekvens</strong> – andelen fältbesök (unika kombinationer av datum och lokal) där arten noterats. Måttet kompenserar för att antalet rapportörer vid Tåkern ökat kraftigt sedan 2006: en art som rapporteras lika ofta i förhållande till besöksvolymen har stabil rapportfrekvens även om antalet observationer ökat.</p>
+
+        <h3>Trendberäkning</h3>
+        <p>Trendlinjen beräknas med <strong>Theil–Sen-estimatorn på log-transformerade rapportfrekvenser</strong>. Log-transformen innebär att trenden modellerar relativ (procentuell) förändring istället för absolut förändring i procentenheter. Det gör att samma metod fungerar rättvisande för både vanliga arter (rapportfrekvens 5–10 %) och sällsynta arter (under 0,5 %) – en halvering ser likadan ut oavsett utgångsnivå.</p>
+        <p>Eftersom rapportfrekvens aldrig kan vara negativ ger log-modellen en exponentiell kurva som alltid stannar ovan noll, till skillnad mot en linjär trendlinje som kan producera meningslösa negativa skattningar för arter med låg frekvens.</p>
+        <p>År med noll observationer hanteras genom att ersätta nollvärden med hälften av det lägsta icke-noll-värdet – en standardmetod för log-transformation av ekologiska data.</p>
+
+        <h3>Tolkning</h3>
+        <ul>
+          <li>Procentförändringen anger den totala förändringen mellan tidsseriens första och sista år, beräknad från den skattade trendlinjen</li>
+          <li>Förändringar under 5 % visas som "Stabil rapportfrekvens"</li>
+          <li>Minst 5 år med observationer krävs för att visa en trendlinje</li>
+        </ul>
+      </div>
+
       <!-- Trendanalys -->
       <div class="about-section">
         <h2>Trendanalys – säsongslängd</h2>
