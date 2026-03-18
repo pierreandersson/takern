@@ -204,7 +204,6 @@ function extractRow($rec) {
         'verification_status'   => $occ['verificationStatus'] ?? null,
         'url'                   => $occ['url'] ?? null,
         'dataset_name'          => $rec['datasetName'] ?? null,
-        'raw_data'              => json_encode($rec, JSON_UNESCAPED_UNICODE),
     ];
 }
 
@@ -217,7 +216,7 @@ function insertRows($db, $rows) {
          activity, bird_nest_activity_id, sex, life_stage,
          family, taxonomic_order,
          is_redlisted, redlist_category,
-         verification_status, url, dataset_name, raw_data)
+         verification_status, url, dataset_name)
         VALUES
         (:occurrence_id, :taxon_id, :scientific_name, :vernacular_name,
          :individual_count, :event_start_date, :event_end_date, :start_time,
@@ -226,7 +225,7 @@ function insertRows($db, $rows) {
          :activity, :bird_nest_activity_id, :sex, :life_stage,
          :family, :taxonomic_order,
          :is_redlisted, :redlist_category,
-         :verification_status, :url, :dataset_name, :raw_data)";
+         :verification_status, :url, :dataset_name)";
 
     $stmt = $db->prepare($sql);
     $inserted = 0;
