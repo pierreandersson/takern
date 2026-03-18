@@ -1033,12 +1033,12 @@ if ($q === 'accumulation') {
             $total += $count;
             $cumulative[] = [$date, $total];
         }
-        // Extend line to today if current year and last data point is before today
+        // Extend line to yesterday if current year and last data point is older
         if ($yr == intval(date('Y')) && !empty($cumulative)) {
-            $today = date('Y-m-d');
+            $yesterday = date('Y-m-d', strtotime('-1 day'));
             $lastDate = $cumulative[count($cumulative) - 1][0];
-            if ($lastDate < $today) {
-                $cumulative[] = [$today, $total];
+            if ($lastDate < $yesterday) {
+                $cumulative[] = [$yesterday, $total];
             }
         }
         return $cumulative;
