@@ -596,11 +596,12 @@
             }
           sl.sort((a, b) => a - b);
           const logSlopePerYear = sl[Math.floor(sl.length / 2)];
-          // Total change from first to last year: (exp(slope*span) - 1) * 100
-          const firstYr = parseInt(erYears[0]);
+          // Total change: skip leading zero-years for start reference
+          const firstNonZeroYr = erYears.find(y => erData[y] > 0);
+          const labelStartYr = firstNonZeroYr ? parseInt(firstNonZeroYr) : parseInt(erYears[0]);
           const lastYr = parseInt(erYears[erYears.length - 1]);
-          const span = lastYr - firstYr;
-          const totalPct = (Math.exp(logSlopePerYear * span) - 1) * 100;
+          const span = lastYr - labelStartYr;
+          const totalPct = span > 0 ? (Math.exp(logSlopePerYear * span) - 1) * 100 : 0;
           if (Math.abs(totalPct) < 5) {
             trendText = 'Stabil rapportfrekvens';
           } else {
@@ -608,7 +609,8 @@
             const arrow = totalPct > 0 ? '▲' : '▼';
             const color = totalPct > 0 ? 'var(--accent)' : '#c0392b';
             const absPct = Math.abs(Math.round(totalPct));
-            trendText = `<span style="color:${color}">${arrow} ${dir} ${absPct} % sedan ${firstYr}</span>`;
+            const pctLabel = absPct > 1000 ? '>1\u2009000' : absPct;
+            trendText = `<span style="color:${color}">${arrow} ${dir} ${pctLabel} % sedan ${labelStartYr}</span>`;
           }
         }
         html += `<div class="chart-section" id="sec-sp-frekvens">
