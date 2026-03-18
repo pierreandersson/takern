@@ -401,6 +401,24 @@ if (!file_exists($DB_FILE)) {
     exit(1);
 }
 
+// ── Step 0: Backup database before any changes ──
+$backupDir = __DIR__ . '/backups';
+if (!is_dir($backupDir)) mkdir($backupDir, 0755, true);
+$backupFile = "$backupDir/takern_observations_" . date('Y-m-d') . ".db";
+if (!file_exists($backupFile)) {
+    copy($DB_FILE, $backupFile);
+    logMsg("Backup created: " . basename($backupFile) . " (" . round(filesize($backupFile)/1024/1024, 1) . " MB)");
+} else {
+    logMsg("Backup already exists for today");
+}
+// Keep only last 7 backups
+$backups = glob("$backupDir/takern_observations_*.db");
+rsort($backups);
+foreach (array_slice($backups, 7) as $old) {
+    unlink($old);
+    logMsg("Removed old backup: " . basename($old));
+}
+
 $db = new SQLite3($DB_FILE);
 $db->exec("PRAGMA journal_mode=WAL");
 
@@ -438,6 +456,16 @@ try {
 $countAfter = $db->querySingle("SELECT COUNT(*) FROM observations");
 $netNew = $countAfter - $countBefore;
 logMsg("Download complete: $netNew new observations (total: $countAfter)");
+
+// ── Integrity check ──
+$integrity = $db->querySingle("PRAGMA quick_check");
+if ($integrity !== 'ok') {
+    logMsg("CRITICAL: Database integrity check failed: $integrity");
+    logMsg("Restore from backup: $backupDir");
+    $db->close();
+    exit(1);
+}
+logMsg("Integrity check: ok");
 
 // ── Ensure indexes exist (idempotent) ──
 $db->exec("CREATE INDEX IF NOT EXISTS idx_obs_locality_date ON observations(locality, event_start_date DESC, start_time DESC)");

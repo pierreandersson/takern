@@ -38,6 +38,7 @@ jobs:
             **/takern_observations.db
             **/takern_observations.db-shm
             **/takern_observations.db-wal
+            **/backups/**
             **/cron-update.log
 
       - name: Clear and warm cache

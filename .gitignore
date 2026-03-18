@@ -5,6 +5,10 @@ deploy/cron_secret.txt
 
 # Database (too large for git, upload manually)
 *.db
+*.db-shm
+*.db-wal
+*.cyberducksegment/
+backups/
 
 # Python
 __pycache__/
