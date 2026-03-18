@@ -292,8 +292,6 @@
           <dd>Akut/starkt hotad – nationell rödlista</dd>
           <dt><span class="badge badge-orange">VU</span> <span class="badge badge-orange">NT</span></dt>
           <dd>Sårbar/nära hotad – nationell rödlista</dd>
-          <dt><span class="badge badge-green">NA</span> <span class="badge badge-green">DD</span> <span class="badge badge-green">NE</span></dt>
-          <dd>Ej tillämplig / Kunskapsbrist / Ej bedömd – nationell rödlista</dd>
           <hr class="legend-divider">
           <dt><span class="legend-red-bar"></span>Röd kantlinje</dt>
           <dd>Noteberbar observation (poäng ≥ 80) – mer om <a href="om.html#noterbarhet">poängsättning</a></dd>
@@ -391,9 +389,9 @@
 
     function redlistBadge(obs) {
       const cat = obs.taxon?.attributes?.redlistCategory;
-      if (!cat || cat === "LC") return "";
-      const colors = { CR: "red", EN: "red", VU: "orange", NT: "orange", DD: "green", NA: "green", NE: "green" };
-      const labels = { CR: "Akut hotad", EN: "Starkt hotad", VU: "Sårbar", NT: "Nära hotad", DD: "Kunskapsbrist", NA: "Ej tillämplig", NE: "Ej bedömd" };
+      if (!cat || cat === "LC" || cat === "NA" || cat === "DD" || cat === "NE") return "";
+      const colors = { CR: "red", EN: "red", VU: "orange", NT: "orange" };
+      const labels = { CR: "Akut hotad", EN: "Starkt hotad", VU: "Sårbar", NT: "Nära hotad" };
       return `<span class="badge badge-${colors[cat] || "green"}">${labels[cat] || cat}</span>`;
     }
 
