@@ -83,6 +83,9 @@ Ranking baseras på tre transparenta faktorer – rödlistestatus visas som badg
 2. **Nyanlända:** Arter med ≤20 obs hittills i år får bonus (80–240 poäng, fler obs = lägre bonus)
 3. **Sällsynthet:** Lokalt sällsynta arter vid Tåkern (<2 obs/år = 120p, <5 = 60p, <10 = 30p)
 
+### Årets första obs (live-supplementering)
+`yearFirstsData` från databasen uppdateras klientsidigt med live-obs för arter som saknas i DB (ännu ej importerade av nattlig cron). Tidigaste obs (per `startDate`) får röd badge "Årets första obs", övriga får blå "Bland årets första" (om ≤10 obs). Matchning sker via `occurrenceId`.
+
 ## "Tåkern i veckan" (veckorapport.html)
 Sektioner: Sammanfattningskort (med förra årets jämförelse) → Heatmap-karta → Artackumulering (kurva: i år vs 5-årssnitt + dygnsmedeltemperatur, Chart.js time-axis) + Vårens framsteg (meter, vecka 8–22) → Nytt för säsongen (årets-första-arter) → Håll utkik efter (arter förväntade inom 21 dagar) → Veckans höjdpunkter (top 8 noterbara, poängbaserat) → Artfördelning (donut per fågelgrupp)
 - **Fågelgrupper:** Mappas via `getBirdGroup()` i stats-api.php (taxonomic_order + family → svensk grupp)

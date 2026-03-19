@@ -429,7 +429,7 @@ if (document.prerendering) {
       const tid = String(obs.taxon?.id || "");
       const yf = yearFirstsData[tid];
       if (!yf) return "";
-      if (yf._live && obs.occurrence?.occurrenceId === yf._firstOccId) return `<span class="badge badge-blue">Årets första obs</span>`;
+      if (yf._live && obs.occurrence?.occurrenceId === yf._firstOccId) return `<span class="badge badge-red">Årets första obs</span>`;
       if (yf.obs_count <= 10) return `<span class="badge badge-blue">Bland årets första</span>`;
       return "";
     }
