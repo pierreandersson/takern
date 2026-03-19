@@ -339,7 +339,49 @@ if (document.prerendering) {
     addRadiusCircle(map);
 
     const markers = L.layerGroup().addTo(map);
+    let markerList = []; // parallel array for hover highlight
+    const highlightLayer = L.layerGroup().addTo(map); // hover ring
     let currentDays = 1;
+
+    let hoverPanTimer = null;
+
+    function highlightMarker(m) {
+      if (!m) return;
+      const ll = m.getLatLng();
+      const origRadius = m.getRadius();
+      highlightLayer.addLayer(
+        L.circleMarker(ll, {
+          radius: origRadius + 10,
+          color: "#2d6a4f",
+          fillColor: "#2d6a4f",
+          fillOpacity: 0.18,
+          weight: 2,
+          className: "marker-highlight-ring",
+        })
+      );
+      m._origStyle = { weight: m.options.weight, fillOpacity: m.options.fillOpacity, radius: origRadius };
+      m.setStyle({ weight: 3, fillOpacity: 1 });
+      m.setRadius(origRadius + 3);
+      // Pan to marker after short delay
+      clearTimeout(hoverPanTimer);
+      hoverPanTimer = setTimeout(() => {
+        if (!map.getBounds().contains(ll)) {
+          map.panTo(ll, { animate: true, duration: 0.4 });
+        }
+      }, 300);
+    }
+
+    function clearHighlight() {
+      clearTimeout(hoverPanTimer);
+      highlightLayer.clearLayers();
+      markers.eachLayer(m => {
+        if (m._origStyle) {
+          m.setStyle({ weight: m._origStyle.weight, fillOpacity: m._origStyle.fillOpacity });
+          m.setRadius(m._origStyle.radius);
+          delete m._origStyle;
+        }
+      });
+    }
 
     function getCount(obs) {
       return parseInt(obs.occurrence?.individualCount) || 0;
@@ -458,6 +500,7 @@ if (document.prerendering) {
     function renderList(observations) {
       const list = document.getElementById("obs-list");
       markers.clearLayers();
+      markerList = [];
 
       if (!observations.length) {
         list.innerHTML = '<div class="loading">Inga observationer hittades.</div>';
@@ -475,11 +518,14 @@ if (document.prerendering) {
           const name = obs.taxon?.vernacularName || obs.taxon?.scientificName || "";
           const count = getCount(obs) || 1;
           const color = score >= 150 ? "#b91c1c" : score >= 80 ? "#b45309" : "#2d6a4f";
-          L.circleMarker([lat, lng], {
+          const m = L.circleMarker([lat, lng], {
             radius: Math.min(4 + count * 0.02, 12),
             color, fillColor: color, fillOpacity: 0.7, weight: 1,
           }).bindPopup(`<strong>${name}</strong><br>${obs.taxon?.scientificName || ""}<br>${count > 1 ? count + " ex" : ""}`)
             .addTo(markers);
+          markerList.push(m);
+        } else {
+          markerList.push(null);
         }
 
         const canonical = normalizeSosObs(obs);
@@ -490,8 +536,8 @@ if (document.prerendering) {
         });
       }).join("");
 
-      // Click cards to fly to marker
-      list.querySelectorAll(".obs-card").forEach(card => {
+      // Click cards to fly to marker + hover highlight
+      list.querySelectorAll(".obs-card").forEach((card, i) => {
         card.addEventListener("click", () => {
           const lat = parseFloat(card.dataset.lat);
           const lng = parseFloat(card.dataset.lng);
@@ -499,6 +545,8 @@ if (document.prerendering) {
             map.flyTo([lat, lng], 14, { duration: 0.5 });
           }
         });
+        card.addEventListener("mouseenter", () => highlightMarker(markerList[i]));
+        card.addEventListener("mouseleave", clearHighlight);
       });
     }
 
@@ -506,6 +554,7 @@ if (document.prerendering) {
     function renderGrouped(observations, groupSort) {
       const list = document.getElementById("obs-list");
       markers.clearLayers();
+      markerList = [];
 
       if (!observations.length) {
         list.innerHTML = '<div class="loading">Inga observationer hittades.</div>';
@@ -530,7 +579,8 @@ if (document.prerendering) {
         return countB - countA;
       }));
 
-      // Add all markers
+      // Add all markers – build a lat/lng→marker map for hover
+      const coordMarkerMap = new Map();
       observations.forEach((obs, i) => {
         const lat = obs.location?.decimalLatitude;
         const lng = obs.location?.decimalLongitude;
@@ -539,11 +589,14 @@ if (document.prerendering) {
           const count = getCount(obs) || 1;
           const name = obs.taxon?.vernacularName || obs.taxon?.scientificName || "";
           const color = score >= 150 ? "#b91c1c" : score >= 80 ? "#b45309" : "#2d6a4f";
-          L.circleMarker([lat, lng], {
+          const m = L.circleMarker([lat, lng], {
             radius: Math.min(4 + count * 0.02, 12),
             color, fillColor: color, fillOpacity: 0.7, weight: 1,
           }).bindPopup(`<strong>${name}</strong><br>${obs.taxon?.scientificName || ""}<br>${count ? count + " ex" : ""}`)
             .addTo(markers);
+          const key = `${lat},${lng}`;
+          if (!coordMarkerMap.has(key)) coordMarkerMap.set(key, []);
+          coordMarkerMap.get(key).push(m);
         }
       });
 
@@ -592,7 +645,7 @@ if (document.prerendering) {
         });
       });
 
-      // Click detail cards to fly to marker
+      // Click detail cards to fly to marker + hover highlight
       list.querySelectorAll(".group-details .obs-card").forEach(card => {
         card.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -602,6 +655,31 @@ if (document.prerendering) {
             map.flyTo([lat, lng], 14, { duration: 0.5 });
           }
         });
+        card.addEventListener("mouseenter", () => {
+          const lat = card.dataset.lat, lng = card.dataset.lng;
+          if (lat && lng) {
+            const ms = coordMarkerMap.get(`${lat},${lng}`);
+            if (ms) ms.forEach(m => highlightMarker(m));
+          }
+        });
+        card.addEventListener("mouseleave", clearHighlight);
+      });
+
+      // Hover on group header → highlight all markers for that species
+      list.querySelectorAll(".group-card").forEach((group, gi) => {
+        const header = group.querySelector(".group-header");
+        const obs = sortedGroups[gi][1];
+        header.addEventListener("mouseenter", () => {
+          obs.forEach(o => {
+            const lat = o.location?.decimalLatitude;
+            const lng = o.location?.decimalLongitude;
+            if (lat && lng) {
+              const ms = coordMarkerMap.get(`${lat},${lng}`);
+              if (ms) ms.forEach(m => highlightMarker(m));
+            }
+          });
+        });
+        header.addEventListener("mouseleave", clearHighlight);
       });
     }
 
