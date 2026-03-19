@@ -2,14 +2,22 @@
 
 // ── Matomo Analytics ──
 (function() {
-  var _paq = window._paq = window._paq || [];
-  _paq.push(['trackPageView']);
-  _paq.push(['enableLinkTracking']);
-  _paq.push(['setTrackerUrl', '//pierrea.se/wp-content/plugins/matomo/app/matomo.php']);
-  _paq.push(['setSiteId', '2']);
-  var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
-  g.async = true; g.src = '//pierrea.se/wp-content/uploads/matomo/matomo.js';
-  s.parentNode.insertBefore(g, s);
+  function initTracking() {
+    var _paq = window._paq = window._paq || [];
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    _paq.push(['alwaysUseSendBeacon']);
+    _paq.push(['setTrackerUrl', '//pierrea.se/wp-content/plugins/matomo/app/matomo.php']);
+    _paq.push(['setSiteId', '1']);
+    var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
+    g.async = true; g.src = '//pierrea.se/wp-content/uploads/matomo/matomo.js';
+    s.parentNode.insertBefore(g, s);
+  }
+  if (document.prerendering) {
+    document.addEventListener('prerenderingchange', initTracking, {once: true});
+  } else {
+    initTracking();
+  }
 })();
 
 // ── Mobile hamburger menu ──
