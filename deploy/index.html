@@ -428,7 +428,9 @@ if (document.prerendering) {
     function yearFirstsBadge(obs) {
       const tid = String(obs.taxon?.id || "");
       const yf = yearFirstsData[tid];
-      if (yf && yf.obs_count <= 10) return `<span class="badge badge-blue">Bland årets första</span>`;
+      if (!yf) return "";
+      if (yf._live && obs.occurrence?.occurrenceId === yf._firstOccId) return `<span class="badge badge-blue">Årets första obs</span>`;
+      if (yf.obs_count <= 10) return `<span class="badge badge-blue">Bland årets första</span>`;
       return "";
     }
 
@@ -661,6 +663,23 @@ if (document.prerendering) {
 
         // data.records is the array in SOS API v1 response
         allObs = data.records || data || [];
+
+        // Supplement yearFirstsData with live obs not yet in the database
+        for (const obs of allObs) {
+          const tid = String(obs.taxon?.id || "");
+          if (!tid) continue;
+          const yf = yearFirstsData[tid];
+          if (yf && !yf._live) continue; // already in DB, skip
+          const dt = obs.event?.startDate || "";
+          const occId = obs.occurrence?.occurrenceId || "";
+          if (!yf) {
+            yearFirstsData[tid] = { obs_count: 1, _live: true, _firstOccId: occId, _firstDt: dt };
+          } else {
+            yf.obs_count++;
+            if (dt < yf._firstDt) { yf._firstDt = dt; yf._firstOccId = occId; }
+          }
+        }
+
         const uniqueSpecies = new Set(allObs.map(o => o.taxon?.scientificName)).size;
         document.getElementById("status").textContent =
           `${formatDateRange(currentDays)} · ${allObs.length} observationer · ${uniqueSpecies} arter`;
