@@ -359,11 +359,54 @@ if (document.prerendering) {
     }
 
     async function load() {
-      const res = await fetch(`stats-api.php?q=reporter&name=${encodeURIComponent(REPORTER)}`);
-      const data = await res.json();
+      const [dbRes, liveRes] = await Promise.all([
+        fetch(`stats-api.php?q=reporter&name=${encodeURIComponent(REPORTER)}`),
+        fetch('api.php?days=1').catch(() => null)
+      ]);
+      const data = await dbRes.json();
       if (data.error) { document.getElementById('diary').textContent = 'Fel: ' + data.error; return; }
 
       allObs = data.observations || [];
+
+      // Supplement with live SOS-API observations for today+yesterday
+      if (liveRes && liveRes.ok) {
+        try {
+          const liveData = await liveRes.json();
+          const liveRecords = liveData.records || liveData || [];
+          const dbUrls = new Set(allObs.filter(o => o.url).map(o => o.url));
+          for (const rec of liveRecords) {
+            const observer = rec.occurrence?.recordedBy || '';
+            if (!observer.includes(REPORTER)) continue;
+            const n = normalizeSosObs(rec);
+            // Build URL for dedup check
+            if (n.url && dbUrls.has(n.url)) continue;
+            allObs.push({
+              taxon_id: n.taxonId,
+              name: n.name,
+              scientific: n.scientific,
+              count: n.count,
+              date: n.date,
+              time: n.time,
+              locality: n.locality,
+              url: n.url,
+              remarks: n.remarks,
+              redlist: n.redlist,
+            });
+            data.total_obs++;
+          }
+          // Re-sort by date+time descending
+          allObs.sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+          // Recalculate species count
+          data.total_species = new Set(allObs.map(o => o.taxon_id || o.name)).size;
+          // Recalculate per_year
+          data.per_year = {};
+          for (const o of allObs) {
+            const y = o.date.substring(0, 4);
+            data.per_year[y] = (data.per_year[y] || 0) + 1;
+          }
+        } catch(e) { /* live fetch failed, continue with DB data only */ }
+      }
+
       for (const obs of allObs) {
         const d = obs.date.substring(0, 10);
         dateCounts[d] = (dateCounts[d] || 0) + 1;
