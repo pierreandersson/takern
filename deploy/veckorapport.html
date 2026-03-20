@@ -526,7 +526,7 @@ if (document.prerendering) {
       // ── 4. Watch for ──
       if (phenology && Object.keys(phenology).length > 0) {
         const currentDoy = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-        const seenInLive = new Set(speciesList.map(sp => String(sp.taxonId)));
+        const seenInLive = new Set(liveData.speciesList.map(sp => String(sp.taxonId)));
         const lookAhead = [];
         for (const [tid, ph] of Object.entries(phenology)) {
           if (ph.avg_first_doy < 32 || ph.avg_first_doy > 180) continue;
