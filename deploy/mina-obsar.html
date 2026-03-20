@@ -326,8 +326,24 @@ if (document.prerendering) {
       <h2>Topplokaler</h2>
       <div class="top-localities" id="top-localities"></div>
     </section>
+
+    <section class="full-width">
+      <h2>Observationer per veckodag</h2>
+      <div style="height:250px"><canvas id="weekdayChart"></canvas></div>
+    </section>
+
+    <section class="full-width">
+      <h2>Observationer per timme</h2>
+      <div style="height:250px"><canvas id="hourChart"></canvas></div>
+    </section>
+
+    <section class="full-width">
+      <h2>Observationer per månad</h2>
+      <div style="height:250px"><canvas id="monthChart"></canvas></div>
+    </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/sv.js"></script>
@@ -424,6 +440,9 @@ if (document.prerendering) {
       renderMap(data.top_localities || []);
       renderTopLocalities(data.top_localities || []);
       renderDiary();
+      renderWeekdayChart();
+      renderHourChart();
+      renderMonthChart();
     }
 
     function renderStats(data) {
@@ -638,6 +657,81 @@ if (document.prerendering) {
           <span class="top-item-count">${loc.count} obs</span>
         </div>`;
       }).join('');
+    }
+
+    function renderWeekdayChart() {
+      const days = ['mån','tis','ons','tor','fre','lör','sön'];
+      const counts = Array(7).fill(0);
+      for (const o of allObs) {
+        const d = new Date(o.date.substring(0, 10) + 'T12:00:00');
+        const dow = (d.getDay() + 6) % 7; // mon=0 … sun=6
+        counts[dow]++;
+      }
+      new Chart(document.getElementById('weekdayChart'), {
+        type: 'bar',
+        data: {
+          labels: days,
+          datasets: [{ data: counts, backgroundColor: 'rgba(45,106,79,0.6)', borderColor: '#2d6a4f', borderWidth: 1, borderRadius: 4 }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => v.toLocaleString('sv') } },
+          },
+        },
+      });
+    }
+
+    function renderHourChart() {
+      const counts = Array(24).fill(0);
+      let hasTime = false;
+      for (const o of allObs) {
+        if (o.time && o.time !== '00:00') {
+          const h = parseInt(o.time.substring(0, 2), 10);
+          counts[h]++;
+          hasTime = true;
+        }
+      }
+      if (!hasTime) { document.getElementById('hourChart').parentElement.previousElementSibling.remove(); document.getElementById('hourChart').parentElement.remove(); return; }
+      const labels = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+      new Chart(document.getElementById('hourChart'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ data: counts, backgroundColor: 'rgba(45,106,79,0.6)', borderColor: '#2d6a4f', borderWidth: 1, borderRadius: 4 }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => v.toLocaleString('sv') } },
+          },
+        },
+      });
+    }
+
+    function renderMonthChart() {
+      const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+      const counts = Array(12).fill(0);
+      for (const o of allObs) {
+        const m = parseInt(o.date.substring(5, 7), 10) - 1;
+        counts[m]++;
+      }
+      new Chart(document.getElementById('monthChart'), {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [{ data: counts, backgroundColor: 'rgba(45,106,79,0.6)', borderColor: '#2d6a4f', borderWidth: 1, borderRadius: 4 }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => v.toLocaleString('sv') } },
+          },
+        },
+      });
     }
 
     load();
