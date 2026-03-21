@@ -498,10 +498,16 @@ if (document.prerendering) {
             for (const [name, cnt] of Object.entries(liveCounts)) {
               obsMap[name] = (obsMap[name] || 0) + cnt;
             }
-            data.top_observers_this_year = Object.entries(obsMap)
+            const sorted = Object.entries(obsMap)
               .map(([name, count]) => ({ name, count }))
-              .sort((a, b) => b.count - a.count)
-              .slice(0, 20);
+              .sort((a, b) => b.count - a.count);
+            // Update rank and obs count for REPORTER
+            const myCount = obsMap[REPORTER] || 0;
+            if (myCount > 0) {
+              data.rank_this_year = sorted.findIndex(o => o.name === REPORTER) + 1;
+              data.obs_this_year = myCount;
+            }
+            data.top_observers_this_year = sorted.slice(0, 20);
           }
         } catch(e) { /* live fetch failed, continue with DB data only */ }
       }
