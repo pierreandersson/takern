@@ -507,16 +507,16 @@ if (document.prerendering) {
     function renderStats(data) {
       document.getElementById('stats-grid').innerHTML = `
         <div class="stat-card">
+          <div class="stat-value">${data.obs_this_year || 0}</div>
+          <div class="stat-label">observationer i år</div>
+        </div>
+        <div class="stat-card">
           <div class="stat-value">${data.total_obs}</div>
-          <div class="stat-label">observationer</div>
+          <div class="stat-label">observationer totalt</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${data.total_species}</div>
-          <div class="stat-label">arter</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${Object.keys(data.per_year).length}</div>
-          <div class="stat-label">aktiva år</div>
+          <div class="stat-label">arter totalt</div>
         </div>
         <div class="stat-card">
           <div class="stat-value sm">${data.obs_this_year > 0 ? '#' + data.rank_this_year : '–'}</div>
