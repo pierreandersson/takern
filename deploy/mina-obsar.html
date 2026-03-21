@@ -341,6 +341,11 @@ if (document.prerendering) {
       <h2>Observationer per månad</h2>
       <div style="height:250px"><canvas id="monthChart"></canvas></div>
     </section>
+
+    <section class="full-width" id="top-observers-section" style="display:none">
+      <h2>Topplista observatörer <span id="top-obs-year"></span></h2>
+      <div class="top-localities" id="top-observers"></div>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -443,6 +448,7 @@ if (document.prerendering) {
       renderWeekdayChart();
       renderHourChart();
       renderMonthChart();
+      renderTopObservers(data.top_observers_this_year || [], data.rank_year || new Date().getFullYear());
     }
 
     function renderStats(data) {
@@ -732,6 +738,18 @@ if (document.prerendering) {
           },
         },
       });
+    }
+
+    function renderTopObservers(observers, year) {
+      if (!observers.length) return;
+      document.getElementById('top-observers-section').style.display = '';
+      document.getElementById('top-obs-year').textContent = year;
+      document.getElementById('top-observers').innerHTML = observers.map((o, i) =>
+        `<div class="top-item"${o.name === REPORTER ? ' style="border-color:var(--accent);background:var(--accent-bg)"' : ''}>
+          <div><div class="top-item-name">${i + 1}. ${o.name}</div></div>
+          <span class="top-item-count">${o.count.toLocaleString('sv')} obs</span>
+        </div>`
+      ).join('');
     }
 
     load();

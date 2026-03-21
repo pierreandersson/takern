@@ -1631,7 +1631,14 @@ if ($q === 'reporter') {
         $topLocalities[] = ['name' => $row['locality'], 'count' => intval($row['n']), 'lat' => round(floatval($row['lat']), 5), 'lng' => round(floatval($row['lng']), 5)];
     }
 
-    jsonOut(['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'rank_this_year' => $rankThisYear, 'obs_this_year' => $myCountThisYear, 'total_observers_this_year' => $totalObserversThisYear, 'rank_year' => $currentYear, 'top_localities' => $topLocalities]);
+    // Top 10 observers this year
+    $topObserversThisYear = [];
+    $res = $db->query("SELECT recorded_by, COUNT(*) n FROM observations WHERE SUBSTR(event_start_date,1,4) = '$currentYear' AND recorded_by IS NOT NULL GROUP BY recorded_by ORDER BY n DESC LIMIT 10");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $topObserversThisYear[] = ['name' => $row['recorded_by'], 'count' => intval($row['n'])];
+    }
+
+    jsonOut(['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'rank_this_year' => $rankThisYear, 'obs_this_year' => $myCountThisYear, 'total_observers_this_year' => $totalObserversThisYear, 'rank_year' => $currentYear, 'top_localities' => $topLocalities, 'top_observers_this_year' => $topObserversThisYear]);
 }
 
 // ── Unknown endpoint ──
