@@ -481,6 +481,28 @@ if (document.prerendering) {
           // Update obs_this_year from recalculated per_year
           const cy = String(new Date().getFullYear());
           data.obs_this_year = data.per_year[cy] || 0;
+
+          // Supplement top observers with today's live data
+          const today = new Date().toISOString().substring(0, 10);
+          const liveCounts = {};
+          for (const rec of liveRecords) {
+            const d = rec.event?.startDate?.substring(0, 10) || '';
+            if (d !== today) continue;
+            const name = rec.occurrence?.recordedBy || '';
+            if (!name) continue;
+            liveCounts[name] = (liveCounts[name] || 0) + 1;
+          }
+          if (Object.keys(liveCounts).length && data.top_observers_this_year) {
+            const obsMap = {};
+            for (const o of data.top_observers_this_year) obsMap[o.name] = o.count;
+            for (const [name, cnt] of Object.entries(liveCounts)) {
+              obsMap[name] = (obsMap[name] || 0) + cnt;
+            }
+            data.top_observers_this_year = Object.entries(obsMap)
+              .map(([name, count]) => ({ name, count }))
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 20);
+          }
         } catch(e) { /* live fetch failed, continue with DB data only */ }
       }
 
