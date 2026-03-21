@@ -478,6 +478,9 @@ if (document.prerendering) {
             const y = o.date.substring(0, 4);
             data.per_year[y] = (data.per_year[y] || 0) + 1;
           }
+          // Update obs_this_year from recalculated per_year
+          const cy = String(new Date().getFullYear());
+          data.obs_this_year = data.per_year[cy] || 0;
         } catch(e) { /* live fetch failed, continue with DB data only */ }
       }
 
