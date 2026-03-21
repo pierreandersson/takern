@@ -1631,9 +1631,9 @@ if ($q === 'reporter') {
         $topLocalities[] = ['name' => $row['locality'], 'count' => intval($row['n']), 'lat' => round(floatval($row['lat']), 5), 'lng' => round(floatval($row['lng']), 5)];
     }
 
-    // Top 10 observers this year
+    // Top 20 observers this year
     $topObserversThisYear = [];
-    $res = $db->query("SELECT recorded_by, COUNT(*) n FROM observations WHERE SUBSTR(event_start_date,1,4) = '$currentYear' AND recorded_by IS NOT NULL GROUP BY recorded_by ORDER BY n DESC LIMIT 10");
+    $res = $db->query("SELECT recorded_by, COUNT(*) n FROM observations WHERE SUBSTR(event_start_date,1,4) = '$currentYear' AND recorded_by IS NOT NULL GROUP BY recorded_by ORDER BY n DESC LIMIT 20");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
         $topObserversThisYear[] = ['name' => $row['recorded_by'], 'count' => intval($row['n'])];
     }
