@@ -240,6 +240,32 @@
     section.full-width { margin-bottom: 2.5rem; }
     section.full-width h2 { font-size: 0.9rem; font-weight: 600; margin: 0 0 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
+    /* Skeleton loading */
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, rgba(0,0,0,0.04) 50%, var(--border) 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: 6px;
+    }
+    .skeleton-text { height: 0.9rem; margin-bottom: 0.5rem; border-radius: 4px; }
+    .skeleton-text.short { width: 40%; }
+    .skeleton-text.medium { width: 65%; }
+    .skeleton-text.long { width: 85%; }
+    .stat-card .skeleton-value { height: 1.5rem; width: 50%; margin: 0 auto 0.4rem; }
+    .stat-card .skeleton-label { height: 0.7rem; width: 70%; margin: 0 auto; }
+    .skeleton-diary-day {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--card);
+      padding: 0.75rem;
+    }
+    .skeleton-chart { height: 200px; border-radius: 8px; }
+
     @media (max-width: 700px) {
       .main-layout { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -296,10 +322,10 @@ if (document.prerendering) {
   <main class="container">
 
     <div class="stats-grid" id="stats-grid">
-      <div class="stat-card" style="height:72px"></div>
-      <div class="stat-card" style="height:72px"></div>
-      <div class="stat-card" style="height:72px"></div>
-      <div class="stat-card" style="height:72px"></div>
+      <div class="stat-card"><div class="skeleton skeleton-value"></div><div class="skeleton skeleton-label"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton-value"></div><div class="skeleton skeleton-label"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton-value"></div><div class="skeleton skeleton-label"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton-value"></div><div class="skeleton skeleton-label"></div></div>
     </div>
 
     <div class="main-layout">
@@ -307,39 +333,66 @@ if (document.prerendering) {
       <div class="sidebar">
         <h2>Välj period</h2>
         <input id="fp-input" type="text" style="display:none">
-        <div class="year-links" id="year-links"></div>
+        <div class="year-links" id="year-links">
+          <div class="skeleton" style="height:2.2rem;margin-bottom:0.3rem"></div>
+          <div class="skeleton" style="height:2.2rem;margin-bottom:0.3rem"></div>
+          <div class="skeleton" style="height:2.2rem"></div>
+        </div>
       </div>
 
       <!-- Right: diary -->
       <div class="diary-col">
         <h2 id="diary-heading">Alla rapporter</h2>
-        <div class="diary" id="diary"></div>
+        <div class="diary" id="diary">
+          <div class="skeleton-diary-day">
+            <div class="skeleton skeleton-text long"></div>
+            <div class="skeleton skeleton-text medium"></div>
+            <div class="skeleton skeleton-text long"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="skeleton-diary-day">
+            <div class="skeleton skeleton-text long"></div>
+            <div class="skeleton skeleton-text medium"></div>
+            <div class="skeleton skeleton-text long"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="skeleton-diary-day">
+            <div class="skeleton skeleton-text medium"></div>
+            <div class="skeleton skeleton-text long"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <section class="full-width">
       <h2>Mina lokaler</h2>
-      <div id="my-map"></div>
+      <div id="my-map"><div class="skeleton skeleton-chart" style="height:350px"></div></div>
     </section>
 
     <section class="full-width">
       <h2>Topplokaler</h2>
-      <div class="top-localities" id="top-localities"></div>
+      <div class="top-localities" id="top-localities">
+        <div class="skeleton" style="height:2.8rem;margin-bottom:0.4rem"></div>
+        <div class="skeleton" style="height:2.8rem;margin-bottom:0.4rem"></div>
+        <div class="skeleton" style="height:2.8rem;margin-bottom:0.4rem"></div>
+        <div class="skeleton" style="height:2.8rem"></div>
+      </div>
     </section>
 
     <section class="full-width">
       <h2>Observationer per veckodag</h2>
-      <div style="height:250px"><canvas id="weekdayChart"></canvas></div>
+      <div style="height:250px"><div class="skeleton skeleton-chart" id="weekdayChartSkeleton"></div><canvas id="weekdayChart" style="display:none"></canvas></div>
     </section>
 
     <section class="full-width">
       <h2>Observationer per timme</h2>
-      <div style="height:250px"><canvas id="hourChart"></canvas></div>
+      <div style="height:250px"><div class="skeleton skeleton-chart" id="hourChartSkeleton"></div><canvas id="hourChart" style="display:none"></canvas></div>
     </section>
 
     <section class="full-width">
       <h2>Observationer per månad</h2>
-      <div style="height:250px"><canvas id="monthChart"></canvas></div>
+      <div style="height:250px"><div class="skeleton skeleton-chart" id="monthChartSkeleton"></div><canvas id="monthChart" style="display:none"></canvas></div>
     </section>
 
     <section class="full-width" id="top-observers-section" style="display:none">
@@ -631,6 +684,7 @@ if (document.prerendering) {
     }
 
     function renderMap(localities) {
+      document.getElementById('my-map').innerHTML = '';
       const map = initMap('my-map', 12);
       const maxCount = Math.max(...localities.map(l => l.count));
       for (const loc of localities) {
@@ -665,6 +719,12 @@ if (document.prerendering) {
       }).join('');
     }
 
+    function showChart(canvasId) {
+      const skel = document.getElementById(canvasId + 'Skeleton');
+      if (skel) skel.remove();
+      document.getElementById(canvasId).style.display = '';
+    }
+
     function renderWeekdayChart() {
       const days = ['mån','tis','ons','tor','fre','lör','sön'];
       const counts = Array(7).fill(0);
@@ -673,6 +733,7 @@ if (document.prerendering) {
         const dow = (d.getDay() + 6) % 7; // mon=0 … sun=6
         counts[dow]++;
       }
+      showChart('weekdayChart');
       new Chart(document.getElementById('weekdayChart'), {
         type: 'bar',
         data: {
@@ -701,6 +762,7 @@ if (document.prerendering) {
       }
       if (!hasTime) { document.getElementById('hourChart').parentElement.previousElementSibling.remove(); document.getElementById('hourChart').parentElement.remove(); return; }
       const labels = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+      showChart('hourChart');
       new Chart(document.getElementById('hourChart'), {
         type: 'bar',
         data: {
@@ -724,6 +786,7 @@ if (document.prerendering) {
         const m = parseInt(o.date.substring(5, 7), 10) - 1;
         counts[m]++;
       }
+      showChart('monthChart');
       new Chart(document.getElementById('monthChart'), {
         type: 'bar',
         data: {
