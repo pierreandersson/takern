@@ -1648,7 +1648,29 @@ if ($q === 'reporter') {
     }
 
     $currentYear = date('Y');
+    $yearStart = "$currentYear-01-01";
+    $yearEnd   = ($currentYear + 1) . '-01-01';
     $obsThisYear = isset($perYear[$currentYear]) ? $perYear[$currentYear] : 0;
+
+    // Ranking among all observers this year (date-range filter → uses date index)
+    $stmt = $db->prepare(
+        "SELECT COUNT(*) + 1 FROM (SELECT recorded_by, COUNT(*) n FROM observations WHERE event_start_date >= :ys AND event_start_date < :ye AND recorded_by IS NOT NULL GROUP BY recorded_by) WHERE n > :cnt"
+    );
+    $stmt->bindValue(':ys', $yearStart, SQLITE3_TEXT);
+    $stmt->bindValue(':ye', $yearEnd, SQLITE3_TEXT);
+    $stmt->bindValue(':cnt', $obsThisYear, SQLITE3_INTEGER);
+    $rankThisYear = intval($stmt->execute()->fetchArray()[0]);
+
+    $totalObserversThisYear = intval($db->querySingle(
+        "SELECT COUNT(DISTINCT recorded_by) FROM observations WHERE event_start_date >= '$yearStart' AND event_start_date < '$yearEnd' AND recorded_by IS NOT NULL"
+    ));
+
+    // Top 20 observers this year
+    $topObserversThisYear = [];
+    $res = $db->query("SELECT recorded_by, COUNT(*) n FROM observations WHERE event_start_date >= '$yearStart' AND event_start_date < '$yearEnd' AND recorded_by IS NOT NULL GROUP BY recorded_by ORDER BY n DESC LIMIT 20");
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $topObserversThisYear[] = ['name' => $row['recorded_by'], 'count' => intval($row['n'])];
+    }
 
     $observations = [];
     $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, individual_count, event_start_date, start_time, locality, url, remarks, is_redlisted, redlist_category FROM observations WHERE recorded_by = :name ORDER BY event_start_date DESC, start_time DESC LIMIT 100");
@@ -1677,7 +1699,7 @@ if ($q === 'reporter') {
         $topLocalities[] = ['name' => $row['locality'], 'count' => intval($row['n']), 'lat' => round(floatval($row['lat']), 5), 'lng' => round(floatval($row['lng']), 5)];
     }
 
-    jsonOut(['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'obs_this_year' => $obsThisYear, 'top_localities' => $topLocalities]);
+    jsonOut(['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'rank_this_year' => $rankThisYear, 'obs_this_year' => $obsThisYear, 'total_observers_this_year' => $totalObserversThisYear, 'rank_year' => $currentYear, 'top_localities' => $topLocalities, 'top_observers_this_year' => $topObserversThisYear]);
 }
 
 // ── Unknown endpoint ──
