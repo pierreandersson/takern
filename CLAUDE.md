@@ -1,7 +1,7 @@
 # Tåkern Fågelobs – Projektkontext
 
 ## Vad detta är
-Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. Sex sidor: index.html (senaste obs), veckorapport.html ("Tåkern i veckan"), arter.html (artbrowser + artsidor), lokaler.html (lokalbrowser + lokalsidor), statistik.html (20 års historik), om.html.
+Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. Sex publika sidor: index.html (senaste obs), veckorapport.html ("Tåkern i veckan"), arter.html (artbrowser + artsidor), lokaler.html (lokalbrowser + lokalsidor), statistik.html (20 års historik), om.html. Plus **mina-obsar.html** (olistad personlig rapportörsvy, noindex) — konsumerar `?q=reporter`-endpointen + `api.php`. Plus **krysslista.html** (olistad personlig livskrysslista, noindex) — konsumerar `krysslista-api.php`. Vid backend-ändringar: kontrollera ALLTID alla konsumerande sidor, inklusive olänkade som mina-obsar.html och krysslista.html.
 
 ## Tech stack
 - **Frontend:** Vanilla HTML/CSS/JS, Leaflet för kartor, Chart.js för grafer
@@ -25,7 +25,7 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 - **cron-update.php:** Daglig datainhämtning + cache-rensning. Skyddad med nyckel i cron_secret.txt
 - **api.php:** Hybrid-proxy för index.html: live SOS-API (idag+igår) + SQLite (äldre dagar, days ≥ 2). Fast 15 km radie.
 - **?q=init:** Batch-endpoint som returnerar overview+geo+localities+species från cache
-- **?q=reporter:** Rapportörsdata. Observations-query begränsad till LIMIT 100 (frontend visar 30). busyTimeout 5000ms.
+- **?q=reporter:** Rapportörsdata för mina-obsar.html. Returnerar ranking, top observers, obs, localities. Observations-query begränsad till LIMIT 100 (frontend visar 30). busyTimeout 5000ms.
 
 ## Delat designsystem
 
@@ -117,6 +117,14 @@ Sektionen "Säsongens längd per år" på artsidor visar:
 - **days 2–7:** Live API för idag+igår + SQLite för äldre dagar → merge + dedup på occurrence_id
 - **Varför:** Cron körs ~04:00, SQLite kan sakna gårdagens sena obs → live API täcker gapet
 - **Radie:** Fast 15 km från [58.35, 14.81], konsekvent med databasens nedladdningsradie. Ingen radieväljare. Radien visas som subtil grön cirkel på alla Leaflet-kartor via `addRadiusCircle()` i utils.js.
+
+## Krysslista (krysslista.html)
+Personlig livskrysslista (olistad, noindex). Fristående från Tåkern-databasen.
+- **Data:** `krysslista-data.json` (JSON-fil, skapas från `krysslista-seed.json` vid första besök)
+- **Backend:** `krysslista-api.php` — CRUD (list/add/edit/delete), filbaserad med `flock()`
+- **Funktioner:** Filter (Sverige/Utomlands), sökning, sortering (datum/grupp/A–Ö), autocomplete (834 arter)
+- **Backup:** Daglig backup i cron-update.php → `backups/krysslista_YYYY-MM-DD.json` (10 senaste)
+- **Deploy:** `krysslista-data.json` exkluderad från FTP-deploy (levande data skrivs aldrig över). Seed-filen deployas normalt.
 
 ## Utvecklingsplan
 Se IDEAS.md för fullständig att-göra-lista. Nästa steg:
