@@ -64,16 +64,15 @@ Delade render-funktioner producerar konsekvent HTML som matchar CSS-komponentern
 ## Deploy-flöde
 1. Push till main med ändringar i deploy/ eller .github/workflows/ → GitHub Actions FTP-deploy
 2. Före FTP: sed lägger till `?v=<git-hash>` på lokala assets (utils.js, style.css) i HTML-filer → cache-busting
-3. Efter FTP: curl till cron-update.php?action=clear-cache&nowarm (rensar cache utan att blockera workern)
-4. GitHub Actions värmer cache parallellt via curl till varje endpoint (overview, species, geo, localities, week_context, accumulation)
-5. Secrets: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH, CRON_SECRET
+3. Efter FTP: curl till cron-update.php?action=clear-cache (rensar all cache + värmer alla endpoints, blockerar workern ~1 min)
+4. Secrets: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH, CRON_SECRET
 
 ## Viktigt att veta
 - **SQLite på Websupport:** %G/%V (ISO-vecka) fungerar INTE. Beräkna datumintervall i PHP istället.
 - **En PHP-worker:** Parallella browser-requests köas. Batch-endpoint (?q=init) löser detta. `shell_exec` är blockerat på Websupport.
 - **WebFetch har 15 min cache:** Använd ALDRIG WebFetch för att verifiera efter deploy. Använd Chrome.
 - **WebFetch tolkar data opålitligt:** Lita inte på WebFetch för exakta siffror från API-svar. Verifiera via eval/kod.
-- **Cache-clear värmer INTE längre automatiskt:** Sedan 2026-03-22 anropas clear-cache med &nowarm vid deploy, och värmning sker parallellt från GitHub Actions. Manuellt: lägg till &nowarm för att skippa värmning.
+- **Cache-clear värmer automatiskt:** Standardbeteende. Skippa med &nowarm.
 - **Fenologi:** Earliest = min dag-på-året (ej kronologiskt äldsta datumet), med januarifilter. Average = senaste 5 år (med januarifilter).
 - **Recent observations:** Dedupliceras per datum+lokal, prioriterar URL-poster. Alla poster har source-etikett.
 - **Rarity-filter:** Exkluderar hybrider (` x `), osäkra (`/`), morfer (`morf`), artgrupper (ej mellanslag i scientific_name)
