@@ -392,6 +392,7 @@ $db->exec("CREATE INDEX IF NOT EXISTS idx_obs_locality ON observations(locality)
 $db->exec("CREATE INDEX IF NOT EXISTS idx_obs_date ON observations(event_start_date)");
 $db->exec("CREATE INDEX IF NOT EXISTS idx_obs_taxon_id ON observations(taxon_id)");
 $db->exec("CREATE INDEX IF NOT EXISTS idx_obs_taxon_date ON observations(taxon_id, event_start_date)");
+$db->exec("CREATE INDEX IF NOT EXISTS idx_obs_recorded_by ON observations(recorded_by)");
 
 $db->close();
 

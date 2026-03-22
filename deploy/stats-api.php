@@ -49,6 +49,7 @@ set_error_handler(function($severity, $msg, $file, $line) {
 try {
 
 $db = new SQLite3($DB_FILE, SQLITE3_OPEN_READONLY);
+$db->busyTimeout(5000);
 
 function doyToStr($doy) {
     if ($doy === null || $doy < 1 || $doy > 366) return null;
@@ -1605,7 +1606,7 @@ if ($q === 'reporter') {
     ));
 
     $observations = [];
-    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, individual_count, event_start_date, start_time, locality, url, remarks, is_redlisted, redlist_category FROM observations WHERE recorded_by = :name ORDER BY event_start_date DESC, start_time DESC");
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, individual_count, event_start_date, start_time, locality, url, remarks, is_redlisted, redlist_category FROM observations WHERE recorded_by = :name ORDER BY event_start_date DESC, start_time DESC LIMIT 100");
     $stmt->bindValue(':name', $name, SQLITE3_TEXT);
     $res = $stmt->execute();
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
