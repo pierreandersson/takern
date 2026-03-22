@@ -1122,17 +1122,24 @@ if ($q === 'accumulation') {
     }
 
     // Daily mean temperature from SMHI (Härsnäs station 85180, 26km east of Tåkern)
+    // Cache SMHI data daily to avoid slow external API call on every request
+    $smhiCacheFile = "$CACHE_DIR/smhi_temp_" . date('Y-m-d') . ".json";
     $tempData = [];
-    $smhiUrl = 'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/2/station/85180/period/latest-months/data.json';
-    $smhiCtx = stream_context_create(['http' => ['timeout' => 10]]);
-    $smhiJson = @file_get_contents($smhiUrl, false, $smhiCtx);
-    if ($smhiJson) {
-        $smhi = json_decode($smhiJson, true);
-        foreach ($smhi['value'] ?? [] as $v) {
-            $date = $v['ref'] ?? '';
-            if (substr($date, 0, 4) === strval($year)) {
-                $tempData[] = [$date, floatval($v['value'])];
+    if (file_exists($smhiCacheFile)) {
+        $tempData = json_decode(file_get_contents($smhiCacheFile), true) ?: [];
+    } else {
+        $smhiUrl = 'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/2/station/85180/period/latest-months/data.json';
+        $smhiCtx = stream_context_create(['http' => ['timeout' => 10]]);
+        $smhiJson = @file_get_contents($smhiUrl, false, $smhiCtx);
+        if ($smhiJson) {
+            $smhi = json_decode($smhiJson, true);
+            foreach ($smhi['value'] ?? [] as $v) {
+                $date = $v['ref'] ?? '';
+                if (substr($date, 0, 4) === strval($year)) {
+                    $tempData[] = [$date, floatval($v['value'])];
+                }
             }
+            file_put_contents($smhiCacheFile, json_encode($tempData));
         }
     }
 
