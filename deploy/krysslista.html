@@ -100,18 +100,38 @@
       background: var(--accent-bg);
       color: var(--text);
     }
-    .search-input {
+    .search-wrap {
       flex: 1;
       min-width: 160px;
-      padding: 0.5rem 0.75rem;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
       border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 16px;
       font-family: inherit;
       background: var(--card);
       outline: none;
     }
     .search-input:focus { border-color: var(--accent); }
+    .search-clear {
+      position: absolute;
+      right: 0.4rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 1.1rem;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.25rem;
+      line-height: 1;
+      display: none;
+    }
+    .search-clear:hover { color: var(--text); }
+    .search-wrap.has-value .search-clear { display: block; }
     .sort-btn {
       padding: 0.5rem 0.75rem;
       border: 1px solid var(--border);
@@ -268,7 +288,7 @@
       padding: 0.5rem 0.7rem;
       border: 1px solid var(--border);
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 16px;
       font-family: inherit;
       background: var(--bg);
     }
@@ -330,7 +350,7 @@
       .stat-card { padding: 0.65rem 0.5rem; }
       .stat-card .stat-value { font-size: 1.25rem; }
       .toolbar { gap: 0.5rem; }
-      .search-input { min-width: 120px; }
+      .search-wrap { min-width: 120px; }
       .species-item { padding: 0.5rem 0.7rem; }
       .fab { bottom: 1rem; right: 1rem; width: 50px; height: 50px; font-size: 1.3rem; }
     }
@@ -370,7 +390,10 @@
         <button class="filter-tab" data-filter="se">Sverige</button>
         <button class="filter-tab" data-filter="foreign">Utomlands</button>
       </div>
-      <input type="text" class="search-input" placeholder="Sök art..." id="search-input">
+      <div class="search-wrap" id="search-wrap">
+        <input type="text" class="search-input" placeholder="Sök art..." id="search-input">
+        <button class="search-clear" id="search-clear" title="Rensa sökning">&times;</button>
+      </div>
       <button class="sort-btn" id="sort-btn" title="Växla sortering">Grupp</button>
     </div>
 
@@ -761,7 +784,18 @@
     });
 
     // Search
-    searchEl.addEventListener('input', () => render());
+    const searchWrap = document.getElementById('search-wrap');
+    const searchClear = document.getElementById('search-clear');
+    searchEl.addEventListener('input', () => {
+      searchWrap.classList.toggle('has-value', searchEl.value.length > 0);
+      render();
+    });
+    searchClear.addEventListener('click', () => {
+      searchEl.value = '';
+      searchWrap.classList.remove('has-value');
+      render();
+      searchEl.focus();
+    });
 
     // Sort
     const SORT_LABELS = { taxonomy: 'A–Ö', alpha: 'Datum', date: 'Grupp' };
