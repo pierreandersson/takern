@@ -379,7 +379,6 @@ if ($q === 'ranking') {
 
 // ── Species detail ──
 if ($q === 'species' && $id !== null) {
-    $dt = isset($_GET['debug_timing']); if ($dt) { $t = []; $t0 = microtime(true); }
     // Check which columns exist (server DB may lack newer columns)
     $cols = [];
     $pragma = $db->query("PRAGMA table_info(observations)");
@@ -396,7 +395,6 @@ if ($q === 'species' && $id !== null) {
         FROM observations WHERE taxon_id = $id", true);
 
     if (!$info || !$info['vernacular_name']) { jsonOut(['error' => 'Not found']); }
-    if ($dt) { $t['info'] = round(microtime(true)-$t0,3); $t0=microtime(true); }
 
     $perYear = [];
     $res = $db->query("SELECT SUBSTR(event_start_date,1,4) y, COUNT(*) n
@@ -405,7 +403,7 @@ if ($q === 'species' && $id !== null) {
 
     $numYears = count($perYear);
 
-    if ($dt) { $t['perYear'] = round(microtime(true)-$t0,3); $t0=microtime(true); }
+
     $weekCounts = [];
     $res = $db->query("SELECT SUBSTR(event_start_date,1,4) y,
         CAST(STRFTIME('%W', event_start_date) AS INTEGER) w, COUNT(*) n
@@ -423,7 +421,7 @@ if ($q === 'species' && $id !== null) {
         if ($avg > 0) $seasonCurve[$w] = round($avg, 1);
     }
 
-    if ($dt) { $t['weekCounts'] = round(microtime(true)-$t0,3); $t0=microtime(true); }
+
     $phenology = [];
     $firstDays = [];
     $lastDays = [];
@@ -468,7 +466,7 @@ if ($q === 'species' && $id !== null) {
         'latest_ever' => $latestLastDate ? $fmtDate($latestLastDate) : null,
     ];
 
-    if ($dt) { $t['phenology'] = round(microtime(true)-$t0,3); $t0=microtime(true); }
+
     $maxCounts = [];
     $res = $db->query("SELECT o.y, o.mx, o.tot, d.event_start_date AS date, d.locality, d.url
         FROM (
@@ -484,7 +482,7 @@ if ($q === 'species' && $id !== null) {
         }
     }
 
-    if ($dt) { $t['maxCounts'] = round(microtime(true)-$t0,3); $t0=microtime(true); }
+
     $topLocalities = [];
     $res = $db->query("SELECT locality, COUNT(*) n FROM observations
         WHERE taxon_id = $id AND locality IS NOT NULL AND locality != ''
@@ -499,7 +497,7 @@ if ($q === 'species' && $id !== null) {
         GROUP BY h ORDER BY h");
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) $timeOfDay[intval($row['h'])] = intval($row['n']);
 
-    if ($dt) { $t['topLoc+timeOfDay'] = round(microtime(true)-$t0,3); $t0=microtime(true); }
+
     // Recent observations (last 20 unique date+locality combos)
     $recent = [];
     $res = $db->query("SELECT event_start_date, start_time, locality,
@@ -530,7 +528,7 @@ if ($q === 'species' && $id !== null) {
         if (count($recent) >= 20) break;
     }
 
-    if ($dt) { $t['recent'] = round(microtime(true)-$t0,3); $t0=microtime(true); }
+
     // ── Encounter rate (reporting frequency) per year ──
     $totalVisits = getTotalVisitsPerYear($db);
 
@@ -596,8 +594,7 @@ if ($q === 'species' && $id !== null) {
         ];
     }
 
-    if ($dt) { $t['encounter'] = round(microtime(true)-$t0,3); }
-    if ($dt) { echo json_encode(['_timings' => $t]); exit; }
+
     jsonOut([
         'taxon_id' => $id,
         'name' => $info['vernacular_name'],
