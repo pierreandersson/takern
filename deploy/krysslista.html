@@ -100,6 +100,9 @@
       background: var(--accent-bg);
       color: var(--text);
     }
+    .search-row {
+      display: contents;
+    }
     .search-wrap {
       flex: 1;
       min-width: 160px;
@@ -373,8 +376,10 @@
       .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
       .stat-card { padding: 0.65rem 0.5rem; }
       .stat-card .stat-value { font-size: 1.25rem; }
-      .toolbar { gap: 0.5rem; }
-      .search-wrap { min-width: 120px; }
+      .toolbar { gap: 0.5rem; flex-direction: column; align-items: stretch; }
+      .filter-tabs { align-self: flex-start; }
+      .search-row { display: flex; gap: 0.5rem; }
+      .search-wrap { min-width: 0; }
       .species-item { padding: 0.5rem 0.7rem; }
       .fab { bottom: 1rem; right: 1rem; width: 50px; height: 50px; font-size: 1.3rem; }
     }
@@ -414,11 +419,13 @@
         <button class="filter-tab" data-filter="se">Sverige</button>
         <button class="filter-tab" data-filter="foreign">Utomlands</button>
       </div>
-      <div class="search-wrap" id="search-wrap">
-        <input type="text" class="search-input" placeholder="Sök art..." id="search-input">
-        <button class="search-clear" id="search-clear" title="Rensa sökning">&times;</button>
+      <div class="search-row">
+        <div class="search-wrap" id="search-wrap">
+          <input type="text" class="search-input" placeholder="Sök art..." id="search-input">
+          <button class="search-clear" id="search-clear" title="Rensa sökning">&times;</button>
+        </div>
+        <button class="sort-btn" id="sort-btn" title="Växla sortering">Grupp</button>
       </div>
-      <button class="sort-btn" id="sort-btn" title="Växla sortering">Grupp</button>
     </div>
 
     <!-- Species list -->
