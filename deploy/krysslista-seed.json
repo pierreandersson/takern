@@ -1,0 +1,1526 @@
+{
+  "observations": [
+    {
+      "id": 1,
+      "species": "prutgås",
+      "group": "Andfåglar",
+      "date": "2024-05-28",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 2,
+      "species": "kanadagås",
+      "group": "Andfåglar",
+      "date": "2023-05-21",
+      "place": "Västra Hargs Lövskogar",
+      "country": "SE",
+      "notes": "Lilla dammen, häckande par"
+    },
+    {
+      "id": 3,
+      "species": "vitkindad gås",
+      "group": "Andfåglar",
+      "date": "2023-06-11",
+      "place": "Ljusfors Naturreservat",
+      "country": "SE",
+      "notes": "Flera familjer med ungar"
+    },
+    {
+      "id": 4,
+      "species": "grågås",
+      "group": "Andfåglar",
+      "date": "2023-05-23",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 5,
+      "species": "sädgås",
+      "group": "Andfåglar",
+      "date": "2024-05-01",
+      "place": "Hovtornet, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 6,
+      "species": "spetsbergsgås",
+      "group": "Andfåglar",
+      "date": "2025-02-01",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 7,
+      "species": "bläsgås",
+      "group": "Andfåglar",
+      "date": "2024-05-01",
+      "place": "Hovtornet, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 8,
+      "species": "knölsvan",
+      "group": "Andfåglar",
+      "date": "2023-06-10",
+      "place": "Kungs Norrby Bro",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 9,
+      "species": "sångsvan",
+      "group": "Andfåglar",
+      "date": "2023-07-25",
+      "place": "Västra Hargs Lövskogar",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 10,
+      "species": "gravand",
+      "group": "Andfåglar",
+      "date": "2023-07-26",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 11,
+      "species": "skedand",
+      "group": "Andfåglar",
+      "date": "2023-10-18",
+      "place": "Vassleden, Tåkern",
+      "country": "SE",
+      "notes": "Plattformen"
+    },
+    {
+      "id": 12,
+      "species": "snatterand",
+      "group": "Andfåglar",
+      "date": "2023-08-26",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 13,
+      "species": "bergand",
+      "group": "Andfåglar",
+      "date": "2023-09-25",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 14,
+      "species": "amerikansk bläsand",
+      "group": "Andfåglar",
+      "date": "2025-02-08",
+      "place": "Helsingborg",
+      "country": "SE",
+      "notes": "Bruces Skog, dammen"
+    },
+    {
+      "id": 15,
+      "species": "gräsand",
+      "group": "Andfåglar",
+      "date": "2023-05-26",
+      "place": "Svartån, Lundby, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 16,
+      "species": "stjärtand",
+      "group": "Andfåglar",
+      "date": "2024-11-13",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 17,
+      "species": "kricka",
+      "group": "Andfåglar",
+      "date": "2023-08-20",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 18,
+      "species": "brunand",
+      "group": "Andfåglar",
+      "date": "2023-05-23",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 19,
+      "species": "vigg",
+      "group": "Andfåglar",
+      "date": "2023-08-20",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 20,
+      "species": "bergand",
+      "group": "Andfåglar",
+      "date": "2025-02-07",
+      "place": "Skanör",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 21,
+      "species": "mindre bergand",
+      "group": "Andfåglar",
+      "date": "2024-02-09",
+      "place": "Skanör",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 22,
+      "species": "praktejder",
+      "group": "Andfåglar",
+      "date": "2025-02-08",
+      "place": "Skanör",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 23,
+      "species": "ejder",
+      "group": "Andfåglar",
+      "date": "2023-08-24",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 24,
+      "species": "svärta",
+      "group": "Andfåglar",
+      "date": "2025-02-07",
+      "place": "Ängelholm",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 25,
+      "species": "sjöorre",
+      "group": "Andfåglar",
+      "date": "2025-02-07",
+      "place": "Ängelholm",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 26,
+      "species": "amerikansk sjöorre",
+      "group": "Andfåglar",
+      "date": "2025-02-07",
+      "place": "Ängelholm",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 27,
+      "species": "alfågel",
+      "group": "Andfåglar",
+      "date": "2025-02-08",
+      "place": "Skanör",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 28,
+      "species": "knipa",
+      "group": "Andfåglar",
+      "date": "2023-06-03",
+      "place": "Tinnerö Eklandskap",
+      "country": "SE",
+      "notes": "Lilla dammen längst bort från parkeringen"
+    },
+    {
+      "id": 29,
+      "species": "salskrake",
+      "group": "Andfåglar",
+      "date": "2024-04-15",
+      "place": "Sjöbo-Knäppan, Motala",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 30,
+      "species": "storskrake",
+      "group": "Andfåglar",
+      "date": "2023-08-23",
+      "place": "Gräsgårds hamn, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 31,
+      "species": "tjäder",
+      "group": "Hönsfåglar",
+      "date": "2024-08-01",
+      "place": "Lövängsborg, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 32,
+      "species": "rapphöna",
+      "group": "Hönsfåglar",
+      "date": "2024-01-07",
+      "place": "Bjälbo",
+      "country": "SE",
+      "notes": "På vägen mot Vadstena"
+    },
+    {
+      "id": 33,
+      "species": "nattskärra",
+      "group": "Skärrfåglar",
+      "date": "2024-05-10",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": "Flygande, mitt på dagen"
+    },
+    {
+      "id": 34,
+      "species": "tornseglare",
+      "group": "Seglar- och kolibrifåglar",
+      "date": "2024-05-10",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 35,
+      "species": "gök",
+      "group": "Gökfåglar",
+      "date": "2024-05-28",
+      "place": "Ottenby Lund, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 36,
+      "species": "skogsduva",
+      "group": "Duvfåglar",
+      "date": "2023-10-01",
+      "place": "Omberg",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 37,
+      "species": "ringduva",
+      "group": "Duvfåglar",
+      "date": "2023-08-23",
+      "place": "Stenåsa Camping",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 38,
+      "species": "vattenrall",
+      "group": "Tranfåglar",
+      "date": "2024-09-16",
+      "place": "Hovtornet, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 39,
+      "species": "rörhöna",
+      "group": "Tranfåglar",
+      "date": "2024-02-11",
+      "place": "Snöbryggan, Linköping",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 40,
+      "species": "sothöna",
+      "group": "Tranfåglar",
+      "date": "2023-06-20",
+      "place": "Västra Hargs Lövskogar",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 41,
+      "species": "trana",
+      "group": "Tranfåglar",
+      "date": "2023-05-28",
+      "place": "Västra Hargs Lövskogar",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 42,
+      "species": "smådopping",
+      "group": "Doppingfåglar",
+      "date": "2024-02-11",
+      "place": "Snöbryggan, Linköping",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 43,
+      "species": "skäggdopping",
+      "group": "Doppingfåglar",
+      "date": "2023-07-23",
+      "place": "Boren",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 44,
+      "species": "svarthakedopping",
+      "group": "Doppingfåglar",
+      "date": "2023-05-21",
+      "place": "Västra Hargs Lövskogar",
+      "country": "SE",
+      "notes": "Lilla dammen"
+    },
+    {
+      "id": 45,
+      "species": "strandskata",
+      "group": "Vadarfåglar",
+      "date": "2023-07-18",
+      "place": "Indalsälvens delta",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 46,
+      "species": "skärfläcka",
+      "group": "Vadarfåglar",
+      "date": "2024-05-09",
+      "place": "Stenåsa Camping, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 47,
+      "species": "kustpipare",
+      "group": "Vadarfåglar",
+      "date": "2025-10-14",
+      "place": "Stenåsa Camping, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 48,
+      "species": "ljungpipare",
+      "group": "Vadarfåglar",
+      "date": "2024-07-01",
+      "place": "Flatruet",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 49,
+      "species": "större strandpipare",
+      "group": "Vadarfåglar",
+      "date": "2023-07-22",
+      "place": "Svartåmynningens naturreservat",
+      "country": "SE",
+      "notes": "Längst ute vid gamla tornet"
+    },
+    {
+      "id": 50,
+      "species": "tofsvipa",
+      "group": "Vadarfåglar",
+      "date": "2023-06-09",
+      "place": "Vassleden, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 51,
+      "species": "storspov",
+      "group": "Vadarfåglar",
+      "date": "2024-05-27",
+      "place": "Sebyläge, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 52,
+      "species": "rödspov",
+      "group": "Vadarfåglar",
+      "date": "2024-05-09",
+      "place": "Stenåsa Camping, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 53,
+      "species": "enkelbeckasin",
+      "group": "Vadarfåglar",
+      "date": "2023-07-24",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 54,
+      "species": "drillsnäppa",
+      "group": "Vadarfåglar",
+      "date": "2023-06-11",
+      "place": "Ljusfors Naturreservat",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 55,
+      "species": "grönbena",
+      "group": "Vadarfåglar",
+      "date": "2023-06-11",
+      "place": "Abisko",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 56,
+      "species": "rödbena",
+      "group": "Vadarfåglar",
+      "date": "2023-07-15",
+      "place": "Stekenjokk",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 57,
+      "species": "gluttsnäppa",
+      "group": "Vadarfåglar",
+      "date": "2023-08-04",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 58,
+      "species": "roskarl",
+      "group": "Vadarfåglar",
+      "date": "2024-05-26",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 59,
+      "species": "brushane",
+      "group": "Vadarfåglar",
+      "date": "2023-09-01",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 60,
+      "species": "kärrsnäppa",
+      "group": "Vadarfåglar",
+      "date": "2023-07-22",
+      "place": "Svartåmynningens naturreservat",
+      "country": "SE",
+      "notes": "Längst ute vid gamla tornet"
+    },
+    {
+      "id": 61,
+      "species": "lunnefågel",
+      "group": "Vadarfåglar",
+      "date": "2025-07-30",
+      "place": "Runde, Norge",
+      "country": "NO",
+      "notes": ""
+    },
+    {
+      "id": 62,
+      "species": "skräntärna",
+      "group": "Vadarfåglar",
+      "date": "2023-08-13",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 63,
+      "species": "silvertärna",
+      "group": "Vadarfåglar",
+      "date": "2024-05-26",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 64,
+      "species": "fisktärna",
+      "group": "Vadarfåglar",
+      "date": "2023-05-21",
+      "place": "Hovtornet, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 65,
+      "species": "dvärgmås",
+      "group": "Vadarfåglar",
+      "date": "2024-06-30",
+      "place": "Storsjö, Härjedalen",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 66,
+      "species": "skrattmås",
+      "group": "Vadarfåglar",
+      "date": "2023-05-15",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 67,
+      "species": "fiskmås",
+      "group": "Vadarfåglar",
+      "date": "2023-06-05",
+      "place": "Boren",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 68,
+      "species": "gråtrut",
+      "group": "Vadarfåglar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 69,
+      "species": "silltrut",
+      "group": "Vadarfåglar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 70,
+      "species": "havstrut",
+      "group": "Vadarfåglar",
+      "date": "2024-02-27",
+      "place": "Motala",
+      "country": "SE",
+      "notes": "Hamnen"
+    },
+    {
+      "id": 71,
+      "species": "storlom",
+      "group": "Lomfåglar",
+      "date": "2023-07-18",
+      "place": "Arvidsjaur",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 72,
+      "species": "vit stork",
+      "group": "Storkfåglar",
+      "date": "2023-06-19",
+      "place": "Rheine, Tyskland",
+      "country": "DE",
+      "notes": "Ej sedd i Sverige ännu."
+    },
+    {
+      "id": 73,
+      "species": "havssula",
+      "group": "Sulfåglar",
+      "date": "2025-07-31",
+      "place": "Runde, Norge",
+      "country": "NO",
+      "notes": ""
+    },
+    {
+      "id": 74,
+      "species": "storskarv",
+      "group": "Sulfåglar",
+      "date": "2023-08-10",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 75,
+      "species": "toppskarv",
+      "group": "Sulfåglar",
+      "date": "2025-02-07",
+      "place": "Torekov",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 76,
+      "species": "rördrom",
+      "group": "Pelikanfåglar",
+      "date": "2023-08-13",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": "Satt i kanten på en av de konstgjorda öarna."
+    },
+    {
+      "id": 77,
+      "species": "silkeshäger",
+      "group": "Pelikanfåglar",
+      "date": "2023-06-25",
+      "place": "Frankrike",
+      "country": "FR",
+      "notes": "Atlantkusten"
+    },
+    {
+      "id": 78,
+      "species": "kohäger",
+      "group": "Pelikanfåglar",
+      "date": "2025-07-04",
+      "place": "Camargue, Frankrike",
+      "country": "FR",
+      "notes": ""
+    },
+    {
+      "id": 79,
+      "species": "ägretthäger",
+      "group": "Pelikanfåglar",
+      "date": "2023-08-09",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 80,
+      "species": "gråhäger",
+      "group": "Pelikanfåglar",
+      "date": "2023-06-18",
+      "place": "Farø Bro",
+      "country": "DK",
+      "notes": "Senare sedd i Sverige"
+    },
+    {
+      "id": 81,
+      "species": "fiskgjuse",
+      "group": "Hökfåglar",
+      "date": "2023-08-13",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 82,
+      "species": "kungsörn",
+      "group": "Hökfåglar",
+      "date": "2025-02-08",
+      "place": "Börringe",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 83,
+      "species": "sparvhök",
+      "group": "Hökfåglar",
+      "date": "2024-04-25",
+      "place": "Säby, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 84,
+      "species": "duvhök",
+      "group": "Hökfåglar",
+      "date": "2024-09-21",
+      "place": "Ramstad, Tåkern",
+      "country": "SE",
+      "notes": "Ute på åkern"
+    },
+    {
+      "id": 85,
+      "species": "brun kärrhök",
+      "group": "Hökfåglar",
+      "date": "2023-05-27",
+      "place": "Vassleden, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 86,
+      "species": "blå kärrhök",
+      "group": "Hökfåglar",
+      "date": "2023-09-09",
+      "place": "Hovtornet, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 87,
+      "species": "ängshök",
+      "group": "Hökfåglar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 88,
+      "species": "röd glada",
+      "group": "Hökfåglar",
+      "date": "2024-09-02",
+      "place": "Kummelby, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 89,
+      "species": "havsörn",
+      "group": "Hökfåglar",
+      "date": "2023-08-23",
+      "place": "Stenåsa Camping, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 90,
+      "species": "fjällvråk",
+      "group": "Hökfåglar",
+      "date": "2024-03-30",
+      "place": "Vreta Kloster",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 91,
+      "species": "ormvråk",
+      "group": "Hökfåglar",
+      "date": "2024-04-25",
+      "place": "Säby, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 92,
+      "species": "hornuggla",
+      "group": "Ugglefåglar",
+      "date": "2024-10-16",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 93,
+      "species": "härfågel",
+      "group": "Härfåglar och näshornsfåglar",
+      "date": "2024-10-16",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 94,
+      "species": "biätare",
+      "group": "Praktfåglar",
+      "date": "2025-07-05",
+      "place": "Camargue, Frankrike",
+      "country": "FR",
+      "notes": ""
+    },
+    {
+      "id": 95,
+      "species": "kungsfiskare",
+      "group": "Praktfåglar",
+      "date": "2024-09-15",
+      "place": "Snöbryggan, Linköping",
+      "country": "SE",
+      "notes": "Ej säker på datum"
+    },
+    {
+      "id": 96,
+      "species": "mindre hackspett",
+      "group": "Hackspettartade fåglar",
+      "date": "2025-08-17",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 97,
+      "species": "större hackspett",
+      "group": "Hackspettartade fåglar",
+      "date": "2023-11-19",
+      "place": "Sjöbo-Knäppan, Motala",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 98,
+      "species": "spillkråka",
+      "group": "Hackspettartade fåglar",
+      "date": "2024",
+      "place": "Linköping",
+      "country": "SE",
+      "notes": "Osäker på datum"
+    },
+    {
+      "id": 99,
+      "species": "gröngöling",
+      "group": "Hackspettartade fåglar",
+      "date": "2024-06-28",
+      "place": "Hovtornet, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 100,
+      "species": "tornfalk",
+      "group": "Falkfåglar",
+      "date": "2023-09-03",
+      "place": "Säby, Tjörn",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 101,
+      "species": "lärkfalk",
+      "group": "Falkfåglar",
+      "date": "2024-05-26",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 102,
+      "species": "pilgrimsfalk",
+      "group": "Falkfåglar",
+      "date": "2024-02-10",
+      "place": "Hästholmens Hamn",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 103,
+      "species": "varfågel",
+      "group": "Tättingar",
+      "date": "2024-01-09",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": "Ute på isen"
+    },
+    {
+      "id": 104,
+      "species": "törnskata",
+      "group": "Tättingar",
+      "date": "2023-07-24",
+      "place": "Svälinge, Tåkern",
+      "country": "SE",
+      "notes": "Skogen norr om vägen"
+    },
+    {
+      "id": 105,
+      "species": "skata",
+      "group": "Tättingar",
+      "date": "2023-05-01",
+      "place": "Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 106,
+      "species": "kaja",
+      "group": "Tättingar",
+      "date": "2023-05-01",
+      "place": "Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 107,
+      "species": "råka",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 108,
+      "species": "korp",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 109,
+      "species": "gråkråka",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 110,
+      "species": "svartmes",
+      "group": "Tättingar",
+      "date": "2023-01-09",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": "Fågelmatningen"
+    },
+    {
+      "id": 111,
+      "species": "entita",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 112,
+      "species": "blåmes",
+      "group": "Tättingar",
+      "date": "2023-09-21",
+      "place": "Stora Lund",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 113,
+      "species": "talgoxe",
+      "group": "Tättingar",
+      "date": "2023-07-14",
+      "place": "Arvidsjaur",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 114,
+      "species": "skäggmes",
+      "group": "Tättingar",
+      "date": "2023-08-14",
+      "place": "Vassleden, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 115,
+      "species": "sånglärka",
+      "group": "Tättingar",
+      "date": "2024-04-04",
+      "place": "Ramstad, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 116,
+      "species": "ladusvala",
+      "group": "Tättingar",
+      "date": "2023-05-21",
+      "place": "Tåkern, vassleden",
+      "country": "SE",
+      "notes": "Byggde bo i gamla gömslet"
+    },
+    {
+      "id": 117,
+      "species": "hussvala",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 118,
+      "species": "stjärtmes",
+      "group": "Tättingar",
+      "date": "2023-10-16",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 119,
+      "species": "lövsångare",
+      "group": "Tättingar",
+      "date": "2023-07-10",
+      "place": "Tornehamn",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 120,
+      "species": "gransångare",
+      "group": "Tättingar",
+      "date": "2024-09-21",
+      "place": "Lövängsborg, Tåkern",
+      "country": "SE",
+      "notes": "90-graderskurvan"
+    },
+    {
+      "id": 121,
+      "species": "trastsångare",
+      "group": "Tättingar",
+      "date": "2024-05-05",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 122,
+      "species": "sävsångare",
+      "group": "Tättingar",
+      "date": "2023-09-25",
+      "place": "Holmen, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 123,
+      "species": "rörsångare",
+      "group": "Tättingar",
+      "date": "2023-08-14",
+      "place": "Vassleden, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 124,
+      "species": "härmsångare",
+      "group": "Tättingar",
+      "date": "2024-05-30",
+      "place": "Ottenby Lund, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 125,
+      "species": "svarthätta",
+      "group": "Tättingar",
+      "date": "",
+      "place": "Stocklycke, Omberg",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 126,
+      "species": "ärtsångare",
+      "group": "Tättingar",
+      "date": "2024-05-01",
+      "place": "Isberga Naturreservat",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 127,
+      "species": "törnsångare",
+      "group": "Tättingar",
+      "date": "2024-05-16",
+      "place": "Stora Lund",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 128,
+      "species": "brandkronad kungsfågel",
+      "group": "Tättingar",
+      "date": "2025-10-14",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 129,
+      "species": "kungsfågel",
+      "group": "Tättingar",
+      "date": "2024-03-31",
+      "place": "Stora Lund",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 130,
+      "species": "sidensvans",
+      "group": "Tättingar",
+      "date": "2023-07-15",
+      "place": "Litsjöforsen",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 131,
+      "species": "gärdsmyg",
+      "group": "Tättingar",
+      "date": "2023-11-19",
+      "place": "Sjöbo-Knäppan, Motala",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 132,
+      "species": "nötväcka",
+      "group": "Tättingar",
+      "date": "2023-10-10",
+      "place": "Egeby, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 133,
+      "species": "trädkrypare",
+      "group": "Tättingar",
+      "date": "2024-03-07",
+      "place": "Svälinge, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 134,
+      "species": "stare",
+      "group": "Tättingar",
+      "date": "2024-03-18",
+      "place": "Svartåmynningens naturreservat",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 135,
+      "species": "taltrast",
+      "group": "Tättingar",
+      "date": "2023-10-18",
+      "place": "Glänås, Tåkern",
+      "country": "SE",
+      "notes": "Strandskogen ut mot vassleden"
+    },
+    {
+      "id": 136,
+      "species": "rödvingetrast",
+      "group": "Tättingar",
+      "date": "2024-03-24",
+      "place": "Västra Hargs Lövskogar",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 137,
+      "species": "koltrast",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 138,
+      "species": "björktrast",
+      "group": "Tättingar",
+      "date": "2023-05-26",
+      "place": "Svartån, Lundby, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 139,
+      "species": "grå flugsnappare",
+      "group": "Tättingar",
+      "date": "2024-06-20",
+      "place": "Egeby, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 140,
+      "species": "rödhake",
+      "group": "Tättingar",
+      "date": "2023-12-03",
+      "place": "Kungsbro Hamn, Roxen",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 141,
+      "species": "näktergal",
+      "group": "Tättingar",
+      "date": "2024-05-10",
+      "place": "Ölands södra udde",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 142,
+      "species": "blåhake",
+      "group": "Tättingar",
+      "date": "2023-07-15",
+      "place": "Stekenjokk",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 143,
+      "species": "svartvit flugsnappare",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 144,
+      "species": "rödstjärt",
+      "group": "Tättingar",
+      "date": "2023-07-09",
+      "place": "Abisko",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 145,
+      "species": "buskskvätta",
+      "group": "Tättingar",
+      "date": "2024-05-02",
+      "place": "Leonardsberg, Norrköping",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 146,
+      "species": "stenskvätta",
+      "group": "Tättingar",
+      "date": "2023-09-03",
+      "place": "Säby, Tjörn",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 147,
+      "species": "pilfink",
+      "group": "Tättingar",
+      "date": "2023-05-28",
+      "place": "Vassleden, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 148,
+      "species": "gråsparv",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 149,
+      "species": "gulärla",
+      "group": "Tättingar",
+      "date": "2023-08-23",
+      "place": "Skärlöv Hamn, Öland",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 150,
+      "species": "forsärla",
+      "group": "Tättingar",
+      "date": "2024-04-24",
+      "place": "Egeby, Mjölby",
+      "country": "SE",
+      "notes": "Nere vid ån"
+    },
+    {
+      "id": 151,
+      "species": "sädesärla",
+      "group": "Tättingar",
+      "date": "2023-05-21",
+      "place": "Hovtornet, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 152,
+      "species": "ängspiplärka",
+      "group": "Tättingar",
+      "date": "2023-07-15",
+      "place": "Stekenjokk",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 153,
+      "species": "skärpiplärka",
+      "group": "Tättingar",
+      "date": "2025-02-07",
+      "place": "Torekov",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 154,
+      "species": "bofink",
+      "group": "Tättingar",
+      "date": "",
+      "place": "",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 155,
+      "species": "bergfink",
+      "group": "Tättingar",
+      "date": "2023-07-09",
+      "place": "Abisko",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 156,
+      "species": "stenknäck",
+      "group": "Tättingar",
+      "date": "2024-03-06",
+      "place": "Örbacken, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 157,
+      "species": "tallbit",
+      "group": "Tättingar",
+      "date": "2024-10-29",
+      "place": "Griftegården, Motala",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 158,
+      "species": "domherre",
+      "group": "Tättingar",
+      "date": "2023-11-02",
+      "place": "Egeby, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 159,
+      "species": "rosenfink",
+      "group": "Tättingar",
+      "date": "2024-06-07",
+      "place": "Ölands norra udde",
+      "country": "SE",
+      "notes": "Hona"
+    },
+    {
+      "id": 160,
+      "species": "grönfink",
+      "group": "Tättingar",
+      "date": "2023-09-17",
+      "place": "Sandudden, Visingsö",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 161,
+      "species": "hämpling",
+      "group": "Tättingar",
+      "date": "2023-09-21",
+      "place": "Stora Lund",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 162,
+      "species": "gråsiska",
+      "group": "Tättingar",
+      "date": "2024-01-11",
+      "place": "Hembygdsgården, Mjölby",
+      "country": "SE",
+      "notes": "Större flock, ca 20 individer"
+    },
+    {
+      "id": 163,
+      "species": "steglits",
+      "group": "Tättingar",
+      "date": "2023-06-11",
+      "place": "Ljusfors Naturreservat",
+      "country": "SE",
+      "notes": "Vid parkeringen"
+    },
+    {
+      "id": 164,
+      "species": "grönsiska",
+      "group": "Tättingar",
+      "date": "2024-02-27",
+      "place": "Sjöbo-Knäppan, Motala",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 165,
+      "species": "lappsparv",
+      "group": "Tättingar",
+      "date": "2024-07-03",
+      "place": "Flatruet",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 166,
+      "species": "snösparv",
+      "group": "Tättingar",
+      "date": "2025-02-26",
+      "place": "Bjälbo",
+      "country": "SE",
+      "notes": "Åkrarna uppe på åsen, 500 m väst om Bjälbo"
+    },
+    {
+      "id": 167,
+      "species": "gulsparv",
+      "group": "Tättingar",
+      "date": "2023-10-10",
+      "place": "Egeby, Mjölby",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 168,
+      "species": "sävsparv",
+      "group": "Tättingar",
+      "date": "2023-05-27",
+      "place": "Vassleden, Tåkern",
+      "country": "SE",
+      "notes": ""
+    },
+    {
+      "id": 169,
+      "species": "flamingo",
+      "group": "Tättingar",
+      "date": "2025-07-04",
+      "place": "Camargue, Frankrike",
+      "country": "FR",
+      "notes": ""
+    }
+  ],
+  "nextId": 170
+}

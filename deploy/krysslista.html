@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Livskryss – Pierre Andersson</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2d6a4f">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hero {
+      position: relative;
+      height: 180px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+    }
+    .hero-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1;
+    }
+    .hero-overlay-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 1.25rem;
+    }
+    .hero-overlay h1 {
+      padding-left: 8px;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0 0 0.15rem;
+      color: white;
+    }
+    .hero-overlay .subtitle {
+      padding-left: 8px;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 3rem;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      text-align: center;
+    }
+    .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+    .stat-card .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* Toolbar: filter + search + sort */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .filter-tab {
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .filter-tab.active {
+      background: var(--accent);
+      color: white;
+      font-weight: 500;
+    }
+    .filter-tab:hover:not(.active) {
+      background: var(--accent-bg);
+      color: var(--text);
+    }
+    .search-input {
+      flex: 1;
+      min-width: 160px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      background: var(--card);
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .sort-btn {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .sort-btn:hover { border-color: var(--accent); color: var(--text); }
+
+    /* Species list */
+    .group-section { margin-bottom: 1.5rem; }
+    .group-header {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+      padding-left: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .group-header .group-count {
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: var(--accent-bg);
+      color: var(--accent);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+    .species-list {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .species-item {
+      display: flex;
+      align-items: center;
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .species-item:last-child { border-bottom: none; }
+    .species-item:hover { background: var(--accent-bg); }
+    .species-name {
+      font-size: 0.92rem;
+      font-weight: 500;
+      flex: 1;
+      min-width: 0;
+    }
+    .species-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .species-place {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .country-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .country-badge.foreign {
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .fab:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 { font-size: 1rem; font-weight: 600; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 0.25rem;
+      line-height: 1;
+    }
+    .modal-body { padding: 1.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: var(--bg);
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .modal-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      padding: 0 1.25rem 1.25rem;
+    }
+    .btn {
+      padding: 0.5rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: #245a42; }
+    .btn-danger {
+      color: var(--red);
+      border-color: var(--red-light);
+    }
+    .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+      .stat-card { padding: 0.65rem 0.5rem; }
+      .stat-card .stat-value { font-size: 1.25rem; }
+      .toolbar { gap: 0.5rem; }
+      .search-input { min-width: 120px; }
+      .species-item { padding: 0.5rem 0.7rem; }
+      .fab { bottom: 1rem; right: 1rem; width: 50px; height: 50px; font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-overlay">
+      <div class="hero-overlay-inner">
+        <h1>Livskryss</h1>
+        <div class="subtitle">Pierre Andersson</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-world">–</div>
+        <div class="stat-label">Världen</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-sweden">–</div>
+        <div class="stat-label">Sverige</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-latest" style="font-size:0.95rem;font-weight:500;">–</div>
+        <div class="stat-label">Senaste kryss</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">Alla</button>
+        <button class="filter-tab" data-filter="se">Sverige</button>
+        <button class="filter-tab" data-filter="foreign">Utomlands</button>
+      </div>
+      <input type="text" class="search-input" placeholder="Sök art..." id="search-input">
+      <button class="sort-btn" id="sort-btn" title="Växla sortering">Grupp</button>
+    </div>
+
+    <!-- Species list -->
+    <div id="species-list"></div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="fab-add" title="Nytt kryss">+</button>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">Nytt kryss</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="f-species">Art</label>
+          <input type="text" id="f-species" list="species-datalist" autocomplete="off" placeholder="t.ex. sångsvan">
+          <datalist id="species-datalist"></datalist>
+        </div>
+        <div class="form-group">
+          <label for="f-group">Grupp</label>
+          <input type="text" id="f-group" list="group-datalist" placeholder="t.ex. Andfåglar">
+          <datalist id="group-datalist"></datalist>
+        </div>
+        <div class="form-group">
+          <label for="f-date">Datum</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="form-group">
+          <label for="f-place">Plats</label>
+          <input type="text" id="f-place" placeholder="t.ex. Ölands södra udde">
+        </div>
+        <div class="form-group">
+          <label for="f-country">Land</label>
+          <select id="f-country">
+            <option value="SE">Sverige</option>
+            <option value="NO">Norge</option>
+            <option value="DK">Danmark</option>
+            <option value="FI">Finland</option>
+            <option value="DE">Tyskland</option>
+            <option value="FR">Frankrike</option>
+            <option value="GB">Storbritannien</option>
+            <option value="ES">Spanien</option>
+            <option value="PT">Portugal</option>
+            <option value="IS">Island</option>
+            <option value="OTHER">Övrigt</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="f-notes">Anteckning</label>
+          <textarea id="f-notes" rows="2" placeholder="Valfri anteckning..."></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="modal-delete" style="display:none;margin-right:auto;">Ta bort</button>
+        <button class="btn" id="modal-cancel">Avbryt</button>
+        <button class="btn btn-primary" id="modal-save">Spara</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Country names for display
+    const COUNTRY_NAMES = {
+      SE:'Sverige', NO:'Norge', DK:'Danmark', FI:'Finland',
+      DE:'Tyskland', FR:'Frankrike', GB:'Storbritannien',
+      ES:'Spanien', PT:'Portugal', IS:'Island', OTHER:'Övrigt'
+    };
+
+    // Taxonomic group order (from CSV)
+    const GROUP_ORDER = [
+      'Andfåglar','Hönsfåglar','Skärrfåglar','Seglar- och kolibrifåglar',
+      'Trappfåglar','Gökfåglar','Flyghönsfåglar','Duvfåglar','Tranfåglar',
+      'Doppingfåglar','Vadarfåglar','Lomfåglar','Stormfåglar','Storkfåglar',
+      'Sulfåglar','Pelikanfåglar','Hökfåglar','Ugglefåglar',
+      'Härfåglar och näshornsfåglar','Praktfåglar','Hackspettartade fåglar',
+      'Falkfåglar','Tättingar'
+    ];
+
+    // State
+    let allObs = [];
+    let currentFilter = 'all';
+    let currentSort = 'date'; // 'date' or 'taxonomy' or 'alpha'
+    let editingId = null;
+
+    // DOM refs
+    const listEl = document.getElementById('species-list');
+    const searchEl = document.getElementById('search-input');
+    const sortBtn = document.getElementById('sort-btn');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDelete = document.getElementById('modal-delete');
+    const fSpecies = document.getElementById('f-species');
+    const fGroup = document.getElementById('f-group');
+    const fDate = document.getElementById('f-date');
+    const fPlace = document.getElementById('f-place');
+    const fCountry = document.getElementById('f-country');
+    const fNotes = document.getElementById('f-notes');
+
+    // Load species reference for autocomplete
+    function initAutocomplete() {
+      const dl = document.getElementById('species-datalist');
+      const gdl = document.getElementById('group-datalist');
+      const groups = new Set();
+      for (const name of Object.keys(SPECIES_REF)) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        dl.appendChild(opt);
+        groups.add(SPECIES_REF[name]);
+      }
+      for (const g of GROUP_ORDER) {
+        if (groups.has(g)) {
+          const opt = document.createElement('option');
+          opt.value = g;
+          gdl.appendChild(opt);
+        }
+      }
+    }
+
+    // Auto-fill group when species is selected
+    fSpecies.addEventListener('change', () => {
+      const g = SPECIES_REF[fSpecies.value.toLowerCase()];
+      if (g) fGroup.value = g;
+    });
+    fSpecies.addEventListener('input', () => {
+      const g = SPECIES_REF[fSpecies.value.toLowerCase()];
+      if (g) fGroup.value = g;
+    });
+
+    // Fetch data
+    async function loadData() {
+      const res = await fetch('krysslista-api.php?action=list');
+      const data = await res.json();
+      allObs = data.observations || [];
+      render();
+    }
+
+    // Stats
+    function updateStats(filtered) {
+      const worldSpecies = new Set(allObs.map(o => o.species));
+      const swedenSpecies = new Set(
+        allObs.filter(o => o.country === 'SE').map(o => o.species)
+      );
+      document.getElementById('stat-world').textContent = worldSpecies.size;
+      document.getElementById('stat-sweden').textContent = swedenSpecies.size;
+
+      // Latest tick (by date)
+      const dated = allObs.filter(o => o.date).sort((a,b) => b.date.localeCompare(a.date));
+      const latest = dated[0];
+      const latestEl = document.getElementById('stat-latest');
+      if (latest) {
+        latestEl.textContent = latest.species;
+        latestEl.title = latest.date + ' – ' + latest.place;
+      }
+    }
+
+    // Filter & search
+    function getFilteredObs() {
+      let obs = [...allObs];
+      // Country filter
+      if (currentFilter === 'se') {
+        const seSpecies = new Set(obs.filter(o => o.country === 'SE').map(o => o.species));
+        obs = obs.filter(o => seSpecies.has(o.species) && o.country === 'SE');
+      } else if (currentFilter === 'foreign') {
+        obs = obs.filter(o => o.country !== 'SE');
+      }
+      // Search
+      const q = searchEl.value.toLowerCase().trim();
+      if (q) {
+        obs = obs.filter(o =>
+          o.species.includes(q) || o.place.toLowerCase().includes(q) ||
+          o.group.toLowerCase().includes(q) || (o.notes && o.notes.toLowerCase().includes(q))
+        );
+      }
+      return obs;
+    }
+
+    // Sort
+    function sortObs(obs) {
+      if (currentSort === 'alpha') {
+        return [...obs].sort((a,b) => a.species.localeCompare(b.species, 'sv'));
+      }
+      if (currentSort === 'date') {
+        return [...obs].sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+      }
+      // taxonomy: preserve original order (by group then insertion order)
+      const gi = g => { const i = GROUP_ORDER.indexOf(g); return i >= 0 ? i : 999; };
+      return [...obs].sort((a,b) => gi(a.group) - gi(b.group) || a.id - b.id);
+    }
+
+    // Render
+    function render() {
+      const obs = sortObs(getFilteredObs());
+      updateStats(obs);
+
+      if (!obs.length) {
+        listEl.innerHTML = '<div class="empty-state">Inga arter att visa</div>';
+        return;
+      }
+
+      if (currentSort === 'alpha' || currentSort === 'date') {
+        // Flat list, no grouping
+        let html = '<div class="species-list">';
+        for (const o of obs) {
+          html += renderItem(o);
+        }
+        html += '</div>';
+        listEl.innerHTML = html;
+      } else {
+        // Grouped by taxonomy
+        const groups = new Map();
+        for (const o of obs) {
+          const g = o.group || 'Övrigt';
+          if (!groups.has(g)) groups.set(g, []);
+          groups.get(g).push(o);
+        }
+        let html = '';
+        for (const [group, items] of groups) {
+          html += '<div class="group-section">';
+          html += `<div class="group-header">${escHtml(group)} <span class="group-count">${items.length}</span></div>`;
+          html += '<div class="species-list">';
+          for (const o of items) {
+            html += renderItem(o);
+          }
+          html += '</div></div>';
+        }
+        listEl.innerHTML = html;
+      }
+
+      // Attach click handlers
+      listEl.querySelectorAll('.species-item').forEach(el => {
+        el.addEventListener('click', () => openEdit(parseInt(el.dataset.id)));
+      });
+    }
+
+    function renderItem(o) {
+      const dateStr = o.date ? formatDate(o.date) : '';
+      const countryBadge = o.country && o.country !== 'SE'
+        ? ` <span class="country-badge foreign">${escHtml(COUNTRY_NAMES[o.country] || o.country)}</span>`
+        : '';
+      const notesStr = o.notes ? ` <span style="color:var(--muted);font-style:italic;font-size:0.75rem"> – ${escHtml(o.notes)}</span>` : '';
+      return `<div class="species-item" data-id="${o.id}">
+        <div class="species-name">${escHtml(o.species)}${countryBadge}${notesStr}</div>
+        <div class="species-meta">
+          <div>${dateStr}</div>
+          ${o.place ? '<div class="species-place">' + escHtml(o.place) + '</div>' : ''}
+        </div>
+      </div>`;
+    }
+
+    function formatDate(d) {
+      if (!d) return '';
+      // Handle year-only dates like "2024"
+      if (/^\d{4}$/.test(d)) return d;
+      const parts = d.split('-');
+      if (parts.length === 3) {
+        const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+        return parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0];
+      }
+      return d;
+    }
+
+    function escHtml(s) {
+      if (!s) return '';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Modal
+    function openModal(isEdit) {
+      editingId = null;
+      modalTitle.textContent = isEdit ? 'Redigera kryss' : 'Nytt kryss';
+      modalDelete.style.display = isEdit ? '' : 'none';
+      modalOverlay.classList.add('open');
+      if (!isEdit) {
+        fSpecies.value = '';
+        fGroup.value = '';
+        fDate.value = '';
+        fPlace.value = '';
+        fCountry.value = 'SE';
+        fNotes.value = '';
+        setTimeout(() => fSpecies.focus(), 100);
+      }
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('open');
+      editingId = null;
+    }
+
+    function openEdit(id) {
+      const obs = allObs.find(o => o.id === id);
+      if (!obs) return;
+      editingId = id;
+      openModal(true);
+      fSpecies.value = obs.species;
+      fGroup.value = obs.group;
+      fDate.value = obs.date;
+      fPlace.value = obs.place;
+      fCountry.value = obs.country || 'SE';
+      fNotes.value = obs.notes || '';
+    }
+
+    async function saveObs() {
+      const species = fSpecies.value.trim().toLowerCase();
+      if (!species) { fSpecies.focus(); return; }
+      const body = {
+        species: species,
+        group: fGroup.value.trim() || SPECIES_REF[species] || '',
+        date: fDate.value,
+        place: fPlace.value.trim(),
+        country: fCountry.value,
+        notes: fNotes.value.trim()
+      };
+
+      if (editingId) {
+        body.id = editingId;
+        await fetch('krysslista-api.php?action=edit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(body)
+        });
+      } else {
+        await fetch('krysslista-api.php?action=add', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(body)
+        });
+      }
+      closeModal();
+      await loadData();
+    }
+
+    async function deleteObs() {
+      if (!editingId) return;
+      if (!confirm('Ta bort detta kryss?')) return;
+      await fetch('krysslista-api.php?action=delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: editingId })
+      });
+      closeModal();
+      await loadData();
+    }
+
+    // Event listeners
+    document.getElementById('fab-add').addEventListener('click', () => openModal(false));
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('modal-save').addEventListener('click', saveObs);
+    document.getElementById('modal-delete').addEventListener('click', deleteObs);
+    modalOverlay.addEventListener('click', e => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    // Filter tabs
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelector('.filter-tab.active').classList.remove('active');
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        render();
+      });
+    });
+
+    // Search
+    searchEl.addEventListener('input', () => render());
+
+    // Sort
+    const SORT_LABELS = { taxonomy: 'A–Ö', alpha: 'Datum', date: 'Grupp' };
+    const SORT_CYCLE = { taxonomy: 'alpha', alpha: 'date', date: 'taxonomy' };
+    sortBtn.addEventListener('click', () => {
+      currentSort = SORT_CYCLE[currentSort];
+      sortBtn.textContent = SORT_LABELS[currentSort];
+      render();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
+        closeModal();
+      }
+    });
+
+    // Species reference map (species name -> group)
+    const SPECIES_REF = {"prutgås":"Andfåglar","svartbukig prutgås":"Andfåglar","mörkbukig prutgås":"Andfåglar","ljusbukig prutgås":"Andfåglar","rödhalsad gås":"Andfåglar","kanadagås":"Andfåglar","östlig kanadagås":"Andfåglar","vitkindad gås":"Andfåglar","stripgås":"Andfåglar","grågås":"Andfåglar","västlig grågås":"Andfåglar","sädgås":"Andfåglar","tajgasädgås":"Andfåglar","tundrasädgås":"Andfåglar","spetsbergsgås":"Andfåglar","bläsgås":"Andfåglar","grönlandsbläsgås":"Andfåglar","rysk bläsgås":"Andfåglar","fjällgås":"Andfåglar","knölsvan":"Andfåglar","mindre sångsvan":"Andfåglar","tundrasvan":"Andfåglar","vanlig mindre sångsvan":"Andfåglar","sångsvan":"Andfåglar","nilgås":"Andfåglar","gravand":"Andfåglar","rostand":"Andfåglar","mandarinand":"Andfåglar","gulkindad kricka":"Andfåglar","årta":"Andfåglar","blåvingad årta":"Andfåglar","skedand":"Andfåglar","snatterand":"Andfåglar","vanlig snatterand":"Andfåglar","bergand":"Andfåglar","amerikansk bläsand":"Andfåglar","gräsand":"Andfåglar","vanlig gräsand":"Andfåglar","svartand":"Andfåglar","stjärtand":"Andfåglar","kricka":"Andfåglar","amerikansk kricka":"Andfåglar","rödhuvad dykand":"Andfåglar","brunand":"Andfåglar","vitögd dykand":"Andfåglar","ringand":"Andfåglar","vigg":"Andfåglar","vanlig bergand":"Andfåglar","mindre bergand":"Andfåglar","alförrädare":"Andfåglar","praktejder":"Andfåglar","ejder":"Andfåglar","europeisk ejder":"Andfåglar","strömand":"Andfåglar","vitnackad svärta":"Andfåglar","svärta":"Andfåglar","amerikansk knölsvärta":"Andfåglar","sibirisk knölsvärta":"Andfåglar","sjöorre":"Andfåglar","amerikansk sjöorre":"Andfåglar","alfågel":"Andfåglar","knipa":"Andfåglar","eurasisk knipa":"Andfåglar","salskrake":"Andfåglar","storskrake":"Andfåglar","vanlig storskrake":"Andfåglar","småskrake":"Andfåglar","amerikansk kopparand":"Andfåglar","järpe":"Hönsfåglar","nordeuropeisk järpe":"Hönsfåglar","dalripa":"Hönsfåglar","nordeuropeisk dalripa":"Hönsfåglar","fjällripa":"Hönsfåglar","nordeuropeisk fjällripa":"Hönsfåglar","tjäder":"Hönsfåglar","nordeuropeisk tjäder":"Hönsfåglar","orre":"Hönsfåglar","vanlig orre":"Hönsfåglar","rapphöna":"Hönsfåglar","vanlig rapphöna":"Hönsfåglar","fasan":"Hönsfåglar","vaktel":"Hönsfåglar","vanlig vaktel":"Hönsfåglar","nattskärra":"Skärrfåglar","nordlig nattskärra":"Skärrfåglar","ökennattskärra":"Skärrfåglar","taggstjärtseglare":"Seglar- och kolibrifåglar","sibirisk taggstjärtseglare":"Seglar- och kolibrifåglar","skorstenseglare":"Seglar- och kolibrifåglar","alpseglare":"Seglar- och kolibrifåglar","tornseglare":"Seglar- och kolibrifåglar","västlig tornseglare":"Seglar- och kolibrifåglar","blek tornseglare":"Seglar- och kolibrifåglar","orientseglare":"Seglar- och kolibrifåglar","stubbstjärtseglare":"Seglar- och kolibrifåglar","vitgumpseglare":"Seglar- och kolibrifåglar","stortrapp":"Trappfåglar","västlig stortrapp":"Trappfåglar","kragtrapp":"Trappfåglar","småtrapp":"Trappfåglar","skatgök":"Gökfåglar","gök":"Gökfåglar","nordlig gök":"Gökfåglar","stäppflyghöna":"Flyghönsfåglar","spetsstjärtad duva":"Duvfåglar","turturduva":"Duvfåglar","nordlig turturduva":"Duvfåglar","större turturduva":"Duvfåglar","orientturturduva":"Duvfåglar","bergturturduva":"Duvfåglar","turkduva":"Duvfåglar","klippduva / tamduva":"Duvfåglar","tamduva":"Duvfåglar","skogsduva":"Duvfåglar","vanlig skogsduva":"Duvfåglar","ringduva":"Duvfåglar","vanlig ringduva":"Duvfåglar","vattenrall":"Tranfåglar","europeisk vattenrall":"Tranfåglar","kornknarr":"Tranfåglar","karolinasumphöna":"Tranfåglar","småfläckig sumphöna":"Tranfåglar","rörhöna":"Tranfåglar","vanlig rörhöna":"Tranfåglar","sothöna":"Tranfåglar","vanlig sothöna":"Tranfåglar","dvärgsumphöna":"Tranfåglar","västlig dvärgsumphöna":"Tranfåglar","mindre sumphöna":"Tranfåglar","prärietrana":"Tranfåglar","jungfrutrana":"Tranfåglar","trana":"Tranfåglar","smådopping":"Doppingfåglar","europeisk smådopping":"Doppingfåglar","gråhakedopping":"Doppingfåglar","vanlig gråhakedopping":"Doppingfåglar","större gråhakedopping":"Doppingfåglar","skäggdopping":"Doppingfåglar","nordlig skäggdopping":"Doppingfåglar","svarthakedopping":"Doppingfåglar","eurasisk svarthakedopping":"Doppingfåglar","svarthalsad dopping":"Doppingfåglar","eurasisk svarthalsad dopping":"Doppingfåglar","tjockfot":"Vadarfåglar","europeisk tjockfot":"Vadarfåglar","strandskata":"Vadarfåglar","europeisk strandskata":"Vadarfåglar","styltlöpare":"Vadarfåglar","skärfläcka":"Vadarfåglar","kustpipare":"Vadarfåglar","ljungpipare":"Vadarfåglar","sibirisk tundrapipare":"Vadarfåglar","amerikansk tundrapipare":"Vadarfåglar","fjällpipare":"Vadarfåglar","större strandpipare":"Vadarfåglar","sydlig större strandpipare":"Vadarfåglar","tundrastrandpipare":"Vadarfåglar","mindre strandpipare":"Vadarfåglar","nordlig mindre strandpipare":"Vadarfåglar","tofsvipa":"Vadarfåglar","gråhuvad vipa":"Vadarfåglar","stäppvipa":"Vadarfåglar","sumpvipa":"Vadarfåglar","kaspisk pipare":"Vadarfåglar","orientpipare":"Vadarfåglar","tibetpipare":"Vadarfåglar","kamtjatkapipare":"Vadarfåglar","ökenpipare":"Vadarfåglar","svartbent strandpipare":"Vadarfåglar","vanlig svartbent strandpipare":"Vadarfåglar","piparsnäppa":"Vadarfåglar","småspov":"Vadarfåglar","europeisk småspov":"Vadarfåglar","dvärgspov":"Vadarfåglar","storspov":"Vadarfåglar","europeisk storspov":"Vadarfåglar","myrspov":"Vadarfåglar","europeisk myrspov":"Vadarfåglar","tajmyrmyrspov":"Vadarfåglar","rödspov":"Vadarfåglar","isländsk rödspov":"Vadarfåglar","europeisk rödspov":"Vadarfåglar","hudsonspov":"Vadarfåglar","större beckasinsnäppa":"Vadarfåglar","mindre beckasinsnäppa":"Vadarfåglar","dvärgbeckasin":"Vadarfåglar","morkulla":"Vadarfåglar","dubbelbeckasin":"Vadarfåglar","enkelbeckasin":"Vadarfåglar","vanlig enkelbeckasin":"Vadarfåglar","wilsonbeckasin":"Vadarfåglar","wilsonsimsnäppa":"Vadarfåglar","brednäbbad simsnäppa":"Vadarfåglar","smalnäbbad simsnäppa":"Vadarfåglar","tereksnäppa":"Vadarfåglar","drillsnäppa":"Vadarfåglar","fläckdrillsnäppa":"Vadarfåglar","skogssnäppa":"Vadarfåglar","amerikansk skogssnäppa":"Vadarfåglar","sibirisk gråsnäppa":"Vadarfåglar","dammsnäppa":"Vadarfåglar","grönbena":"Vadarfåglar","rödbena":"Vadarfåglar","isländsk rödbena":"Vadarfåglar","europeisk rödbena":"Vadarfåglar","mindre gulbena":"Vadarfåglar","svartsnäppa":"Vadarfåglar","gluttsnäppa":"Vadarfåglar","större gulbena":"Vadarfåglar","roskarl":"Vadarfåglar","vanlig roskarl":"Vadarfåglar","kolymasnäppa":"Vadarfåglar","kustsnäppa":"Vadarfåglar","tajmyrkustsnäppa":"Vadarfåglar","grönlandskustsnäppa":"Vadarfåglar","brushane":"Vadarfåglar","myrsnäppa":"Vadarfåglar","västlig myrsnäppa":"Vadarfåglar","spetsstjärtad snäppa":"Vadarfåglar","styltsnäppa":"Vadarfåglar","spovsnäppa":"Vadarfåglar","mosnäppa":"Vadarfåglar","långtåsnäppa":"Vadarfåglar","rödhalsad snäppa":"Vadarfåglar","sandlöpare":"Vadarfåglar","vanlig sandlöpare":"Vadarfåglar","kärrsnäppa":"Vadarfåglar","sydlig kärrsnäppa":"Vadarfåglar","nordlig kärrsnäppa":"Vadarfåglar","skärsnäppa":"Vadarfåglar","gulbröstad snäppa":"Vadarfåglar","småsnäppa":"Vadarfåglar","dvärgsnäppa":"Vadarfåglar","vitgumpsnäppa":"Vadarfåglar","prärielöpare":"Vadarfåglar","tuvsnäppa":"Vadarfåglar","tundrasnäppa":"Vadarfåglar","sandsnäppa":"Vadarfåglar","ökenlöpare":"Vadarfåglar","orientvadarsvala":"Vadarfåglar","rödvingad vadarsvala":"Vadarfåglar","nordlig rödvingad vadarsvala":"Vadarfåglar","svartvingad vadarsvala":"Vadarfåglar","fjällabb":"Vadarfåglar","kustlabb":"Vadarfåglar","bredstjärtad labb":"Vadarfåglar","storlabb":"Vadarfåglar","tofslunne":"Vadarfåglar","lunnefågel":"Vadarfåglar","papegojalka":"Vadarfåglar","tobisgrissla":"Vadarfåglar","atlanttobisgrissla":"Vadarfåglar","östersjötobisgrissla":"Vadarfåglar","tordmule":"Vadarfåglar","nordlig tordmule":"Vadarfåglar","isländsk tordmule":"Vadarfåglar","garfågel":"Vadarfåglar","alkekung":"Vadarfåglar","mindre alkekung":"Vadarfåglar","spetsbergsgrissla":"Vadarfåglar","atlantspetsbergsgrissla":"Vadarfåglar","sillgrissla":"Vadarfåglar","nordlig sillgrissla":"Vadarfåglar","arktisk sillgrissla":"Vadarfåglar","brittisk sillgrissla":"Vadarfåglar","sottärna":"Vadarfåglar","atlantsottärna":"Vadarfåglar","tygeltärna":"Vadarfåglar","atlanttygeltärna":"Vadarfåglar","småtärna":"Vadarfåglar","vanlig småtärna":"Vadarfåglar","sandtärna":"Vadarfåglar","vanlig sandtärna":"Vadarfåglar","skräntärna":"Vadarfåglar","skäggtärna":"Vadarfåglar","nordlig skäggtärna":"Vadarfåglar","svarttärna":"Vadarfåglar","eurasisk svarttärna":"Vadarfåglar","vitvingad tärna":"Vadarfåglar","kentsk tärna":"Vadarfåglar","kärrtärna":"Vadarfåglar","silvertärna":"Vadarfåglar","fisktärna":"Vadarfåglar","västlig fisktärna":"Vadarfåglar","rosentärna":"Vadarfåglar","atlantrosentärna":"Vadarfåglar","dvärgmås":"Vadarfåglar","rosenmås":"Vadarfåglar","tretåig mås":"Vadarfåglar","vanlig tretåig mås":"Vadarfåglar","ismås":"Vadarfåglar","tärnmås":"Vadarfåglar","långnäbbad mås":"Vadarfåglar","trädmås":"Vadarfåglar","skrattmås":"Vadarfåglar","sotvingad mås":"Vadarfåglar","nordlig sotvingad mås":"Vadarfåglar","präriemås":"Vadarfåglar","svarthuvad trut":"Vadarfåglar","svarthuvad mås":"Vadarfåglar","fiskmås":"Vadarfåglar","europeisk fiskmås":"Vadarfåglar","rysk fiskmås":"Vadarfåglar","ringnäbbad mås":"Vadarfåglar","vittrut":"Vadarfåglar","europeisk vittrut":"Vadarfåglar","gråtrut":"Vadarfåglar","skandinavisk gråtrut":"Vadarfåglar","kaspisk trut":"Vadarfåglar","silltrut":"Vadarfåglar","atlantsilltrut":"Vadarfåglar","nordsjösilltrut":"Vadarfåglar","östersjötrut":"Vadarfåglar","havstrut":"Vadarfåglar","medelhavstrut":"Vadarfåglar","azorisk medelhavstrut":"Vadarfåglar","östlig medelhavstrut":"Vadarfåglar","vitvingad trut":"Vadarfåglar","grönlandstrut":"Vadarfåglar","baffintrut":"Vadarfåglar","smålom":"Lomfåglar","storlom":"Lomfåglar","västlig storlom":"Lomfåglar","stillahavslom":"Lomfåglar","svartnäbbad islom":"Lomfåglar","vitnäbbad islom":"Lomfåglar","mindre albatross":"Stormfåglar","svartbrynad albatross":"Stormfåglar","stormsvala":"Stormfåglar","atlantstormsvala":"Stormfåglar","klykstjärtad stormsvala":"Stormfåglar","vanlig klykstjärtad stormsvala":"Stormfåglar","stormfågel":"Stormfåglar","atlantstormfågel":"Stormfåglar","obest. madeirapetrell/atlantpetrell":"Stormfåglar","scopolilira":"Stormfåglar","gulnäbbad lira":"Stormfåglar","grålira":"Stormfåglar","större lira":"Stormfåglar","mindre lira":"Stormfåglar","vanlig mindre lira":"Stormfåglar","medelhavslira":"Stormfåglar","balearisk lira":"Stormfåglar","svart stork":"Storkfåglar","vit stork":"Storkfåglar","vanlig vit stork":"Storkfåglar","obestämd fregattfågel":"Sulfåglar","havssula":"Sulfåglar","brunsula":"Sulfåglar","dvärgskarv":"Sulfåglar","storskarv":"Sulfåglar","atlantstorskarv":"Sulfåglar","mellanskarv":"Sulfåglar","toppskarv":"Sulfåglar","nordlig toppskarv":"Sulfåglar","bronsibis":"Pelikanfåglar","skedstork":"Pelikanfåglar","eurasisk skedstork":"Pelikanfåglar","rördrom":"Pelikanfåglar","vanlig rördrom":"Pelikanfåglar","amerikansk rördrom":"Pelikanfåglar","dvärgrördrom":"Pelikanfåglar","nordlig dvärgrördrom":"Pelikanfåglar","natthäger":"Pelikanfåglar","eurasisk natthäger":"Pelikanfåglar","silkeshäger":"Pelikanfåglar","vanlig silkeshäger":"Pelikanfåglar","rallhäger":"Pelikanfåglar","kohäger":"Pelikanfåglar","ägretthäger":"Pelikanfåglar","vanlig ägretthäger":"Pelikanfåglar","gråhäger":"Pelikanfåglar","västlig gråhäger":"Pelikanfåglar","purpurhäger":"Pelikanfåglar","vanlig purpurhäger":"Pelikanfåglar","fiskgjuse":"Hökfåglar","eurasisk fiskgjuse":"Hökfåglar","svartvingad glada":"Hökfåglar","västlig svartvingad glada":"Hökfåglar","smutsgam":"Hökfåglar","vanlig smutsgam":"Hökfåglar","bivråk":"Hökfåglar","gåsgam":"Hökfåglar","västlig gåsgam":"Hökfåglar","grågam":"Hökfåglar","ormörn":"Hökfåglar","vanlig ormörn":"Hökfåglar","mindre skrikörn":"Hökfåglar","större skrikörn":"Hökfåglar","dvärgörn":"Hökfåglar","stäppörn":"Hökfåglar","västlig stäppörn":"Hökfåglar","kejsarörn":"Hökfåglar","kungsörn":"Hökfåglar","europeisk kungsörn":"Hökfåglar","sparvhök":"Hökfåglar","europeisk sparvhök":"Hökfåglar","duvhök":"Hökfåglar","europeisk duvhök":"Hökfåglar","brun kärrhök":"Hökfåglar","vanlig brun kärrhök":"Hökfåglar","blå kärrhök":"Hökfåglar","stäpphök":"Hökfåglar","ängshök":"Hökfåglar","röd glada":"Hökfåglar","vanlig röd glada":"Hökfåglar","brun glada":"Hökfåglar","västlig brun glada":"Hökfåglar","havsörn":"Hökfåglar","fjällvråk":"Hökfåglar","europeisk fjällvråk":"Hökfåglar","örnvråk":"Hökfåglar","nordlig örnvråk":"Hökfåglar","ormvråk":"Hökfåglar","vanlig ormvråk":"Hökfåglar","tornuggla":"Ugglefåglar","östeuropeisk tornuggla":"Ugglefåglar","pärluggla":"Ugglefåglar","europeisk pärluggla":"Ugglefåglar","minervauggla":"Ugglefåglar","centraleuropeisk minervauggla":"Ugglefåglar","hökuggla":"Ugglefåglar","vanlig hökuggla":"Ugglefåglar","sparvuggla":"Ugglefåglar","västlig sparvuggla":"Ugglefåglar","dvärguv":"Ugglefåglar","europeisk dvärguv":"Ugglefåglar","hornuggla":"Ugglefåglar","vanlig hornuggla":"Ugglefåglar","jorduggla":"Ugglefåglar","vanlig jorduggla":"Ugglefåglar","fjälluggla":"Ugglefåglar","berguv":"Ugglefåglar","nordeuropeisk berguv":"Ugglefåglar","kattuggla":"Ugglefåglar","vanlig kattuggla":"Ugglefåglar","slaguggla":"Ugglefåglar","nordeuropeisk slaguggla":"Ugglefåglar","lappuggla":"Ugglefåglar","eurasisk lappuggla":"Ugglefåglar","härfågel":"Härfåglar och näshornsfåglar","nordlig härfågel":"Härfåglar och näshornsfåglar","grön biätare":"Praktfåglar","biätare":"Praktfåglar","blåkråka":"Praktfåglar","nordlig blåkråka":"Praktfåglar","kungsfiskare":"Praktfåglar","nordeuropeisk kungsfiskare":"Praktfåglar","göktyta":"Hackspettartade fåglar","nordeuropeisk göktyta":"Hackspettartade fåglar","tretåig hackspett":"Hackspettartade fåglar","vanlig tretåig hackspett":"Hackspettartade fåglar","mellanspett":"Hackspettartade fåglar","europeisk mellanspett":"Hackspettartade fåglar","mindre hackspett":"Hackspettartade fåglar","nordlig mindre hackspett":"Hackspettartade fåglar","större hackspett":"Hackspettartade fåglar","vanlig större hackspett":"Hackspettartade fåglar","vitryggig hackspett":"Hackspettartade fåglar","nordlig vitryggig hackspett":"Hackspettartade fåglar","spillkråka":"Hackspettartade fåglar","vanlig spillkråka":"Hackspettartade fåglar","gröngöling":"Hackspettartade fåglar","vanlig gröngöling":"Hackspettartade fåglar","gråspett":"Hackspettartade fåglar","västlig gråspett":"Hackspettartade fåglar","rödfalk":"Falkfåglar","tornfalk":"Falkfåglar","vanlig tornfalk":"Falkfåglar","aftonfalk":"Falkfåglar","amurfalk":"Falkfåglar","eleonorafalk":"Falkfåglar","stenfalk":"Falkfåglar","europeisk stenfalk":"Falkfåglar","lärkfalk":"Falkfåglar","vanlig lärkfalk":"Falkfåglar","jaktfalk":"Falkfåglar","pilgrimsfalk":"Falkfåglar","vanlig pilgrimsfalk":"Falkfåglar","sommargylling":"Tättingar","varfågel":"Tättingar","nordlig varfågel":"Tättingar","ökenvarfågel":"Tättingar","saxaulvarfågel":"Tättingar","masktörnskata":"Tättingar","svartpannad törnskata":"Tättingar","rödhuvad törnskata":"Tättingar","västlig rödhuvad törnskata":"Tättingar","balearisk rödhuvad törnskata":"Tättingar","östlig rödhuvad törnskata":"Tättingar","isabellatörnskata":"Tättingar","mongoltörnskata":"Tättingar","törnskata":"Tättingar","turkestantörnskata":"Tättingar","brun törnskata":"Tättingar","sibirisk törnskata":"Tättingar","rostgumpad törnskata":"Tättingar","västlig rostgumpad törnskata":"Tättingar","lavskrika":"Tättingar","västlig lavskrika":"Tättingar","nötskrika":"Tättingar","europeisk nötskrika":"Tättingar","skata":"Tättingar","nordlig skata":"Tättingar","europeisk skata":"Tättingar","nötkråka":"Tättingar","tjocknäbbad nötkråka":"Tättingar","smalnäbbad nötkråka":"Tättingar","kaja":"Tättingar","skandinavisk kaja":"Tättingar","klippkaja":"Tättingar","råka":"Tättingar","västlig råka":"Tättingar","korp":"Tättingar","europeisk korp":"Tättingar","svartkråka":"Tättingar","europeisk svartkråka":"Tättingar","gråkråka":"Tättingar","nordlig gråkråka":"Tättingar","svartmes":"Tättingar","vanlig svartmes":"Tättingar","tofsmes":"Tättingar","nordlig tofsmes":"Tättingar","lappmes":"Tättingar","europeisk lappmes":"Tättingar","entita":"Tättingar","vanlig entita":"Tättingar","talltita":"Tättingar","nordlig talltita":"Tättingar","blåmes":"Tättingar","vanlig blåmes":"Tättingar","azurmes":"Tättingar","talgoxe":"Tättingar","vanlig talgoxe":"Tättingar","pungmes":"Tättingar","europeisk pungmes":"Tättingar","skäggmes":"Tättingar","västlig skäggmes":"Tättingar","trädlärka":"Tättingar","nordlig trädlärka":"Tättingar","vitvingad lärka":"Tättingar","sånglärka":"Tättingar","europeisk sånglärka":"Tättingar","tofslärka":"Tättingar","europeisk tofslärka":"Tättingar","berglärka":"Tättingar","fjällberglärka":"Tättingar","korttålärka":"Tättingar","asiatisk kalanderlärka":"Tättingar","kalanderlärka":"Tättingar","svartlärka":"Tättingar","turkestanlärka":"Tättingar","stäpplärka":"Tättingar","backsvala":"Tättingar","vanlig backsvala":"Tättingar","klippsvala":"Tättingar","ladusvala":"Tättingar","europeisk ladusvala":"Tättingar","hussvala":"Tättingar","rostgumpsvala":"Tättingar","östlig rostgumpsvala":"Tättingar","europeisk rostgumpsvala":"Tättingar","stensvala":"Tättingar","cettisångare":"Tättingar","turkestancettisångare":"Tättingar","stjärtmes":"Tättingar","nordlig stjärtmes":"Tättingar","kontinental stjärtmes":"Tättingar","grönsångare":"Tättingar","bergsångare":"Tättingar","balkansångare":"Tättingar","bergtajgasångare":"Tättingar","västlig bergtajgasångare":"Tättingar","tajgasångare":"Tättingar","kungsfågelsångare":"Tättingar","videsångare":"Tättingar","brunsångare":"Tättingar","dvärgsångare":"Tättingar","lövsångare":"Tättingar","sydlig lövsångare":"Tättingar","nordlig lövsångare":"Tättingar","gransångare":"Tättingar","nordlig gransångare":"Tättingar","sydlig gransångare":"Tättingar","sibirisk gransångare":"Tättingar","iberisk gransångare":"Tättingar","östlig kronsångare":"Tättingar","kaukasisk lundsångare":"Tättingar","sibirisk lundsångare":"Tättingar","lundsångare":"Tättingar","västlig lundsångare":"Tättingar","nordsångare":"Tättingar","trastsångare":"Tättingar","västlig trastsångare":"Tättingar","kaveldunsångare":"Tättingar","vattensångare":"Tättingar","sävsångare":"Tättingar","fältsångare":"Tättingar","busksångare":"Tättingar","rörsångare":"Tättingar","nordlig rörsångare":"Tättingar","kärrsångare":"Tättingar","stäppsångare":"Tättingar","saxaulsångare":"Tättingar","eksångare":"Tättingar","östlig eksångare":"Tättingar","macchiasångare":"Tättingar","polyglottsångare":"Tättingar","härmsångare":"Tättingar","starrsångare":"Tättingar","träsksångare":"Tättingar","flodsångare":"Tättingar","vassångare":"Tättingar","västlig vassångare":"Tättingar","gräshoppsångare":"Tättingar","västlig gräshoppsångare":"Tättingar","grässångare":"Tättingar","svarthätta":"Tättingar","vanlig svarthätta":"Tättingar","trädgårdssångare":"Tättingar","höksångare":"Tättingar","ärtsångare":"Tättingar","europeisk ärtsångare":"Tättingar","sibirisk ärtsångare":"Tättingar","stäppärtsångare":"Tättingar","ökensångare":"Tättingar","sammetshätta":"Tättingar","medelhavssammetshätta":"Tättingar","rostsångare":"Tättingar","moltonisångare":"Tättingar","rödstrupig sångare":"Tättingar","törnsångare":"Tättingar","vanlig törnsångare":"Tättingar","provencesångare":"Tättingar","brandkronad kungsfågel":"Tättingar","europeisk brandkronad kungsfågel":"Tättingar","kungsfågel":"Tättingar","europeisk kungsfågel":"Tättingar","sidensvans":"Tättingar","eurasisk sidensvans":"Tättingar","gärdsmyg":"Tättingar","europeisk gärdsmyg":"Tättingar","nötväcka":"Tättingar","sibirisk nötväcka":"Tättingar","vanlig nötväcka":"Tättingar","trädkrypare":"Tättingar","vanlig trädkrypare":"Tättingar","trädgårdsträdkrypare":"Tättingar","vanlig trädgårdsträdkrypare":"Tättingar","stare":"Tättingar","europeisk stare":"Tättingar","rosenstare":"Tättingar","guldtrast":"Tättingar","beigekindad skogstrast":"Tättingar","eremitskogstrast":"Tättingar","rostskogstrast":"Tättingar","sibirisk trast":"Tättingar","taltrast":"Tättingar","vanlig taltrast":"Tättingar","dubbeltrast":"Tättingar","vanlig dubbeltrast":"Tättingar","rödvingetrast":"Tättingar","vanlig rödvingetrast":"Tättingar","koltrast":"Tättingar","vanlig koltrast":"Tättingar","gråhalsad trast":"Tättingar","björktrast":"Tättingar","ringtrast":"Tättingar","nordlig ringtrast":"Tättingar","alpringtrast":"Tättingar","svarthalsad trast":"Tättingar","bruntrast":"Tättingar","rödtrast":"Tättingar","vandringstrast":"Tättingar","glasögonflugsnappare":"Tättingar","grå flugsnappare":"Tättingar","vanlig grå flugsnappare":"Tättingar","rödhake":"Tättingar","vanlig rödhake":"Tättingar","vitstrupig näktergal":"Tättingar","näktergal":"Tättingar","sydnäktergal":"Tättingar","europeisk sydnäktergal":"Tättingar","turkestansydnäktergal":"Tättingar","blåhake":"Tättingar","rödstjärnig blåhake":"Tättingar","vitstjärnig blåhake":"Tättingar","rubinnäktergal":"Tättingar","mindre flugsnappare":"Tättingar","tajgaflugsnappare":"Tättingar","svartvit flugsnappare":"Tättingar","vanlig svartvit flugsnappare":"Tättingar","halsbandsflugsnappare":"Tättingar","tajgablåstjärt":"Tättingar","vanlig tajgablåstjärt":"Tättingar","svart rödstjärt":"Tättingar","västlig svart rödstjärt":"Tättingar","turkestanrödstjärt":"Tättingar","rödstjärt":"Tättingar","vanlig rödstjärt":"Tättingar","stentrast":"Tättingar","blåtrast":"Tättingar","buskskvätta":"Tättingar","svart buskskvätta":"Tättingar","amurbuskskvätta":"Tättingar","vitgumpad buskskvätta":"Tättingar","sibirisk buskskvätta":"Tättingar","kaspisk buskskvätta":"Tättingar","svarthakad buskskvätta":"Tättingar","östlig svarthakad buskskvätta":"Tättingar","stenskvätta":"Tättingar","grönlandsstenskvätta":"Tättingar","vanlig stenskvätta":"Tättingar","isabellastenskvätta":"Tättingar","ökenstenskvätta":"Tättingar","nordlig ökenstenskvätta":"Tättingar","västlig medelhavsstenskvätta":"Tättingar","nunnestenskvätta":"Tättingar","östlig medelhavsstenskvätta":"Tättingar","strömstare":"Tättingar","svartbukig strömstare":"Tättingar","alpjärnsparv":"Tättingar","västlig alpjärnsparv":"Tättingar","sibirisk järnsparv":"Tättingar","västlig sibirisk järnsparv":"Tättingar","svartstrupig järnsparv":"Tättingar","uraljärnsparv":"Tättingar","järnsparv":"Tättingar","nordlig järnsparv":"Tättingar","pilfink":"Tättingar","vanlig pilfink":"Tättingar","spansk sparv":"Tättingar","gråsparv":"Tättingar","vanlig gråsparv":"Tättingar","gulärla":"Tättingar","brittisk / gulhuvad gulärla":"Tättingar","sydlig gulärla":"Tättingar","italiensk gulärla":"Tättingar","svarthuvad gulärla":"Tättingar","nordlig gulärla":"Tättingar","”östlig gulärla”":"Tättingar","citronärla":"Tättingar","forsärla":"Tättingar","vanlig forsärla":"Tättingar","sädesärla":"Tättingar","engelsk sädesärla":"Tättingar","europeisk sädesärla":"Tättingar","masksädesärla":"Tättingar","sibirisk sädesärla":"Tättingar","fältpiplärka":"Tättingar","större piplärka":"Tättingar","mongolpiplärka":"Tättingar","tundrapiplärka":"Tättingar","trädpiplärka":"Tättingar","vanlig trädpiplärka":"Tättingar","sibirisk piplärka":"Tättingar","rödstrupig piplärka":"Tättingar","stenpiplärka":"Tättingar","amerikansk piplärka":"Tättingar","nordlig amerikansk piplärka":"Tättingar","ängspiplärka":"Tättingar","vattenpiplärka":"Tättingar","vanlig vattenpiplärka":"Tättingar","skärpiplärka":"Tättingar","skandinavisk skärpiplärka":"Tättingar","bofink":"Tättingar","vanlig bofink":"Tättingar","bergfink":"Tättingar","stenknäck":"Tättingar","vanlig stenknäck":"Tättingar","tallbit":"Tättingar","europeisk tallbit":"Tättingar","domherre":"Tättingar","vanlig domherre":"Tättingar","ökentrumpetare":"Tättingar","mongolfink":"Tättingar","rosenfink":"Tättingar","västlig rosenfink":"Tättingar","grönfink":"Tättingar","nordlig grönfink":"Tättingar","vinterhämpling":"Tättingar","norsk vinterhämpling":"Tättingar","hämpling":"Tättingar","nordlig hämpling":"Tättingar","gråsiska":"Tättingar","vanlig gråsiska":"Tättingar","grönlandsgråsiska":"Tättingar","brunsiska":"Tättingar","snösiska":"Tättingar","större korsnäbb":"Tättingar","mindre korsnäbb":"Tättingar","vanlig mindre korsnäbb":"Tättingar","bändelkorsnäbb":"Tättingar","steglits":"Tättingar","nordeuropeisk steglits":"Tättingar","gulhämpling":"Tättingar","grönsiska":"Tättingar","lappsparv":"Tättingar","vanlig lappsparv":"Tättingar","snösparv":"Tättingar","vanlig snösparv":"Tättingar","svarthuvad sparv":"Tättingar","kornsparv":"Tättingar","rödkindad sparv":"Tättingar","klippsparv":"Tättingar","bergortolan":"Tättingar","gulgrå sparv":"Tättingar","kurdsparv":"Tättingar","ortolansparv":"Tättingar","rostsparv":"Tättingar","häcksparv":"Tättingar","gulsparv":"Tättingar","västlig gulsparv":"Tättingar","tallsparv":"Tättingar","västlig tallsparv":"Tättingar","sävsparv":"Tättingar","nordeuropeisk sävsparv":"Tättingar","dvärgsävsparv":"Tättingar","gyllensparv":"Tättingar","västlig gyllensparv":"Tättingar","videsparv":"Tättingar","västlig videsparv":"Tättingar","dvärgsparv":"Tättingar","gråhuvad sparv":"Tättingar","nordlig gråhuvad sparv":"Tättingar","gulbrynad sparv":"Tättingar","tundrasparv":"Tättingar","mörkögd junco":"Tättingar","vitstrupig sparv":"Tättingar","sångsparv":"Tättingar","baltimoretrupial":"Tättingar","brokig kardinal":"Tättingar","flamingo":"Tättingar"};
+
+    // Init
+    initAutocomplete();
+    loadData();
+  </script>
+</body>
+</html>

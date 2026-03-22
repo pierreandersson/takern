@@ -338,6 +338,23 @@ foreach (array_slice($backups, 7) as $old) {
     logMsg("Removed old backup: " . basename($old));
 }
 
+// Backup krysslista data (if it exists)
+$kryssFile = __DIR__ . '/krysslista-data.json';
+if (file_exists($kryssFile)) {
+    $kryssBackup = "$backupDir/krysslista_" . date('Y-m-d') . ".json";
+    if (!file_exists($kryssBackup)) {
+        copy($kryssFile, $kryssBackup);
+        logMsg("Krysslista backup created: " . basename($kryssBackup));
+    }
+    // Keep only last 10 krysslista backups
+    $kryssBackups = glob("$backupDir/krysslista_*.json");
+    rsort($kryssBackups);
+    foreach (array_slice($kryssBackups, 10) as $old) {
+        unlink($old);
+        logMsg("Removed old krysslista backup: " . basename($old));
+    }
+}
+
 $db = new SQLite3($DB_FILE);
 $db->exec("PRAGMA journal_mode=WAL");
 
