@@ -97,6 +97,60 @@ function jsonOut($data) {
     exit;
 }
 
+// Theil-Sen regression on an array of [x, y] points.
+// Returns slope, intercept, R², relative change, mean rate, mean first/last 5.
+// Returns null if fewer than $minPoints data points.
+function computeTheilSen($pts, $minPoints = 5) {
+    if (count($pts) < $minPoints) return null;
+
+    // All pairwise slopes
+    $slopes = [];
+    for ($i = 0; $i < count($pts); $i++) {
+        for ($j = $i + 1; $j < count($pts); $j++) {
+            $dx = $pts[$j][0] - $pts[$i][0];
+            if ($dx != 0) $slopes[] = ($pts[$j][1] - $pts[$i][1]) / $dx;
+        }
+    }
+    sort($slopes);
+    $slope = $slopes[intval(count($slopes) / 2)];
+
+    // Intercept = median of (y - slope * x)
+    $intercepts = array_map(fn($p) => $p[1] - $slope * $p[0], $pts);
+    sort($intercepts);
+    $intercept = $intercepts[intval(count($intercepts) / 2)];
+
+    // Mean rate
+    $meanRate = array_sum(array_column($pts, 1)) / count($pts);
+
+    // R²
+    $ssRes = 0; $ssTot = 0;
+    foreach ($pts as $p) {
+        $pred = $intercept + $slope * $p[0];
+        $ssRes += ($p[1] - $pred) ** 2;
+        $ssTot += ($p[1] - $meanRate) ** 2;
+    }
+    $r2 = ($ssTot > 0) ? 1 - $ssRes / $ssTot : 0;
+
+    // Relative change = slope / mean rate
+    $relChange = ($meanRate > 0) ? $slope / $meanRate : 0;
+
+    // Mean first 5 years, mean last 5 years
+    $firstYears = array_slice($pts, 0, 5);
+    $lastYears = array_slice($pts, -5);
+    $meanFirst = array_sum(array_column($firstYears, 1)) / count($firstYears);
+    $meanLast = array_sum(array_column($lastYears, 1)) / count($lastYears);
+
+    return [
+        'slope' => $slope,
+        'intercept' => $intercept,
+        'r2' => $r2,
+        'rel_change' => $relChange,
+        'mean_rate' => $meanRate,
+        'mean_first5' => $meanFirst,
+        'mean_last5' => $meanLast,
+    ];
+}
+
 // Total field visits per year – cached because it's a full table scan used by multiple endpoints
 function getTotalVisitsPerYear($db) {
     global $CACHE_DIR;
@@ -565,34 +619,13 @@ if ($q === 'species' && $id !== null) {
         $trendPts[] = [intval($yr), $rate];
     }
 
-    $erTrend = null;
-    if (count($trendPts) >= 5) {
-        // Theil-Sen: median of pairwise slopes
-        $slopes = [];
-        for ($i = 0; $i < count($trendPts); $i++) {
-            for ($j = $i + 1; $j < count($trendPts); $j++) {
-                $dx = $trendPts[$j][0] - $trendPts[$i][0];
-                if ($dx != 0) $slopes[] = ($trendPts[$j][1] - $trendPts[$i][1]) / $dx;
-            }
-        }
-        sort($slopes);
-        $medianSlope = $slopes[intval(count($slopes) / 2)];
-
-        // Intercept = median of (y - slope * x)
-        $intercepts = array_map(fn($p) => $p[1] - $medianSlope * $p[0], $trendPts);
-        sort($intercepts);
-        $intercept = $intercepts[intval(count($intercepts) / 2)];
-
-        // First and last fitted values (in percentage)
-        $firstYr = $trendPts[0][0];
-        $lastYr = $trendPts[count($trendPts) - 1][0];
-        $erTrend = [
-            'slope_per_decade' => round($medianSlope * 10 * 100, 2), // percentage points per decade
-            'intercept' => $intercept,
-            'first_year' => $firstYr,
-            'last_year' => $lastYr,
-        ];
-    }
+    $ts = computeTheilSen($trendPts);
+    $erTrend = $ts ? [
+        'slope_per_decade' => round($ts['slope'] * 10 * 100, 2),
+        'intercept' => $ts['intercept'],
+        'first_year' => $trendPts[0][0],
+        'last_year' => $trendPts[count($trendPts) - 1][0],
+    ] : null;
 
 
     jsonOut([
@@ -1425,65 +1458,15 @@ if ($q === 'trends') {
 
     // 4. Theil-Sen regression on encounter rates (exclude current incomplete year)
     $currentYear = date('Y');
-    function theilSen($rates, $years) {
-        global $currentYear;
-        $pts = [];
-        foreach ($years as $yr) {
-            if ($yr == $currentYear) continue;  // Exclude incomplete year
-            if (isset($rates[$yr])) $pts[] = [intval($yr), $rates[$yr]];
-        }
-        if (count($pts) < 5) return null;
-
-        // All pairwise slopes
-        $slopes = [];
-        for ($i = 0; $i < count($pts); $i++) {
-            for ($j = $i + 1; $j < count($pts); $j++) {
-                $dx = $pts[$j][0] - $pts[$i][0];
-                if ($dx != 0) $slopes[] = ($pts[$j][1] - $pts[$i][1]) / $dx;
-            }
-        }
-        sort($slopes);
-        $median = $slopes[intval(count($slopes) / 2)];
-
-        // Intercept = median of (y - slope * x)
-        $intercepts = array_map(fn($p) => $p[1] - $median * $p[0], $pts);
-        sort($intercepts);
-        $intercept = $intercepts[intval(count($intercepts) / 2)];
-
-        // Mean encounter rate
-        $meanRate = array_sum(array_column($pts, 1)) / count($pts);
-
-        // R²
-        $ssRes = 0; $ssTot = 0;
-        foreach ($pts as $p) {
-            $pred = $intercept + $median * $p[0];
-            $ssRes += ($p[1] - $pred) ** 2;
-            $ssTot += ($p[1] - $meanRate) ** 2;
-        }
-        $r2 = ($ssTot > 0) ? 1 - $ssRes / $ssTot : 0;
-
-        // Relative change = slope / mean rate
-        $relChange = ($meanRate > 0) ? $median / $meanRate : 0;
-
-        // Mean first 5 years, mean last 5 years
-        $firstYears = array_slice($pts, 0, 5);
-        $lastYears = array_slice($pts, -5);
-        $meanFirst = array_sum(array_column($firstYears, 1)) / count($firstYears);
-        $meanLast = array_sum(array_column($lastYears, 1)) / count($lastYears);
-
-        return [
-            'slope' => $median,
-            'r2' => $r2,
-            'rel_change' => $relChange,
-            'mean_rate' => $meanRate,
-            'mean_first5' => $meanFirst,
-            'mean_last5' => $meanLast,
-        ];
-    }
 
     $trends = [];
     foreach ($qualified as $tid => $rates) {
-        $t = theilSen($rates, $years);
+        $pts = [];
+        foreach ($years as $yr) {
+            if ($yr == $currentYear) continue;
+            if (isset($rates[$yr])) $pts[] = [intval($yr), $rates[$yr]];
+        }
+        $t = computeTheilSen($pts);
         if ($t === null) continue;
         $trends[$tid] = $t;
         $trends[$tid]['rates'] = $rates;

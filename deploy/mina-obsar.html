@@ -754,6 +754,8 @@ if (document.prerendering) {
       }).join('');
     }
 
+    let _weekdayChart = null, _hourChart = null, _monthChart = null;
+
     function showChart(canvasId) {
       const skel = document.getElementById(canvasId + 'Skeleton');
       if (skel) skel.remove();
@@ -769,7 +771,8 @@ if (document.prerendering) {
         counts[dow]++;
       }
       showChart('weekdayChart');
-      new Chart(document.getElementById('weekdayChart'), {
+      if (_weekdayChart) { _weekdayChart.destroy(); _weekdayChart = null; }
+      _weekdayChart = new Chart(document.getElementById('weekdayChart'), {
         type: 'bar',
         data: {
           labels: days,
@@ -798,7 +801,8 @@ if (document.prerendering) {
       if (!hasTime) { document.getElementById('hourChart').parentElement.previousElementSibling.remove(); document.getElementById('hourChart').parentElement.remove(); return; }
       const labels = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
       showChart('hourChart');
-      new Chart(document.getElementById('hourChart'), {
+      if (_hourChart) { _hourChart.destroy(); _hourChart = null; }
+      _hourChart = new Chart(document.getElementById('hourChart'), {
         type: 'bar',
         data: {
           labels,
@@ -822,7 +826,8 @@ if (document.prerendering) {
         counts[m]++;
       }
       showChart('monthChart');
-      new Chart(document.getElementById('monthChart'), {
+      if (_monthChart) { _monthChart.destroy(); _monthChart = null; }
+      _monthChart = new Chart(document.getElementById('monthChart'), {
         type: 'bar',
         data: {
           labels: months,

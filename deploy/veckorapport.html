@@ -666,10 +666,13 @@ if (document.prerendering) {
     }
 
     // ── Charts ──
+    let _accumChart = null;
+    let _donutChart = null;
 
     function renderAccumulation(data) {
       const ctx = document.getElementById("accumChart");
       if (!ctx || !data) return;
+      if (_accumChart) { _accumChart.destroy(); _accumChart = null; }
 
       const year = data.year;
       const avgRange = data.avg_range || "";
@@ -731,7 +734,7 @@ if (document.prerendering) {
         });
       }
 
-      new Chart(ctx, {
+      _accumChart = new Chart(ctx, {
         type: "line",
         data: { datasets },
         options: {
@@ -796,7 +799,8 @@ if (document.prerendering) {
         ).join("");
       }
 
-      new Chart(ctx, {
+      if (_donutChart) { _donutChart.destroy(); _donutChart = null; }
+      _donutChart = new Chart(ctx, {
         type: "doughnut",
         data: {
           labels,

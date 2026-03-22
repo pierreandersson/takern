@@ -673,15 +673,19 @@ if (document.prerendering) {
       renderTimeChart(data.hourly);
     }
 
+    let _activityChart = null;
+    let _timeChart = null;
+
     function renderActivityChart(dailyStats) {
       const ctx = document.getElementById("activityChart");
       if (!ctx) return;
+      if (_activityChart) { _activityChart.destroy(); _activityChart = null; }
 
       const labels = dailyStats.map(d =>
         new Date(d.date).toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "numeric" })
       );
 
-      new Chart(ctx, {
+      _activityChart = new Chart(ctx, {
         type: "bar",
         data: {
           labels,
@@ -749,7 +753,8 @@ if (document.prerendering) {
         values.push(hourly[h] || 0);
       }
 
-      new Chart(ctx, {
+      if (_timeChart) { _timeChart.destroy(); _timeChart = null; }
+      _timeChart = new Chart(ctx, {
         type: "bar",
         data: {
           labels,

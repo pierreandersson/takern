@@ -219,6 +219,7 @@ if (document.prerendering) {
     let currentChart3 = null;
     let currentChart4 = null;
     let currentChart5 = null;
+    let phenTrendCharts = [];
     let currentSpeciesMap = null;
     let activeGroup = null;
 
@@ -425,6 +426,8 @@ if (document.prerendering) {
       if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
       if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
       if (currentChart5) { currentChart5.destroy(); currentChart5 = null; }
+      phenTrendCharts.forEach(c => c.destroy());
+      phenTrendCharts = [];
       if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
       updateSectionNav(null);
     }
@@ -538,6 +541,8 @@ if (document.prerendering) {
       if (currentChart3) { currentChart3.destroy(); currentChart3 = null; }
       if (currentChart4) { currentChart4.destroy(); currentChart4 = null; }
       if (currentChart5) { currentChart5.destroy(); currentChart5 = null; }
+      phenTrendCharts.forEach(c => c.destroy());
+      phenTrendCharts = [];
       if (currentSpeciesMap) { currentSpeciesMap.remove(); currentSpeciesMap = null; }
 
       let html = "";
@@ -1030,7 +1035,7 @@ if (document.prerendering) {
             return vals.length % 2 ? vals[(vals.length-1)/2] : (vals[vals.length/2-1]+vals[vals.length/2])/2;
           })();
           const trendLine = [{ x: minY, y: intercept + trend.slope * minY }, { x: maxY, y: intercept + trend.slope * maxY }];
-          new Chart(ctx, {
+          phenTrendCharts.push(new Chart(ctx, {
             type: "scatter",
             data: {
               datasets: [
@@ -1067,7 +1072,7 @@ if (document.prerendering) {
                 y: { ticks: { maxTicksLimit: 4, callback: v => yLabel === "dagar" ? Math.round(v) : doyToLabel(Math.round(v)) }, grid: { color: "rgba(0,0,0,0.05)" } },
               },
             },
-          });
+          }));
         };
         renderTrendChart("phenTrendFirst", pt.firstPts, pt.firstT, "datum");
         renderTrendChart("phenTrendLast", pt.lastPts, pt.lastT, "datum");

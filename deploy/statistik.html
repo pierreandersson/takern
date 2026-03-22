@@ -286,6 +286,7 @@ if (document.prerendering) {
       { id: "sec-observatorer", label: "Observatörer" },
     ];
     // ── Load overview ──
+    let _yearChart = null, _richnessChart = null, _newSpeciesChart = null, _todChart = null;
 
     async function loadOverview() {
       const overviewResp = await fetch("stats-api.php?q=overview");
@@ -478,7 +479,8 @@ if (document.prerendering) {
 
       // Render year chart
       const ctx = document.getElementById("yearChart");
-      new Chart(ctx, {
+      if (_yearChart) { _yearChart.destroy(); _yearChart = null; }
+      _yearChart = new Chart(ctx, {
         type: "bar",
         data: {
           labels: years,
@@ -509,7 +511,8 @@ if (document.prerendering) {
       if (overview.richness_per_month) {
         const months = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
         const richData = Array.from({ length: 12 }, (_, i) => overview.richness_per_month[i + 1] || 0);
-        new Chart(document.getElementById("richnessChart"), {
+        if (_richnessChart) { _richnessChart.destroy(); _richnessChart = null; }
+        _richnessChart = new Chart(document.getElementById("richnessChart"), {
           type: "bar",
           data: {
             labels: months,
@@ -536,7 +539,8 @@ if (document.prerendering) {
       // Render new species per year chart (skip first year)
       if (overview.new_species_per_year) {
         const nsYears = Object.keys(overview.new_species_per_year).sort().slice(1);
-        new Chart(document.getElementById("newSpeciesChart"), {
+        if (_newSpeciesChart) { _newSpeciesChart.destroy(); _newSpeciesChart = null; }
+        _newSpeciesChart = new Chart(document.getElementById("newSpeciesChart"), {
           type: "bar",
           data: {
             labels: nsYears,
@@ -563,7 +567,8 @@ if (document.prerendering) {
       // Render overview time of day chart
       if (overview.time_of_day && Object.keys(overview.time_of_day).length > 0) {
         const hours = Array.from({ length: 24 }, (_, i) => i);
-        new Chart(document.getElementById("overviewTodChart"), {
+        if (_todChart) { _todChart.destroy(); _todChart = null; }
+        _todChart = new Chart(document.getElementById("overviewTodChart"), {
           type: "bar",
           data: {
             labels: hours.map(h => `${String(h).padStart(2, "0")}:00`),
