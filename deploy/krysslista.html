@@ -662,6 +662,7 @@
     function closeModal() {
       modalOverlay.classList.remove('open');
       editingId = null;
+      resetDeleteConfirm();
     }
 
     function openEdit(id) {
@@ -689,34 +690,54 @@
         notes: fNotes.value.trim()
       };
 
-      if (editingId) {
-        body.id = editingId;
-        await fetch('krysslista-api.php?action=edit', {
+      try {
+        const action = editingId ? 'edit' : 'add';
+        if (editingId) body.id = editingId;
+        const res = await fetch('krysslista-api.php?action=' + action, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(body)
         });
-      } else {
-        await fetch('krysslista-api.php?action=add', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(body)
-        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Fel'); }
+        closeModal();
+        await loadData();
+      } catch (err) {
+        alert('Kunde inte spara: ' + err.message);
       }
-      closeModal();
-      await loadData();
     }
 
-    async function deleteObs() {
+    let deleteConfirmPending = false;
+
+    function deleteObs() {
       if (!editingId) return;
-      if (!confirm('Ta bort detta kryss?')) return;
-      await fetch('krysslista-api.php?action=delete', {
+      if (!deleteConfirmPending) {
+        deleteConfirmPending = true;
+        modalDelete.textContent = 'Bekräfta borttagning';
+        modalDelete.style.background = 'var(--red)';
+        modalDelete.style.color = 'white';
+        modalDelete.style.borderColor = 'var(--red)';
+        return;
+      }
+      fetch('krysslista-api.php?action=delete', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ id: editingId })
+      }).then(res => {
+        if (!res.ok) return res.json().then(d => { throw new Error(d.error || 'Fel'); });
+        closeModal();
+        loadData();
+      }).catch(err => {
+        alert('Kunde inte ta bort: ' + err.message);
+        resetDeleteConfirm();
       });
-      closeModal();
-      await loadData();
+    }
+
+    function resetDeleteConfirm() {
+      deleteConfirmPending = false;
+      modalDelete.textContent = 'Ta bort';
+      modalDelete.style.background = '';
+      modalDelete.style.color = '';
+      modalDelete.style.borderColor = '';
     }
 
     // Event listeners
