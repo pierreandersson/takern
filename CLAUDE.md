@@ -8,7 +8,8 @@ Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. 
 - **Backend:** PHP på Websupport shared hosting (en PHP-worker = inga parallella requests)
 - **Data:** SQLite-databas (~333k obs, 374 arter, 20 år) + live SOS-API (Artdatabanken)
 - **Deploy:** GitHub Actions → FTP (SamKirkland/FTP-Deploy-Action) → auto cache-clear/warm
-- **Caching:** Filbaserad JSON-cache i deploy/cache/, invalideras av cron-update.php
+- **Caching:** Filbaserad JSON-cache i deploy/cache/, invalideras av cron-update.php. SMHI-temperatur cachas separat per dag.
+- **SQLite-index:** locality+date, locality, date, taxon_id, taxon_id+date, recorded_by (skapas av cron-update.php)
 
 ## Datakällor
 All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
@@ -24,6 +25,7 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 - **cron-update.php:** Daglig datainhämtning + cache-rensning. Skyddad med nyckel i cron_secret.txt
 - **api.php:** Hybrid-proxy för index.html: live SOS-API (idag+igår) + SQLite (äldre dagar, days ≥ 2). Fast 15 km radie.
 - **?q=init:** Batch-endpoint som returnerar overview+geo+localities+species från cache
+- **?q=reporter:** Rapportörsdata. Observations-query begränsad till LIMIT 100 (frontend visar 30). busyTimeout 5000ms.
 
 ## Delat designsystem
 
@@ -62,15 +64,16 @@ Delade render-funktioner producerar konsekvent HTML som matchar CSS-komponentern
 ## Deploy-flöde
 1. Push till main med ändringar i deploy/ eller .github/workflows/ → GitHub Actions FTP-deploy
 2. Före FTP: sed lägger till `?v=<git-hash>` på lokala assets (utils.js, style.css) i HTML-filer → cache-busting
-3. Efter FTP: curl till cron-update.php?action=clear-cache (värmer automatiskt, ~1 min blockerar PHP-worker)
-4. Secrets: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH, CRON_SECRET
+3. Efter FTP: curl till cron-update.php?action=clear-cache&nowarm (rensar cache utan att blockera workern)
+4. GitHub Actions värmer cache parallellt via curl till varje endpoint (overview, species, geo, localities, week_context, accumulation)
+5. Secrets: FTP_HOST, FTP_USER, FTP_PASS, FTP_PATH, CRON_SECRET
 
 ## Viktigt att veta
 - **SQLite på Websupport:** %G/%V (ISO-vecka) fungerar INTE. Beräkna datumintervall i PHP istället.
-- **En PHP-worker:** Parallella browser-requests köas. Batch-endpoint (?q=init) löser detta. Cache-värmning efter deploy blockerar sajten ~1 min.
+- **En PHP-worker:** Parallella browser-requests köas. Batch-endpoint (?q=init) löser detta. `shell_exec` är blockerat på Websupport.
 - **WebFetch har 15 min cache:** Använd ALDRIG WebFetch för att verifiera efter deploy. Använd Chrome.
 - **WebFetch tolkar data opålitligt:** Lita inte på WebFetch för exakta siffror från API-svar. Verifiera via eval/kod.
-- **Cache-clear värmer automatiskt:** Standardbeteende sedan 2026-03-15. Skippa med &nowarm.
+- **Cache-clear värmer INTE längre automatiskt:** Sedan 2026-03-22 anropas clear-cache med &nowarm vid deploy, och värmning sker parallellt från GitHub Actions. Manuellt: lägg till &nowarm för att skippa värmning.
 - **Fenologi:** Earliest = min dag-på-året (ej kronologiskt äldsta datumet), med januarifilter. Average = senaste 5 år (med januarifilter).
 - **Recent observations:** Dedupliceras per datum+lokal, prioriterar URL-poster. Alla poster har source-etikett.
 - **Rarity-filter:** Exkluderar hybrider (` x `), osäkra (`/`), morfer (`morf`), artgrupper (ej mellanslag i scientific_name)
@@ -90,7 +93,7 @@ Ranking baseras på tre transparenta faktorer – rödlistestatus visas som badg
 Sektioner: Sammanfattningskort (med förra årets jämförelse) → Heatmap-karta → Artackumulering (kurva: i år vs 5-årssnitt + dygnsmedeltemperatur, Chart.js time-axis) + Vårens framsteg (meter, vecka 8–22) → Nytt för säsongen (årets-första-arter) → Håll utkik efter (arter förväntade inom 21 dagar) → Veckans höjdpunkter (top 8 noterbara, poängbaserat) → Artfördelning (donut per fågelgrupp)
 - **Fågelgrupper:** Mappas via `getBirdGroup()` i stats-api.php (taxonomic_order + family → svensk grupp)
 - **Artackumulering:** Endpoint `?q=accumulation&year=YYYY` – kumulativt unika arter per dag, 5-årssnitt, SMHI-temperatur
-- **Temperatur:** Dygnsmedeltemperatur från SMHI Härsnäs (station 85180, 26 km öster om Tåkern). Parameter 2, period latest-months.
+- **Temperatur:** Dygnsmedeltemperatur från SMHI Härsnäs (station 85180, 26 km öster om Tåkern). Parameter 2, period latest-months. SMHI-svaret cachas dagligen i `cache/smhi_temp_YYYY-MM-DD.json` för att undvika externt API-anrop (upp till 10s) vid varje request.
 
 ## Säsongstidslinje och trendanalys (statistik.html artsidor)
 Sektionen "Säsongens längd per år" på artsidor visar:
