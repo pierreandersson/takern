@@ -844,7 +844,7 @@ if (document.prerendering) {
       document.getElementById('top-obs-year').textContent = year;
       document.getElementById('top-observers').innerHTML = observers.map((o, i) =>
         `<div class="top-item"${o.name === REPORTER ? ' style="border-color:var(--accent);background:var(--accent-bg)"' : ''}>
-          <div><div class="top-item-name">${i + 1}. ${o.name}</div></div>
+          <div><div class="top-item-name">${i + 1}. ${reporterLink(o.name)}</div></div>
           <span class="top-item-count">${o.count.toLocaleString('sv')} obs</span>
         </div>`
       ).join('');

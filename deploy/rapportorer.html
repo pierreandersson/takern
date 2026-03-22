@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tåkern – Rapportör</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#2d6a4f">
+  <meta name="description" content="Fågelrapportör vid Tåkern – senaste observationer.">
+  <meta property="og:title" content="Tåkern – Rapportör">
+  <meta property="og:description" content="Fågelrapportör vid Tåkern – senaste observationer.">
+  <meta property="og:image" content="https://pierrea.se/takern/og-image.jpg">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="sv_SE">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .reporter-summary {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .reporter-summary .stat {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .reporter-summary .stat strong {
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+  </style>
+<!-- Matomo -->
+<script>
+(function () {
+function initTracking() {
+var _paq = window._paq = window._paq || [];
+_paq.push(['trackPageView']);
+_paq.push(['enableLinkTracking']);
+_paq.push(['alwaysUseSendBeacon']);
+_paq.push(['setTrackerUrl', "\/\/pierrea.se\/wp-content\/plugins\/matomo\/app\/matomo.php"]);
+_paq.push(['setSiteId', '1']);
+var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+g.type='text/javascript';
+ g.async=true;
+ g.src="\/\/pierrea.se\/wp-content\/uploads\/matomo\/matomo.js";
+ s.parentNode.insertBefore(g,s);
+}
+if (document.prerendering) {
+	document.addEventListener('prerenderingchange', initTracking, {once: true});
+} else {
+	initTracking();
+}
+})();
+</script>
+<!-- End Matomo Code -->
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div>
+        <h1><a href="index.html">Fågelobservationer vid Tåkern</a></h1>
+        <p id="header-desc">Rapportör</p>
+      </div>
+    </div>
+    <div class="nav-bar">
+      <span class="current-page">Rapportör</span>
+      <button class="hamburger" aria-label="Meny">&#9776;</button>
+    </div>
+    <nav>
+      <a href="index.html">Senaste</a>
+      <a href="veckorapport.html">Denna vecka</a>
+      <a href="arter.html">Arter</a>
+      <a href="lokaler.html">Lokaler</a>
+      <a href="statistik.html">Statistik</a>
+      <a href="om.html">Om</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div id="reporter-content">
+      <div class="loading">Laddar rapportördata...</div>
+    </div>
+  </div>
+
+  <script src="utils.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const reporterName = params.get("namn");
+
+    if (!reporterName) {
+      document.getElementById("reporter-content").innerHTML =
+        '<div class="error">Ingen rapportör angiven.</div>';
+    } else {
+      document.title = `Tåkern – ${reporterName}`;
+      document.getElementById("header-desc").textContent = reporterName;
+      document.querySelector(".current-page").textContent = reporterName;
+      loadReporter(reporterName);
+    }
+
+    async function loadReporter(name) {
+      const content = document.getElementById("reporter-content");
+      try {
+        const resp = await fetch(`stats-api.php?q=reporter&name=${encodeURIComponent(name)}`);
+        const data = await resp.json();
+
+        if (data.error) {
+          content.innerHTML = `<div class="error">${data.error}</div>`;
+          return;
+        }
+
+        if (data.total_obs === 0) {
+          content.innerHTML = '<div class="error">Inga observationer hittades för denna rapportör.</div>';
+          return;
+        }
+
+        const obs = (data.observations || []).slice(0, 30);
+
+        content.innerHTML = `
+          <div class="reporter-summary">
+            <div class="stat"><strong>${data.total_obs.toLocaleString("sv")}</strong> observationer</div>
+            <div class="stat"><strong>${data.total_species}</strong> arter</div>
+            ${data.rank_this_year ? `<div class="stat">Plats <strong>#${data.rank_this_year}</strong> i ${data.rank_year}</div>` : ""}
+          </div>
+          <h2>Senaste observationer</h2>
+          <div id="recent-obs-list">
+            ${obs.map(o => renderObsItem(normalizeDbObs(o), {
+              showSpecies: true,
+              showSpeciesLink: true,
+              showLocalityLink: true,
+            })).join("")}
+          </div>
+        `;
+
+        refreshWithLiveData(name, obs);
+      } catch (err) {
+        content.innerHTML = `<div class="error">Kunde inte ladda data: ${err.message}</div>`;
+      }
+    }
+
+    async function refreshWithLiveData(name, cachedObs) {
+      try {
+        const resp = await fetch("api.php?days=1");
+        const data = await resp.json();
+        if (!data.records || data.records.length === 0) return;
+
+        const liveObs = data.records
+          .filter(r => (r.occurrence?.recordedBy || "") === name)
+          .map(r => {
+            const n = normalizeSosObs(r);
+            return {
+              taxon_id: n.taxonId,
+              name: n.name,
+              scientific: n.scientific,
+              count: n.count,
+              date: n.date,
+              time: n.time,
+              locality: n.locality,
+              observer: n.observer,
+              url: n.url,
+            };
+          });
+
+        if (liveObs.length === 0) return;
+
+        const seen = new Set();
+        const merged = [];
+        for (const o of liveObs) {
+          const key = `${o.date}|${o.name}|${o.locality}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          merged.push(o);
+        }
+        for (const o of cachedObs) {
+          const key = `${o.date}|${o.name}|${o.locality}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          merged.push(o);
+        }
+        merged.sort((a, b) => {
+          const da = (a.date || "") + (a.time || "");
+          const db = (b.date || "") + (b.time || "");
+          return db.localeCompare(da);
+        });
+
+        const el = document.getElementById("recent-obs-list");
+        if (el) {
+          el.innerHTML = merged.slice(0, 30).map(o =>
+            renderObsItem(normalizeDbObs(o), {
+              showSpecies: true,
+              showSpeciesLink: true,
+              showLocalityLink: true,
+            })
+          ).join("");
+        }
+      } catch (e) { /* cached data still shown */ }
+    }
+
+    // Hamburger menu
+    document.querySelector(".hamburger")?.addEventListener("click", () => {
+      document.querySelector("nav").classList.toggle("open");
+    });
+  </script>
+</body>
+</html>

@@ -186,6 +186,11 @@ function speciesLink(name) {
   return `<a href="statistik.html?art=${toSlug(name)}" class="species-link" onclick="event.stopPropagation()">${name}</a>`;
 }
 
+function reporterLink(name) {
+  if (!name) return "";
+  return `<a href="rapportorer.html?namn=${encodeURIComponent(name)}" class="reporter-link" onclick="event.stopPropagation()">${name}</a>`;
+}
+
 // ── Data normalizers ──
 
 /**
@@ -269,7 +274,7 @@ function renderObsItem(obs, options = {}) {
   if (dateTimeStr) metaParts.push(`<span>${dateTimeStr}</span>`);
   if (obs.locality && showLocalityLink) metaParts.push(`<span>${localityLink(obs.locality)}</span>`);
   else if (obs.locality) metaParts.push(`<span>${obs.locality}</span>`);
-  if (obs.observer) metaParts.push(`<span>${obs.observer}</span>`);
+  if (obs.observer) metaParts.push(`<span>${reporterLink(obs.observer)}</span>`);
   if (obs.url) metaParts.push(`<a href="${obs.url}" target="_blank" rel="noopener" class="ap-link" onclick="event.stopPropagation()">Artportalen ↗</a>`);
 
   const remarksHtml = showRemarks && obs.remarks
@@ -325,7 +330,7 @@ function renderSpeciesItem(species, options = {}) {
  */
 function renderReporterItem(reporter) {
   return `<div class="top-item">
-  <div><div class="top-item-name">${reporter.name}</div></div>
+  <div><div class="top-item-name">${reporterLink(reporter.name)}</div></div>
   <span class="top-item-count">${reporter.count.toLocaleString("sv")}</span>
 </div>`;
 }
