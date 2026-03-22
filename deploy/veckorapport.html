@@ -876,17 +876,32 @@ if (document.prerendering) {
     async function init() {
       try {
         const year = new Date().getFullYear();
-        const [liveResp, contextResp, accumResp] = await Promise.all([
+        // Two parallel requests instead of three – avoids queuing on single PHP worker
+        const [liveResp, batchResp] = await Promise.all([
           fetch(`api.php?days=${DAYS_BACK}`),
-          fetch(`stats-api.php?q=week_context&year=${year}&days=${DAYS_BACK}`),
-          fetch(`stats-api.php?q=accumulation&year=${year}`),
+          fetch(`stats-api.php?q=week_init&year=${year}&days=${DAYS_BACK}`),
         ]);
 
         const liveRaw = await liveResp.json();
         let context = {};
         let accumData = null;
-        try { context = await contextResp.json(); } catch (e) { console.warn("Context error:", e); }
-        try { accumData = await accumResp.json(); } catch (e) { console.warn("Accumulation error:", e); }
+        try {
+          const batch = await batchResp.json();
+          if (batch.week_context) {
+            context = batch.week_context;
+            accumData = batch.accumulation || null;
+          } else if (!batch.error) {
+            context = batch;
+          } else {
+            // Batch cache miss – fall back to individual requests (sequential on single worker)
+            const [ctxResp, accResp] = await Promise.all([
+              fetch(`stats-api.php?q=week_context&year=${year}&days=${DAYS_BACK}`),
+              fetch(`stats-api.php?q=accumulation&year=${year}`),
+            ]);
+            context = await ctxResp.json();
+            accumData = await accResp.json();
+          }
+        } catch (e) { console.warn("Context error:", e); }
 
         if (liveRaw.error) {
           document.getElementById("main").innerHTML =

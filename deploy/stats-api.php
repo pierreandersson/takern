@@ -1539,6 +1539,29 @@ if ($q === 'init') {
     // If not all cached, fall through – client will use individual endpoints as fallback
 }
 
+// ── Batch endpoint for veckorapport.html ──
+// Returns week_context + accumulation in one response to avoid queuing on single worker
+if ($q === 'week_init') {
+    $year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
+    $days = isset($_GET['days']) ? intval($_GET['days']) : 7;
+    $wcKey = "week_context_y{$year}";
+    $acKey = "accumulation_y{$year}";
+    $wcFile = "$CACHE_DIR/$wcKey.json";
+    $acFile = "$CACHE_DIR/$acKey.json";
+
+    if (file_exists($wcFile) && file_exists($acFile)) {
+        $result = [
+            'week_context' => json_decode(file_get_contents($wcFile), true),
+            'accumulation' => json_decode(file_get_contents($acFile), true),
+        ];
+        $json = json_encode($result, JSON_UNESCAPED_UNICODE);
+        file_put_contents($cacheFile, $json);
+        echo $json;
+        exit;
+    }
+    // If not both cached, fall through – client will use individual endpoints
+}
+
 // ── Reporter page ──
 if ($q === 'reporter') {
     $name = isset($_GET['name']) ? trim($_GET['name']) : '';
