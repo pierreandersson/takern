@@ -211,15 +211,4 @@ if ($use_hybrid) {
 }
 
 $result = json_encode(['records' => $records, 'totalCount' => count($records)], JSON_UNESCAPED_UNICODE);
-
-// Archive one snapshot per day for historical comparison
-$archive_dir = __DIR__ . '/data';
-if (!is_dir($archive_dir)) {
-    mkdir($archive_dir, 0755, true);
-}
-$archive_file = $archive_dir . '/' . date('Y-m-d') . "_d{$DAYS_BACK}.json";
-if (!file_exists($archive_file)) {
-    file_put_contents($archive_file, $result);
-}
-
 echo $result;
