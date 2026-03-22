@@ -478,9 +478,10 @@ if (document.prerendering) {
             const y = o.date.substring(0, 4);
             data.per_year[y] = (data.per_year[y] || 0) + 1;
           }
-          // Update obs_this_year from recalculated per_year
+          // Update obs_this_year and species_this_year from recalculated per_year
           const cy = String(new Date().getFullYear());
           data.obs_this_year = data.per_year[cy] || 0;
+          data.species_this_year = new Set(allObs.filter(o => o.date.startsWith(cy)).map(o => o.taxon_id || o.name)).size;
 
           // Supplement top observers with today's live data
           const today = new Date().toISOString().substring(0, 10);
@@ -522,6 +523,9 @@ if (document.prerendering) {
         selectedDate = allObs[0].date.substring(0, 10);
       }
 
+      const cyInit = String(new Date().getFullYear());
+      data.species_this_year = new Set(allObs.filter(o => o.date.startsWith(cyInit)).map(o => o.taxon_id || o.name)).size;
+
       renderStats(data);
       renderYearLinks(data.per_year);
       initFlatpickr();
@@ -542,8 +546,8 @@ if (document.prerendering) {
           <div class="stat-label">observationer i år</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">${data.total_obs}</div>
-          <div class="stat-label">observationer totalt</div>
+          <div class="stat-value">${data.species_this_year || 0}</div>
+          <div class="stat-label">arter i år</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${data.total_species}</div>
