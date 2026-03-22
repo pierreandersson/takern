@@ -52,5 +52,7 @@ jobs:
           # Only warm the most-visited endpoints; geo/localities are cached weekly by cron
           curl -s -f "${BASE}overview" -o /dev/null
           curl -s -f "${BASE}species" -o /dev/null
+          curl -s -f "${BASE}top_weekly" -o /dev/null
+          curl -s -f "${BASE}top_yearly" -o /dev/null
           curl -s -f "${BASE}week_context&year=${YEAR}&days=7" -o /dev/null
           curl -s -f "${BASE}accumulation&year=${YEAR}" -o /dev/null
