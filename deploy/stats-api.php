@@ -27,6 +27,7 @@ $cacheKey = $q;
 if ($id !== null) $cacheKey .= "_$id";
 if (isset($_GET['year'])) $cacheKey .= "_y" . intval($_GET['year']);
 if (isset($_GET['name'])) $cacheKey .= "_n" . md5($_GET['name']);
+if (isset($_GET['taxon_id'])) $cacheKey .= "_t" . intval($_GET['taxon_id']);
 if ($q === 'top_weekly' || $q === 'top_yearly' || $q === 'reporter') $cacheKey .= '_' . date('Y-m-d');
 $cacheFile = "$CACHE_DIR/$cacheKey.json";
 
@@ -747,16 +748,18 @@ if ($q === 'locality' && isset($_GET['name'])) {
         jsonOut(['error' => 'Locality not found']);
     }
 
-    // Top 10 species
-    $topSpecies = [];
-    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, COUNT(*) n
+    // All species at this locality
+    $allSpecies = [];
+    $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, COUNT(*) n,
+        MAX(event_start_date) last_seen
         FROM observations WHERE locality = :name AND vernacular_name IS NOT NULL
-        GROUP BY taxon_id ORDER BY n DESC LIMIT 10");
+        GROUP BY taxon_id ORDER BY n DESC");
     $stmt->bindValue(':name', $locName, SQLITE3_TEXT);
     $res = $stmt->execute();
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        $topSpecies[] = ['taxon_id' => intval($row['taxon_id']), 'name' => $row['vernacular_name'],
-            'scientific' => $row['scientific_name'], 'count' => intval($row['n'])];
+        $allSpecies[] = ['taxon_id' => intval($row['taxon_id']), 'name' => $row['vernacular_name'],
+            'scientific' => $row['scientific_name'], 'count' => intval($row['n']),
+            'last_seen' => $row['last_seen']];
     }
 
     // Season curve: average reports per week
@@ -827,11 +830,34 @@ if ($q === 'locality' && isset($_GET['name'])) {
         'last_obs' => $info['last_obs'],
         'lat' => $info['lat'] ? floatval($info['lat']) : null,
         'lng' => $info['lng'] ? floatval($info['lng']) : null,
-        'top_species' => $topSpecies,
+        'all_species' => $allSpecies,
         'recent_reports' => $recentReports,
         'season_curve' => $seasonCurve,
         'top_reporters' => $topReporters,
     ]);
+}
+
+// ── Species observations at a locality ──
+if ($q === 'locality_species' && isset($_GET['name']) && isset($_GET['taxon_id'])) {
+    $locName = $_GET['name'];
+    $taxonId = intval($_GET['taxon_id']);
+    $obs = [];
+    $stmt = $db->prepare("SELECT event_start_date, start_time, individual_count, recorded_by, url, dataset_name
+        FROM observations WHERE locality = :name AND taxon_id = :tid
+        ORDER BY event_start_date DESC, start_time DESC LIMIT 20");
+    $stmt->bindValue(':name', $locName, SQLITE3_TEXT);
+    $stmt->bindValue(':tid', $taxonId, SQLITE3_INTEGER);
+    $res = $stmt->execute();
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $obs[] = [
+            'date' => $row['event_start_date'],
+            'time' => $row['start_time'],
+            'count' => $row['individual_count'] ? intval($row['individual_count']) : null,
+            'observer' => $row['recorded_by'],
+            'url' => $row['url'],
+        ];
+    }
+    jsonOut(['observations' => $obs]);
 }
 
 // ── Week context (for weekly report) ──

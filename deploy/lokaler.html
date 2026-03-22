@@ -128,6 +128,21 @@
     @media (max-width: 600px) {
       .locality-stats { grid-template-columns: 1fr 1fr; }
     }
+
+    .locality-species-row.expanded > .top-item {
+      border-bottom: 1px solid var(--border);
+      border-radius: 8px 8px 0 0;
+      background: var(--accent-bg);
+    }
+    .species-obs-detail {
+      padding: 0.25rem 0.5rem 0.5rem;
+      background: var(--accent-bg);
+      border-radius: 0 0 8px 8px;
+      margin-bottom: 0.25rem;
+    }
+    .species-obs-detail .obs-card {
+      background: var(--card);
+    }
   </style>
 <!-- Matomo -->
 <script>
@@ -529,14 +544,15 @@ if (document.prerendering) {
         </div>`;
       }
 
-      // Top species
-      if (data.top_species && data.top_species.length > 0) {
-        html += `<div class="section-title" id="sec-arter">Mest rapporterade arter</div>
-        <div class="top-list">
-          ${data.top_species.map(s =>
-            renderSpeciesItem(s, { showLink: true, showCount: true, countLabel: "obs" })
-          ).join("")}
-        </div>`;
+      // All species (searchable)
+      if (data.all_species && data.all_species.length > 0) {
+        html += `<div class="section-title" id="sec-arter">Arter <span style="font-weight:400;color:var(--muted);font-size:0.9rem">(${data.all_species.length} arter)</span></div>
+        <div style="margin-bottom:0.75rem">
+          <input type="text" id="locality-species-filter" placeholder="Sök art vid denna lokal…"
+            style="width:100%;padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:var(--card);outline:none;box-sizing:border-box">
+        </div>
+        <div class="top-list" id="locality-species-list"></div>
+        <button id="show-all-species-btn" style="display:none;width:100%;padding:0.6rem;margin-top:0.5rem;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:0.85rem;cursor:pointer"></button>`;
       }
 
       // Top reporters
@@ -561,6 +577,123 @@ if (document.prerendering) {
         e.preventDefault();
         showBrowse();
       });
+
+      // Searchable species list with expandable observations
+      if (data.all_species && data.all_species.length > 0) {
+        const allSpecies = data.all_species;
+        const localityName = data.name;
+        const INITIAL_COUNT = 10;
+        let showAllSpecies = false;
+        let expandedTaxon = null;
+
+        function renderLocalitySpeciesItem(s) {
+          const nameHtml = speciesLink(s.name);
+          const lastSeen = s.last_seen ? new Date(s.last_seen).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" }) : "";
+          const isExpanded = expandedTaxon === s.taxon_id;
+          return `<div class="locality-species-row${isExpanded ? " expanded" : ""}" data-taxon-id="${s.taxon_id}" data-name="${s.name}">
+  <div class="top-item" style="cursor:pointer">
+    <div>
+      <div class="top-item-name">${nameHtml}</div>
+      ${s.scientific ? `<div class="top-item-sub">${s.scientific}</div>` : ""}
+    </div>
+    <div style="text-align:right">
+      <span class="top-item-count">${s.count.toLocaleString("sv")} obs</span>
+      ${lastSeen ? `<div style="font-size:0.75rem;color:var(--muted)">Senast ${lastSeen}</div>` : ""}
+    </div>
+  </div>
+  <div class="species-obs-detail" style="display:${isExpanded ? "block" : "none"}"></div>
+</div>`;
+        }
+
+        function renderSpeciesList(filterText) {
+          const list = document.getElementById("locality-species-list");
+          const btn = document.getElementById("show-all-species-btn");
+          let filtered = allSpecies;
+          if (filterText) {
+            const q = filterText.toLowerCase();
+            filtered = allSpecies.filter(s =>
+              s.name.toLowerCase().includes(q) ||
+              (s.scientific && s.scientific.toLowerCase().includes(q))
+            );
+          }
+          const toShow = (filterText || showAllSpecies) ? filtered : filtered.slice(0, INITIAL_COUNT);
+          list.innerHTML = toShow.map(renderLocalitySpeciesItem).join("");
+          if (!filterText && !showAllSpecies && filtered.length > INITIAL_COUNT) {
+            btn.textContent = `Visa alla ${filtered.length} arter`;
+            btn.style.display = "";
+          } else {
+            btn.style.display = "none";
+          }
+          if (filterText && filtered.length === 0) {
+            list.innerHTML = '<div style="padding:0.75rem;color:var(--muted);text-align:center">Inga arter matchade</div>';
+          }
+        }
+
+        document.getElementById("locality-species-list").addEventListener("click", async e => {
+          const row = e.target.closest(".locality-species-row");
+          if (!row || e.target.closest("a")) return;
+          const taxonId = parseInt(row.dataset.taxonId);
+          const detailDiv = row.querySelector(".species-obs-detail");
+
+          if (expandedTaxon === taxonId) {
+            expandedTaxon = null;
+            row.classList.remove("expanded");
+            detailDiv.style.display = "none";
+            return;
+          }
+
+          // Collapse previous
+          const prev = document.querySelector(".locality-species-row.expanded");
+          if (prev) {
+            prev.classList.remove("expanded");
+            prev.querySelector(".species-obs-detail").style.display = "none";
+          }
+
+          expandedTaxon = taxonId;
+          row.classList.add("expanded");
+          detailDiv.style.display = "block";
+          detailDiv.innerHTML = '<div style="padding:0.75rem;color:var(--muted);text-align:center;font-size:0.85rem">Laddar observationer…</div>';
+
+          try {
+            const resp = await fetch(`stats-api.php?q=locality_species&name=${encodeURIComponent(localityName)}&taxon_id=${taxonId}`);
+            const result = await resp.json();
+            if (result.observations && result.observations.length > 0) {
+              const speciesData = allSpecies.find(s => s.taxon_id === taxonId);
+              const total = speciesData ? speciesData.count : result.observations.length;
+              const showing = result.observations.length;
+              const header = total > showing
+                ? `<div style="font-size:0.8rem;color:var(--muted);padding:0.25rem 0 0.5rem">Senaste ${showing} av ${total.toLocaleString("sv")} observationer</div>`
+                : "";
+              detailDiv.innerHTML = header + result.observations.map(o => {
+                // Format date with year (renderObsItem uses formatDateSwedish which omits year)
+                const datePart = o.date ? new Date(o.date).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" }) : "";
+                const timePart = o.time || "";
+                const dateTimeStr = timePart ? `${datePart} ${timePart}` : datePart;
+                const countHtml = o.count ? `<div class="obs-header"><div class="obs-count">${o.count} ex</div></div>` : "";
+                const metaParts = [];
+                if (dateTimeStr) metaParts.push(`<span>${dateTimeStr}</span>`);
+                if (o.observer) metaParts.push(`<span>${reporterLink(o.observer)}</span>`);
+                if (o.url) metaParts.push(`<a href="${o.url}" target="_blank" rel="noopener" class="ap-link" onclick="event.stopPropagation()">Artportalen ↗</a>`);
+                return `<div class="obs-card">${countHtml}${metaParts.length ? `<div class="obs-meta">${metaParts.join("")}</div>` : ""}</div>`;
+              }).join("");
+            } else {
+              detailDiv.innerHTML = '<div style="padding:0.75rem;color:var(--muted);text-align:center;font-size:0.85rem">Inga observationer hittades</div>';
+            }
+          } catch (err) {
+            detailDiv.innerHTML = `<div style="padding:0.75rem;color:var(--muted);text-align:center;font-size:0.85rem">Kunde inte ladda: ${err.message}</div>`;
+          }
+        });
+
+        document.getElementById("locality-species-filter").addEventListener("input", e => {
+          expandedTaxon = null;
+          renderSpeciesList(e.target.value.trim());
+        });
+        document.getElementById("show-all-species-btn").addEventListener("click", () => {
+          showAllSpecies = true;
+          renderSpeciesList("");
+        });
+        renderSpeciesList("");
+      }
 
       // Map with nearby localities
       if (data.lat && data.lng) {
