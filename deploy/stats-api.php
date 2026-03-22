@@ -1568,19 +1568,27 @@ if ($q === 'reporter') {
         exit;
     }
 
+    if (isset($_GET['debug_timing'])) { $timings = []; $t0 = microtime(true); }
+
     $stmt = $db->prepare("SELECT COUNT(*) FROM observations WHERE recorded_by = :name");
     $stmt->bindValue(':name', $name, SQLITE3_TEXT);
     $totalObs = intval($stmt->execute()->fetchArray()[0]);
 
+    if (isset($_GET['debug_timing'])) { $timings['count'] = round(microtime(true) - $t0, 3); $t0 = microtime(true); }
+
     $stmt = $db->prepare("SELECT COUNT(DISTINCT taxon_id) FROM observations WHERE recorded_by = :name");
     $stmt->bindValue(':name', $name, SQLITE3_TEXT);
     $totalSpecies = intval($stmt->execute()->fetchArray()[0]);
+
+    if (isset($_GET['debug_timing'])) { $timings['distinct_species'] = round(microtime(true) - $t0, 3); $t0 = microtime(true); }
 
     $perYear = [];
     $stmt = $db->prepare("SELECT SUBSTR(event_start_date,1,4) y, COUNT(*) n FROM observations WHERE recorded_by = :name GROUP BY y ORDER BY y");
     $stmt->bindValue(':name', $name, SQLITE3_TEXT);
     $res = $stmt->execute();
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) $perYear[$row['y']] = intval($row['n']);
+
+    if (isset($_GET['debug_timing'])) { $timings['per_year'] = round(microtime(true) - $t0, 3); $t0 = microtime(true); }
 
     $topSpecies = [];
     $stmt = $db->prepare("SELECT taxon_id, vernacular_name, scientific_name, COUNT(*) n FROM observations WHERE recorded_by = :name AND vernacular_name IS NOT NULL GROUP BY taxon_id ORDER BY n DESC LIMIT 20");
@@ -1589,6 +1597,8 @@ if ($q === 'reporter') {
     while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
         $topSpecies[] = ['taxon_id' => intval($row['taxon_id']), 'name' => $row['vernacular_name'], 'scientific' => $row['scientific_name'], 'count' => intval($row['n'])];
     }
+
+    if (isset($_GET['debug_timing'])) { $timings['top_species'] = round(microtime(true) - $t0, 3); $t0 = microtime(true); }
 
     $currentYear = date('Y');
     $obsThisYear = isset($perYear[$currentYear]) ? $perYear[$currentYear] : 0;
@@ -1612,6 +1622,8 @@ if ($q === 'reporter') {
         ];
     }
 
+    if (isset($_GET['debug_timing'])) { $timings['observations'] = round(microtime(true) - $t0, 3); $t0 = microtime(true); }
+
     $topLocalities = [];
     $stmt = $db->prepare("SELECT locality, COUNT(*) n, AVG(latitude) lat, AVG(longitude) lng FROM observations WHERE recorded_by = :name AND locality IS NOT NULL AND latitude IS NOT NULL GROUP BY locality ORDER BY n DESC");
     $stmt->bindValue(':name', $name, SQLITE3_TEXT);
@@ -1620,7 +1632,11 @@ if ($q === 'reporter') {
         $topLocalities[] = ['name' => $row['locality'], 'count' => intval($row['n']), 'lat' => round(floatval($row['lat']), 5), 'lng' => round(floatval($row['lng']), 5)];
     }
 
-    jsonOut(['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'obs_this_year' => $obsThisYear, 'top_localities' => $topLocalities]);
+    if (isset($_GET['debug_timing'])) { $timings['top_localities'] = round(microtime(true) - $t0, 3); }
+
+    $result = ['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'obs_this_year' => $obsThisYear, 'top_localities' => $topLocalities];
+    if (isset($_GET['debug_timing'])) { $result['_timings'] = $timings; echo json_encode($result); exit; }
+    jsonOut($result);
 }
 
 // ── Unknown endpoint ──
