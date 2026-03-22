@@ -97,6 +97,22 @@ function jsonOut($data) {
     exit;
 }
 
+// Total field visits per year – cached because it's a full table scan used by multiple endpoints
+function getTotalVisitsPerYear($db) {
+    global $CACHE_DIR;
+    $cf = "$CACHE_DIR/total_visits_" . date('Y-m-d') . ".json";
+    if (file_exists($cf)) return json_decode(file_get_contents($cf), true);
+    $totalVisits = [];
+    $res = $db->query("SELECT strftime('%Y', event_start_date) AS yr,
+        COUNT(DISTINCT event_start_date || '|' || locality) AS visits
+        FROM observations WHERE event_start_date >= '2006-01-01' GROUP BY yr");
+    while ($r = $res->fetchArray(SQLITE3_ASSOC)) {
+        $totalVisits[$r['yr']] = intval($r['visits']);
+    }
+    file_put_contents($cf, json_encode($totalVisits));
+    return $totalVisits;
+}
+
 // ── Overview ──
 if ($q === 'overview') {
     $total = $db->querySingle("SELECT COUNT(*) FROM observations");
@@ -508,18 +524,7 @@ if ($q === 'species' && $id !== null) {
     }
 
     // ── Encounter rate (reporting frequency) per year ──
-    // Total field visits per year (all species)
-    $totalVisits = [];
-    $tvRes = $db->query("
-        SELECT strftime('%Y', event_start_date) AS yr,
-               COUNT(DISTINCT event_start_date || '|' || locality) AS visits
-        FROM observations
-        WHERE event_start_date >= '2006-01-01'
-        GROUP BY yr
-    ");
-    while ($r = $tvRes->fetchArray(SQLITE3_ASSOC)) {
-        $totalVisits[$r['yr']] = intval($r['visits']);
-    }
+    $totalVisits = getTotalVisitsPerYear($db);
 
     // Species field visits per year
     // Handle taxonomic merges (sädgås = skogsgås + tundragås)
@@ -1157,14 +1162,7 @@ if ($q === 'accumulation') {
 if ($q === 'group_trends') {
     $currentYear = date('Y');
 
-    // Total field visits per year
-    $totalVisits = [];
-    $res = $db->query("SELECT strftime('%Y', event_start_date) AS yr,
-        COUNT(DISTINCT event_start_date || '|' || locality) AS visits
-        FROM observations WHERE event_start_date >= '2006-01-01' GROUP BY yr");
-    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        $totalVisits[$row['yr']] = intval($row['visits']);
-    }
+    $totalVisits = getTotalVisitsPerYear($db);
     $years = array_keys($totalVisits);
     sort($years);
     $completeYears = array_values(array_filter($years, fn($yr) => $yr != $currentYear));
@@ -1236,13 +1234,7 @@ if ($q === 'group_trends') {
 if ($q === 'stability') {
     $currentYear = date('Y');
 
-    $totalVisits = [];
-    $res = $db->query("SELECT strftime('%Y', event_start_date) AS yr,
-        COUNT(DISTINCT event_start_date || '|' || locality) AS visits
-        FROM observations WHERE event_start_date >= '2006-01-01' GROUP BY yr");
-    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        $totalVisits[$row['yr']] = intval($row['visits']);
-    }
+    $totalVisits = getTotalVisitsPerYear($db);
     $years = array_keys($totalVisits);
     sort($years);
     $completeYears = array_values(array_filter($years, fn($yr) => $yr != $currentYear));
@@ -1335,17 +1327,7 @@ if ($q === 'stability') {
 // ── Trends: encounter rate + Theil-Sen regression ──
 if ($q === 'trends') {
     // 1. Total field visits (unique date+locality) per year
-    $totalVisits = [];
-    $res = $db->query("
-        SELECT strftime('%Y', event_start_date) AS yr,
-               COUNT(DISTINCT event_start_date || '|' || locality) AS visits
-        FROM observations
-        WHERE event_start_date >= '2006-01-01'
-        GROUP BY yr
-    ");
-    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
-        $totalVisits[$row['yr']] = intval($row['visits']);
-    }
+    $totalVisits = getTotalVisitsPerYear($db);
 
     // 2. Per-species visits per year (only species with scientific_name containing a space = real species)
     $speciesVisits = [];
