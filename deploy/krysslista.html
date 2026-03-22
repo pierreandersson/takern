@@ -668,8 +668,8 @@
     function openEdit(id) {
       const obs = allObs.find(o => o.id === id);
       if (!obs) return;
-      editingId = id;
       openModal(true);
+      editingId = id;
       fSpecies.value = obs.species;
       fGroup.value = obs.group;
       fDate.value = obs.date;
