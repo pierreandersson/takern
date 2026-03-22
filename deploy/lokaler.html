@@ -362,15 +362,6 @@ if (document.prerendering) {
     let liveDataCache = { data: null, ts: 0 };
     const LIVE_CACHE_TTL = 2 * 60 * 1000;
 
-    function localityHasRecentObs(name) {
-      if (!localitiesCache) return true; // assume yes if we don't know
-      const loc = localitiesCache.find(l => l.name === name);
-      if (!loc) return true;
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 3);
-      return loc.last_obs >= cutoff.toISOString().substring(0, 10);
-    }
-
     async function fetchLiveData() {
       const now = Date.now();
       if (liveDataCache.data && (now - liveDataCache.ts) < LIVE_CACHE_TTL) {
@@ -397,11 +388,9 @@ if (document.prerendering) {
       if (currentMap) { currentMap.remove(); currentMap = null; }
 
       try {
-        const needsLive = localityHasRecentObs(name);
-
-        // Fetch locality stats (always) and live observations (only if recent activity)
+        // Fetch locality stats and live observations in parallel
         const statsPromise = fetch(`stats-api.php?q=locality&name=${encodeURIComponent(name)}`);
-        const livePromise = needsLive ? fetchLiveData() : Promise.resolve(null);
+        const livePromise = fetchLiveData();
 
         const [statsResp, liveData] = await Promise.all([statsPromise, livePromise]);
         const data = await statsResp.json();
