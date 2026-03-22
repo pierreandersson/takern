@@ -41,6 +41,18 @@ jobs:
             **/backups/**
             **/cron-update.log
 
-      - name: Clear and warm cache
+      - name: Clear cache
         run: |
-          curl -s -f "https://pierrea.se/takern/cron-update.php?key=${{ secrets.CRON_SECRET }}&action=clear-cache"
+          curl -s -f "https://pierrea.se/takern/cron-update.php?key=${{ secrets.CRON_SECRET }}&action=clear-cache&nowarm"
+
+      - name: Warm cache (parallel)
+        run: |
+          BASE="https://pierrea.se/takern/stats-api.php?q="
+          YEAR=$(date +%Y)
+          curl -s -f "${BASE}overview" -o /dev/null &
+          curl -s -f "${BASE}species" -o /dev/null &
+          curl -s -f "${BASE}geo" -o /dev/null &
+          curl -s -f "${BASE}localities" -o /dev/null &
+          curl -s -f "${BASE}week_context&year=${YEAR}&days=7" -o /dev/null &
+          curl -s -f "${BASE}accumulation&year=${YEAR}" -o /dev/null &
+          wait

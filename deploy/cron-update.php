@@ -295,22 +295,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'clear-cache') {
     $warm = !isset($_GET['nowarm']);
     $warmed = 0;
     if ($warm) {
-        $endpoints = ['overview', 'species', 'geo', 'localities', 'week_context&year=' . date('Y') . '&days=7', 'accumulation&year=' . date('Y')];
-        $canShell = function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))));
-        if ($canShell) {
-            // Background CLI processes — web worker freed immediately
-            $warmScript = escapeshellarg(__DIR__ . '/cache-warm.php');
-            foreach ($endpoints as $ep) {
-                @shell_exec("php $warmScript " . escapeshellarg($ep) . " >/dev/null 2>&1 &");
-                $warmed++;
-            }
-        } else {
-            // Fallback: sequential HTTP (blocks worker but always works)
-            $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
-            foreach ($endpoints as $ep) {
-                @file_get_contents("$baseUrl/stats-api.php?q=$ep", false, stream_context_create(['http' => ['timeout' => 120]]));
-                $warmed++;
-            }
+        $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+        foreach (['overview', 'species', 'geo', 'localities', 'week_context&year=' . date('Y') . '&days=7', 'accumulation&year=' . date('Y')] as $ep) {
+            @file_get_contents("$baseUrl/stats-api.php?q=$ep", false, stream_context_create(['http' => ['timeout' => 120]]));
+            $warmed++;
         }
     }
     echo json_encode(['ok' => true, 'cleared' => $cleared, 'warmed' => $warmed]);
@@ -431,18 +419,10 @@ if ($isWeeklyRefresh) {
     $warmEndpoints = array_merge($warmEndpoints, ['geo', 'localities']);
 }
 
-// ── Pre-warm caches via CLI subprocess (doesn't block the web PHP worker) ──
-$canShell = function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))));
-if ($canShell) {
-    $warmScript = escapeshellarg(__DIR__ . '/cache-warm.php');
-    foreach ($warmEndpoints as $ep) {
-        @shell_exec("php $warmScript " . escapeshellarg($ep) . " >/dev/null 2>&1 &");
-    }
-} else {
-    $baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
-    foreach ($warmEndpoints as $ep) {
-        @file_get_contents("$baseUrl/stats-api.php?q=$ep", false, stream_context_create(['http' => ['timeout' => 120]]));
-    }
+// ── Pre-warm caches ──
+$baseUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+foreach ($warmEndpoints as $ep) {
+    @file_get_contents("$baseUrl/stats-api.php?q=$ep", false, stream_context_create(['http' => ['timeout' => 120]]));
 }
 logMsg("Pre-warmed " . count($warmEndpoints) . " cache endpoints");
 
