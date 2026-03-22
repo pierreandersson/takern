@@ -1080,22 +1080,17 @@ if (document.prerendering) {
         delete window._phenTrend;
       }
 
-      // Geo heatmap
+      // Geo heatmap – data included in species detail response
       currentSpeciesMap = initMap("speciesMap");
       setTimeout(() => currentSpeciesMap.invalidateSize(), 300);
-      fetch(`stats-api.php?q=geo&id=${taxonId}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.points.length > 0) {
-            const layer = createHeatLayer(data.points);
-            if (layer) layer.addTo(currentSpeciesMap);
-            setTimeout(() => currentSpeciesMap.invalidateSize(), 100);
-          }
-        });
-
-      fetch(`stats-api.php?q=localities&id=${taxonId}`)
-        .then(r => r.json())
-        .then(data => { addLocalityMarkers(currentSpeciesMap, data.localities); });
+      if (sp.geo_points && sp.geo_points.length > 0) {
+        const layer = createHeatLayer(sp.geo_points);
+        if (layer) layer.addTo(currentSpeciesMap);
+        setTimeout(() => currentSpeciesMap.invalidateSize(), 100);
+      }
+      if (sp.localities) {
+        addLocalityMarkers(currentSpeciesMap, sp.localities);
+      }
 
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -1111,16 +1106,31 @@ if (document.prerendering) {
 
     // ── Init ──
     async function init() {
-      const [speciesResp, weeklyResp, yearlyResp] = await Promise.all([
-        fetch("stats-api.php?q=species"),
-        fetch("stats-api.php?q=top_weekly"),
-        fetch("stats-api.php?q=top_yearly"),
-      ]);
-      const [speciesData, weeklyData, yearlyData] = await Promise.all([
-        speciesResp.json(),
-        weeklyResp.json(),
-        yearlyResp.json(),
-      ]);
+      let speciesData, weeklyData, yearlyData;
+
+      // Try batch endpoint first (single request instead of three)
+      try {
+        const batchResp = await fetch("stats-api.php?q=species_init");
+        const batch = await batchResp.json();
+        if (batch.species && !batch.error) {
+          speciesData = batch.species;
+          weeklyData = batch.top_weekly || {};
+          yearlyData = batch.top_yearly || {};
+        }
+      } catch (e) { /* fall through to individual requests */ }
+
+      // Fallback to individual requests if batch failed
+      if (!speciesData) {
+        const [spResp, twResp, tyResp] = await Promise.all([
+          fetch("stats-api.php?q=species"),
+          fetch("stats-api.php?q=top_weekly"),
+          fetch("stats-api.php?q=top_yearly"),
+        ]);
+        [speciesData, weeklyData, yearlyData] = await Promise.all([
+          spResp.json(), twResp.json(), tyResp.json(),
+        ]);
+      }
+
       speciesCache = speciesData.species;
       weeklyTopCache = weeklyData.species || null;
       yearlyTopCache = yearlyData.species || null;

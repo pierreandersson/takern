@@ -628,6 +628,37 @@ if ($q === 'species' && $id !== null) {
     ] : null;
 
 
+    // Geo heatmap points for this species
+    $geoPoints = [];
+    $geoRes = $db->query("SELECT ROUND(latitude,3) lat, ROUND(longitude,3) lng, COUNT(*) n
+        FROM observations WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND taxon_id = $id
+        GROUP BY lat, lng");
+    while ($row = $geoRes->fetchArray(SQLITE3_ASSOC)) {
+        $geoPoints[] = [floatval($row['lat']), floatval($row['lng']), intval($row['n'])];
+    }
+
+    // Localities for this species
+    $oneYearAgo = date('Y-m-d', strtotime('-1 year'));
+    $spLocalities = [];
+    $locRes = $db->query("SELECT locality, ROUND(AVG(latitude),5) lat, ROUND(AVG(longitude),5) lng,
+        COUNT(*) obs_count, COUNT(DISTINCT taxon_id) species_count,
+        MAX(event_start_date) last_obs,
+        SUM(CASE WHEN event_start_date >= '$oneYearAgo' THEN 1 ELSE 0 END) recent_obs
+        FROM observations
+        WHERE locality IS NOT NULL AND locality != '' AND latitude IS NOT NULL AND taxon_id = $id
+        GROUP BY locality HAVING obs_count >= 10 AND last_obs >= '$oneYearAgo' ORDER BY recent_obs DESC LIMIT 500");
+    while ($row = $locRes->fetchArray(SQLITE3_ASSOC)) {
+        $spLocalities[] = [
+            'name' => $row['locality'],
+            'lat' => floatval($row['lat']),
+            'lng' => floatval($row['lng']),
+            'obs' => intval($row['obs_count']),
+            'species' => intval($row['species_count']),
+            'recent_obs' => intval($row['recent_obs']),
+            'last_obs' => $row['last_obs'],
+        ];
+    }
+
     jsonOut([
         'taxon_id' => $id,
         'name' => $info['vernacular_name'],
@@ -648,6 +679,8 @@ if ($q === 'species' && $id !== null) {
         'recent' => $recent,
         'encounter_rate' => $encounterRate,
         'encounter_rate_trend' => $erTrend,
+        'geo_points' => $geoPoints,
+        'localities' => $spLocalities,
     ]);
 }
 
@@ -1537,6 +1570,28 @@ if ($q === 'init') {
         jsonOut($result);
     }
     // If not all cached, fall through – client will use individual endpoints as fallback
+}
+
+// ── Batch endpoint for arter.html ──
+// Returns species + top_weekly + top_yearly in one response
+if ($q === 'species_init') {
+    $today = date('Y-m-d');
+    $spFile = "$CACHE_DIR/species.json";
+    $twFile = "$CACHE_DIR/top_weekly_$today.json";
+    $tyFile = "$CACHE_DIR/top_yearly_$today.json";
+
+    if (file_exists($spFile) && file_exists($twFile) && file_exists($tyFile)) {
+        $result = [
+            'species' => json_decode(file_get_contents($spFile), true),
+            'top_weekly' => json_decode(file_get_contents($twFile), true),
+            'top_yearly' => json_decode(file_get_contents($tyFile), true),
+        ];
+        $json = json_encode($result, JSON_UNESCAPED_UNICODE);
+        file_put_contents($cacheFile, $json);
+        echo $json;
+        exit;
+    }
+    // If not all cached, fall through – client will use individual endpoints
 }
 
 // ── Batch endpoint for veckorapport.html ──
