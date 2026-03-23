@@ -6,7 +6,7 @@ Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. 
 ## Tech stack
 - **Frontend:** Vanilla HTML/CSS/JS, Leaflet för kartor, Chart.js för grafer
 - **Backend:** PHP på Websupport shared hosting (en PHP-worker = inga parallella requests)
-- **Data:** SQLite-databas (~333k obs, 374 arter, 20 år) + live SOS-API (Artdatabanken)
+- **Data:** SQLite-databas (~333k obs, ~292 arter efter filtrering, 20 år) + live SOS-API (Artdatabanken)
 - **Deploy:** GitHub Actions → FTP (SamKirkland/FTP-Deploy-Action) → auto cache-clear/warm
 - **Caching:** Filbaserad JSON-cache i deploy/cache/, invalideras av cron-update.php. SMHI-temperatur cachas separat per dag.
 - **SQLite-index:** locality+date, locality, date, taxon_id, taxon_id+date, recorded_by (skapas av cron-update.php)
