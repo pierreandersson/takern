@@ -171,7 +171,12 @@ function getTotalVisitsPerYear($db) {
 // ── Overview ──
 if ($q === 'overview') {
     $total = $db->querySingle("SELECT COUNT(*) FROM observations");
-    $species = $db->querySingle("SELECT COUNT(DISTINCT taxon_id) FROM observations");
+    $species = $db->querySingle("SELECT COUNT(DISTINCT taxon_id) FROM observations
+        WHERE vernacular_name IS NOT NULL
+        AND scientific_name LIKE '% %'
+        AND vernacular_name NOT LIKE '% x %'
+        AND vernacular_name NOT LIKE '%/%'
+        AND vernacular_name NOT LIKE '%, % morf'");
     $observers = $db->querySingle("SELECT COUNT(DISTINCT recorded_by) FROM observations WHERE recorded_by IS NOT NULL");
     $r = $db->querySingle("SELECT MIN(event_start_date) mn, MAX(event_start_date) mx FROM observations", true);
 
