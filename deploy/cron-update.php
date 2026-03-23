@@ -290,7 +290,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'clear-cache') {
     $cleared = 0;
     if (is_dir($cacheDir)) {
         $files = glob("$cacheDir/*.json");
-        foreach ($files as $f) { unlink($f); $cleared++; }
+        foreach ($files as $f) {
+            if (strpos(basename($f), 'artfakta_') === 0) continue; // Preserve Artfakta cache
+            unlink($f); $cleared++;
+        }
     }
     $warm = !isset($_GET['nowarm']);
     $warmed = 0;
@@ -302,6 +305,48 @@ if (isset($_GET['action']) && $_GET['action'] === 'clear-cache') {
         }
     }
     echo json_encode(['ok' => true, 'cleared' => $cleared, 'warmed' => $warmed]);
+    exit;
+}
+
+// ── Artfakta bootstrap: fetch all uncached species in one run ──
+if (isset($_GET['action']) && $_GET['action'] === 'artfakta-bootstrap') {
+    require_once __DIR__ . '/artfakta-fetch.php';
+    $artfaktaKeyFile = __DIR__ . '/artfakta_api_key.txt';
+    if (!file_exists($artfaktaKeyFile)) {
+        echo json_encode(['ok' => false, 'error' => 'artfakta_api_key.txt missing']);
+        exit;
+    }
+    $artfaktaKey = trim(file_get_contents($artfaktaKeyFile));
+    if (!file_exists($DB_FILE)) {
+        echo json_encode(['ok' => false, 'error' => 'Database missing']);
+        exit;
+    }
+    $db = new SQLite3($DB_FILE, SQLITE3_OPEN_READONLY);
+    $db->busyTimeout(5000);
+    $res = $db->query("SELECT DISTINCT taxon_id FROM observations WHERE vernacular_name IS NOT NULL ORDER BY taxon_id");
+    $taxonIds = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) $taxonIds[] = intval($row['taxon_id']);
+    $db->close();
+
+    // Filter to uncached species
+    $uncached = array_filter($taxonIds, function($tid) { return getArtfaktaCache($tid) === null; });
+    $skipped = count($taxonIds) - count($uncached);
+
+    // Batch fetch in groups of 10
+    $fetched = 0; $failed = 0;
+    foreach (array_chunk(array_values($uncached), 10) as $batch) {
+        $results = fetchArtfaktaBatch($batch, $artfaktaKey);
+        foreach ($batch as $tid) {
+            if (isset($results[$tid])) {
+                saveArtfaktaCache($tid, $results[$tid]);
+                $fetched++;
+            } else {
+                $failed++;
+            }
+        }
+        sleep(1); // Pause between batches
+    }
+    echo json_encode(['ok' => true, 'fetched' => $fetched, 'skipped' => $skipped, 'failed' => $failed, 'total' => count($taxonIds)]);
     exit;
 }
 
@@ -425,6 +470,7 @@ if (is_dir($cacheDir)) {
     $cleared = 0;
     $slowCaches = ['localities.json', 'geo.json'];
     foreach ($files as $f) {
+        if (strpos(basename($f), 'artfakta_') === 0) continue; // Preserve Artfakta cache
         if (!$isWeeklyRefresh && in_array(basename($f), $slowCaches)) continue;
         unlink($f);
         $cleared++;
@@ -442,5 +488,43 @@ foreach ($warmEndpoints as $ep) {
     @file_get_contents("$baseUrl/stats-api.php?q=$ep", false, stream_context_create(['http' => ['timeout' => 120]]));
 }
 logMsg("Pre-warmed " . count($warmEndpoints) . " cache endpoints");
+
+// ── Artfakta: refresh stale species descriptions ──
+$artfaktaKeyFile = __DIR__ . '/artfakta_api_key.txt';
+if (file_exists($artfaktaKeyFile)) {
+    require_once __DIR__ . '/artfakta-fetch.php';
+    $artfaktaKey = trim(file_get_contents($artfaktaKeyFile));
+    $afDb = new SQLite3($DB_FILE, SQLITE3_OPEN_READONLY);
+    $afDb->busyTimeout(5000);
+    $res = $afDb->query("SELECT DISTINCT taxon_id FROM observations WHERE vernacular_name IS NOT NULL ORDER BY taxon_id");
+    $taxonIds = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) $taxonIds[] = intval($row['taxon_id']);
+    $afDb->close();
+
+    // Find species needing refresh: uncached, or cache older than 90 days
+    $needRefresh = [];
+    foreach ($taxonIds as $tid) {
+        if (getArtfaktaCacheAge($tid) > 90) $needRefresh[] = $tid;
+    }
+
+    // Batch fetch up to 10 species per cron run (1 API call)
+    $maxPerRun = 10;
+    $toFetch = array_slice($needRefresh, 0, $maxPerRun);
+    $fetched = 0;
+    foreach (array_chunk($toFetch, 10) as $batch) {
+        $results = fetchArtfaktaBatch($batch, $artfaktaKey);
+        foreach ($batch as $tid) {
+            if (isset($results[$tid])) {
+                saveArtfaktaCache($tid, $results[$tid]);
+                $fetched++;
+            }
+        }
+        sleep(1);
+    }
+    $remaining = max(0, count($needRefresh) - $maxPerRun);
+    if ($fetched > 0 || $remaining > 0) {
+        logMsg("Artfakta: updated $fetched species" . ($remaining > 0 ? " ($remaining remaining)" : " (all up to date)"));
+    }
+}
 
 logMsg("=== Update complete: $netNew new observations ===");

@@ -20,6 +20,15 @@ All data kommer via SLU Artdatabankens SOS-API som aggregerar flera källor:
 
 `dataset_name`-kolumnen är tom/null för Artportalen-poster. Använd `url`-fältet (innehåller "artportalen") för att identifiera källa.
 
+### SLU Artfakta (artbeskrivningar)
+- **API:** `api.artdatabanken.se/taxonservice/v1/taxa` – batch-hämtning (max 50 taxon_id per anrop), kräver API-nyckel (`artfakta_api_key.txt`)
+- **Data:** Kännetecken, ekologi, utbredning & status, hot, åtgärder, svensk förekomst, rödlistestatus
+- **Cache:** `cache/artfakta_{taxon_id}.json`, 90 dagars livstid. Bevaras vid cache-clear (ej invalideras av deploy)
+- **Refresh:** cron-update.php refreshar max 10 arter per körning (cache äldre än 90 dagar)
+- **Bootstrap:** `cron-update.php?action=artfakta-bootstrap` – hämtar alla saknade arter i en körning
+- **Fetch-hjälpare:** `artfakta-fetch.php` – delade funktioner: `fetchArtfaktaBatch()`, `getArtfaktaCache()`, `saveArtfaktaCache()`, `getArtfaktaCacheAge()`
+- **Frontend:** arter.html visar "Om arten (från SLU Artfakta)" med svensk förekomst, rödlistestatus (med länk till bedömning för hotade arter), och expanderbar beskrivningstext
+
 ## Nyckelarkitektur
 - **stats-api.php:** Alla statistik-queries. Cache-filer per endpoint (overview.json, species.json, species_XXXXX.json, etc.)
 - **cron-update.php:** Daglig datainhämtning + cache-rensning. Skyddad med nyckel i cron_secret.txt
@@ -108,9 +117,9 @@ Sektionen "Säsongens längd per år" på artsidor visar:
 - **Pågående år exkluderas** från trendberäkning (ofullständig data)
 
 ## Säkerhet
-- .htaccess blockerar takern_api_key.txt och cron_secret.txt
+- .htaccess blockerar takern_api_key.txt, cron_secret.txt och artfakta_api_key.txt
 - Cron-nyckel roterad 2026-03-15 (gammal var exponerad via webbläsaren)
-- API-nyckel och cron-secret exkluderas från FTP-deploy
+- API-nyckel, artfakta-nyckel och cron-secret exkluderas från FTP-deploy
 
 ## Hybrid-arkitektur (api.php)
 - **days 0–1:** Enbart live SOS-API (snabbt, under 1000-gränsen)

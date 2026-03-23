@@ -136,6 +136,25 @@
     @media (max-width: 600px) {
       .species-stats { grid-template-columns: 1fr 1fr; }
     }
+
+    /* Artfakta species info */
+    .artfakta-text { margin-bottom: 1rem; }
+    .artfakta-text:last-of-type { margin-bottom: 0; }
+    .artfakta-text h3 { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+    .artfakta-text p { font-size: 0.9rem; line-height: 1.6; color: var(--text); margin: 0 0 0.5rem; }
+    .artfakta-text p:last-child { margin-bottom: 0; }
+    .artfakta-facts { margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.8; }
+    .artfakta-fact-label { font-weight: 600; margin-right: 0.3rem; }
+    .artfakta-divider { border-top: 1px solid var(--border); margin: 1rem 0; }
+    .artfakta-heading-source { font-size: 0.75rem; font-weight: 400; color: var(--muted); }
+    .artfakta-heading-source a { color: var(--muted); text-decoration: underline; }
+    .artfakta-heading-source a:hover { color: var(--accent); }
+    .artfakta-toggle {
+      background: none; border: none; padding: 0; margin-top: 0.5rem;
+      font-size: 0.85rem; color: var(--accent); cursor: pointer; font-weight: 500;
+    }
+    .artfakta-toggle:hover { text-decoration: underline; }
+    .artfakta-source { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
   </style>
 <!-- Matomo -->
 <script>
@@ -236,6 +255,7 @@ if (document.prerendering) {
 
     // ── Section navigation ──
     const SPECIES_SECTIONS = [
+      { id: "sec-artinfo", label: "Om arten" },
       { id: "sec-senaste", label: "Senaste" },
       { id: "sec-sp-karta", label: "Karta" },
       { id: "sec-sp-sasong", label: "Säsong" },
@@ -579,6 +599,94 @@ if (document.prerendering) {
         </div>
       </div>`;
 
+      // Split long text into paragraphs at sentence boundaries (~400 chars)
+      // Only break at ". X" where X is an uppercase letter (avoids t.ex., ca., etc.)
+      function textToParagraphs(text) {
+        const escaped = text.replace(/</g, '&lt;');
+        if (escaped.length <= 500) return `<p>${escaped}</p>`;
+        const sentenceEnd = /\. [A-ZÅÄÖ]/g;
+        const parts = []; let pos = 0;
+        while (pos < escaped.length) {
+          if (escaped.length - pos <= 500) { parts.push(escaped.slice(pos)); break; }
+          sentenceEnd.lastIndex = pos + 400;
+          const m = sentenceEnd.exec(escaped);
+          if (m && m.index < pos + 800) {
+            parts.push(escaped.slice(pos, m.index + 2));
+            pos = m.index + 2;
+          } else {
+            parts.push(escaped.slice(pos)); break;
+          }
+        }
+        return parts.map(p => `<p>${p.trim()}</p>`).join('');
+      }
+
+      // Species info from Artfakta (if available)
+      if (sp.artfakta) {
+        const af = sp.artfakta;
+
+        // Fact summary: Svensk förekomst + Rödlista (shown even without description texts)
+        let factsHtml = '';
+        const facts = [];
+        if (af.swedish_presence) facts.push({ label: 'Svensk förekomst', value: af.swedish_presence });
+        if (af.redlist && af.redlist.category) {
+          const rlCat = af.redlist.category;
+          const rlNames = { CR: 'Akut hotad', EN: 'Starkt hotad', VU: 'Sårbar', NT: 'Nära hotad', LC: 'Livskraftig', DD: 'Kunskapsbrist', RE: 'Nationellt utdöd', NA: 'Ej tillämplig', NE: 'Ej bedömd' };
+          let rlText = `${rlNames[rlCat] || rlCat} (${rlCat})`;
+          if (af.redlist.criterion) rlText += ` · Kriterium ${af.redlist.criterion}`;
+          if (af.redlist.period) rlText += ` · ${af.redlist.period}`;
+          if (['CR','EN','VU','NT'].includes(rlCat)) {
+            rlText += ` · <a href="https://artfakta.se/taxa/${af.taxon_id}/rodlistning" target="_blank" rel="noopener">Bedömning ↗</a>`;
+          }
+          facts.push({ label: 'Rödlistestatus', value: rlText });
+        }
+        if (facts.length > 0) {
+          factsHtml = `<div class="artfakta-facts">${facts.map(f =>
+            `<div class="artfakta-fact"><span class="artfakta-fact-label">${f.label}</span> ${f.value}</div>`
+          ).join('')}</div>`;
+        }
+
+        // Description texts (only for species with text content)
+        let textsHtml = '';
+        if (af.has_text) {
+          const sections = [
+            { key: 'characteristic', label: 'Kännetecken' },
+            { key: 'ecology', label: 'Ekologi' },
+            { key: 'spread_and_status', label: 'Utbredning & status' },
+            { key: 'threat', label: 'Hot' },
+            { key: 'conservation_measures', label: 'Åtgärder' },
+          ];
+          const available = sections.filter(s => af[s.key]);
+          if (available.length > 0) {
+            const first = available[0];
+            const rest = available.slice(1);
+            textsHtml = `<div class="artfakta-text">
+              ${textToParagraphs(af[first.key])}
+            </div>`;
+            if (rest.length > 0) {
+              let moreHtml = '';
+              for (const s of rest) {
+                moreHtml += `<div class="artfakta-text">
+                  <h3>${s.label}</h3>
+                  ${textToParagraphs(af[s.key])}
+                </div>`;
+              }
+              textsHtml += `<div class="artfakta-more" style="display:none">${moreHtml}</div>
+                <button class="artfakta-toggle" onclick="const m=this.previousElementSibling;const show=m.style.display==='none';m.style.display=show?'':'none';this.textContent=show?'Visa mindre':'Visa mer'">Visa mer</button>`;
+            }
+          }
+        }
+
+        if (factsHtml || textsHtml) {
+          html += `<div class="chart-section" id="sec-artinfo">
+            <h2>Om arten <span class="artfakta-heading-source">(från <a href="${af.source_url || 'https://artfakta.se'}" target="_blank" rel="noopener">SLU Artfakta</a>)</span></h2>
+            ${factsHtml}${textsHtml}
+            <div class="artfakta-source">
+              <a href="${af.source_url || 'https://artfakta.se'}" target="_blank" rel="noopener" class="ap-link">Artfakta (SLU Artdatabanken) ↗</a>
+            </div>
+          </div>`;
+        }
+      }
+
       // Recent observations
       html += `<div class="chart-section" id="sec-senaste">
         <h2>Senaste observationer</h2>
@@ -811,7 +919,8 @@ if (document.prerendering) {
       detail.innerHTML = html;
 
       refreshRecentObs(taxonId, sp.recent || []);
-      updateSectionNav(SPECIES_SECTIONS);
+      const activeSections = SPECIES_SECTIONS.filter(s => document.getElementById(s.id));
+      updateSectionNav(activeSections);
 
       // Render charts
       // Season curve

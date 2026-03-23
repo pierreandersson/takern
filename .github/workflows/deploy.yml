@@ -41,6 +41,7 @@ jobs:
             **/backups/**
             **/cron-update.log
             **/krysslista-data.json
+            **/artfakta_api_key.txt
 
       - name: Clear and warm cache
         run: |

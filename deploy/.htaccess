@@ -5,3 +5,6 @@
 <Files "cron_secret.txt">
     Require all denied
 </Files>
+<Files "artfakta_api_key.txt">
+    Require all denied
+</Files>

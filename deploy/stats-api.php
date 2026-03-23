@@ -660,6 +660,13 @@ if ($q === 'species' && $id !== null) {
         ];
     }
 
+    // Load Artfakta species info from cache (if available)
+    $artfakta = null;
+    $artfaktaFile = "$CACHE_DIR/artfakta_$id.json";
+    if (file_exists($artfaktaFile)) {
+        $artfakta = json_decode(file_get_contents($artfaktaFile), true);
+    }
+
     jsonOut([
         'taxon_id' => $id,
         'name' => $info['vernacular_name'],
@@ -682,6 +689,7 @@ if ($q === 'species' && $id !== null) {
         'encounter_rate_trend' => $erTrend,
         'geo_points' => $geoPoints,
         'localities' => $spLocalities,
+        'artfakta' => $artfakta,
     ]);
 }
 
