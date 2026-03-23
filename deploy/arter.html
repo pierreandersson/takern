@@ -668,7 +668,7 @@ if (document.prerendering) {
                 </div>`;
               }
               textsHtml += `<div class="artfakta-more" style="display:none">${moreHtml}</div>
-                <button class="artfakta-toggle" onclick="const m=this.previousElementSibling;const show=m.style.display==='none';m.style.display=show?'':'none';this.textContent=show?'Visa mindre':'Visa mer'">Visa mer</button>`;
+                <button class="artfakta-toggle" onclick="const m=this.previousElementSibling;const show=m.style.display==='none';m.style.display=show?'':'none';this.textContent=show?'Visa mindre':'Visa mer';if(!show)document.getElementById('sec-artinfo').scrollIntoView({behavior:'smooth'})">Visa mer</button>`;
             }
           }
         }
