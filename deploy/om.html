@@ -282,15 +282,6 @@ if (document.prerendering) {
 
       <p>All originaldata lagras hos och förvaltas av <a href="https://www.artdatabanken.se">SLU Artdatabanken</a>. Databasen innehåller över 300 000 observationer av närmare 300 arter, från 2006 till idag. Data uppdateras automatiskt varje natt. Temperaturdata hämtas från <a href="https://www.smhi.se/data/meteorologi/ladda-ner-meteorologiska-observationer">SMHI:s öppna API</a> (station Härsnäs). Artbeskrivningar, rödlistestatus och svensk förekomst på artsidorna hämtas från <a href="https://artfakta.se">SLU Artfakta</a>.</p>
 
-      <h3>Hur arttalet beräknas</h3>
-      <p>Det totala arttalet som visas på sajten är filtrerat för att ge en rättvisande bild. Följande exkluderas:</p>
-      <ul>
-        <li><strong>Hybrider</strong> – t.ex. "gräsand x bläsand"</li>
-        <li><strong>Osäkra bestämningar</strong> – t.ex. "kärr-/ängshök"</li>
-        <li><strong>Morfer</strong> – t.ex. "fjällvråk, mörk morf"</li>
-        <li><strong>Artgrupper</strong> – övergripande taxa utan artbestämning (t.ex. "beckasiner", "kärrhökar")</li>
-        <li><strong>Arter med enbart en enda observation</strong> – dessa kan vara felrapporterade och exkluderas för att inte blåsa upp arttalet</li>
-      </ul>
     </div>
 
     <!-- Villkor och dataskydd -->
@@ -421,6 +412,19 @@ if (document.prerendering) {
 
         <h3>Röd kantlinje</h3>
         <p>Observationer med en poängsumma på 80 eller mer markeras med en röd kantlinje till vänster. Det indikerar att observationen är noteberbar av minst ett skäl – tidig ankomst, sällsynthet, ny för säsongen, eller en kombination.</p>
+      </div>
+
+      <!-- Hur arttalet beräknas -->
+      <div class="about-section">
+        <h2>Hur arttalet beräknas</h2>
+        <p>Det totala arttalet som visas på sajten är filtrerat för att ge en rättvisande bild. Följande exkluderas:</p>
+        <ul>
+          <li><strong>Hybrider</strong> – t.ex. "gräsand x bläsand"</li>
+          <li><strong>Osäkra bestämningar</strong> – t.ex. "kärr-/ängshök"</li>
+          <li><strong>Morfer</strong> – t.ex. "fjällvråk, mörk morf"</li>
+          <li><strong>Artgrupper</strong> – övergripande taxa utan artbestämning (t.ex. "beckasiner", "kärrhökar")</li>
+          <li><strong>Arter med enbart en enda observation</strong> – dessa kan vara felrapporterade och exkluderas för att inte blåsa upp arttalet</li>
+        </ul>
       </div>
 
       <!-- Sällsynthetsfilter -->
