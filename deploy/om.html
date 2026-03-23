@@ -280,7 +280,7 @@ if (document.prerendering) {
         </tbody>
       </table>
 
-      <p>Databasen innehåller över 300 000 observationer av närmare 300 arter, från 2006 till idag. Data uppdateras automatiskt varje natt. Temperaturdata hämtas från <a href="https://www.smhi.se/data/meteorologi/ladda-ner-meteorologiska-observationer">SMHI:s öppna API</a> (station Härsnäs).</p>
+      <p>Databasen innehåller över 300 000 observationer av närmare 300 arter, från 2006 till idag. Data uppdateras automatiskt varje natt. Temperaturdata hämtas från <a href="https://www.smhi.se/data/meteorologi/ladda-ner-meteorologiska-observationer">SMHI:s öppna API</a> (station Härsnäs). Artbeskrivningar, rödlistestatus och svensk förekomst på artsidorna hämtas från <a href="https://artfakta.se">SLU Artfakta</a>.</p>
 
       <h3>Hur arttalet beräknas</h3>
       <p>Det totala arttalet som visas på sajten är filtrerat för att ge en rättvisande bild. Följande exkluderas:</p>
@@ -413,13 +413,7 @@ if (document.prerendering) {
       <!-- Sällsynthetsfilter -->
       <div class="about-section">
         <h2>Sällsynthetsfilter</h2>
-        <p>Vid beräkning av sällsynthet och fenologi exkluderas poster som inte representerar tydliga arter:</p>
-        <ul>
-          <li><strong>Hybrider</strong> – namn som innehåller " x " (t.ex. "gräsand x bläsand")</li>
-          <li><strong>Osäkra bestämningar</strong> – namn med "/" (t.ex. "kärr-/ängshök")</li>
-          <li><strong>Morfer</strong> – namn som slutar med "morf" (t.ex. "fjällvråk, mörk morf")</li>
-          <li><strong>Artgrupper</strong> – vetenskapliga namn utan mellanslag (inte binomiala, t.ex. "Larus" utan artepitet)</li>
-        </ul>
+        <p>Vid beräkning av sällsynthet och fenologi exkluderas samma taxa som vid arttalet (se <em>Hur arttalet beräknas</em> ovan): hybrider, osäkra bestämningar, morfer och artgrupper.</p>
         <p>Sällsynthetsetiketter på observationskorten:</p>
         <table>
           <thead>
