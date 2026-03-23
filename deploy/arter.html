@@ -633,10 +633,7 @@ if (document.prerendering) {
           const rlNames = { CR: 'Akut hotad', EN: 'Starkt hotad', VU: 'Sårbar', NT: 'Nära hotad', LC: 'Livskraftig', DD: 'Kunskapsbrist', RE: 'Nationellt utdöd', NA: 'Ej tillämplig', NE: 'Ej bedömd' };
           let rlText = `${redlistBadgeHtml(rlCat)} ${rlNames[rlCat] || rlCat} (${rlCat})`;
           if (af.redlist.criterion) rlText += ` · Kriterium ${af.redlist.criterion}`;
-          if (af.redlist.period) rlText += ` · ${af.redlist.period}`;
-          if (['CR','EN','VU','NT'].includes(rlCat)) {
-            rlText += ` · <a href="https://artfakta.se/taxa/${af.taxon_id}/rodlistning" target="_blank" rel="noopener">Bedömning ↗</a>`;
-          }
+          if (af.redlist.period) rlText += ` · <a href="https://artfakta.se/taxa/${af.taxon_id}/rodlistning" target="_blank" rel="noopener">bedömd i ${af.redlist.period.replace('Rödlistning ', 'Rödlista ')} ↗</a>`;
           facts.push({ label: 'Rödlistestatus', value: rlText });
         }
         if (facts.length > 0) {
