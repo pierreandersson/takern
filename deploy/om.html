@@ -280,7 +280,17 @@ if (document.prerendering) {
         </tbody>
       </table>
 
-      <p>Databasen innehåller över 300 000 observationer av närmare 300 arter, från 2006 till idag. Arter med enbart en enda rapport exkluderas från arttalet då dessa kan vara felrapporterade. Data uppdateras automatiskt varje natt.</p>
+      <p>Databasen innehåller över 300 000 observationer av närmare 300 arter, från 2006 till idag. Data uppdateras automatiskt varje natt.</p>
+
+      <h3>Hur arttalet beräknas</h3>
+      <p>Det totala arttalet som visas på sajten är filtrerat för att ge en rättvisande bild. Följande exkluderas:</p>
+      <ul>
+        <li><strong>Hybrider</strong> – t.ex. "gräsand x bläsand"</li>
+        <li><strong>Osäkra bestämningar</strong> – t.ex. "kärr-/ängshök"</li>
+        <li><strong>Morfer</strong> – t.ex. "fjällvråk, mörk morf"</li>
+        <li><strong>Artgrupper</strong> – övergripande taxa utan artbestämning (t.ex. "beckasiner", "kärrhökar")</li>
+        <li><strong>Arter med enbart en enda observation</strong> – dessa kan vara felrapporterade och exkluderas för att inte blåsa upp arttalet</li>
+      </ul>
       <p>Temperaturdata hämtas från <a href="https://www.smhi.se/data/meteorologi/ladda-ner-meteorologiska-observationer">SMHI:s öppna API</a> – stationen Härsnäs (85180), belägen 26 km öster om Tåkern. Dygnsmedeltemperatur (parameter 2) visas i artackumuleringskurvan.</p>
     </div>
 
