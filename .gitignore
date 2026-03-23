@@ -2,6 +2,7 @@
 config.json
 deploy/takern_api_key.txt
 deploy/cron_secret.txt
+deploy/artfakta_api_key.txt
 
 # Database (too large for git, upload manually)
 *.db
