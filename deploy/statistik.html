@@ -889,7 +889,9 @@ if (document.prerendering) {
 
       // Effect size annotation below chart
       const effectEl = document.createElement("p");
-      effectEl.style.cssText = "font-size:0.85rem;color:var(--muted);margin-top:0.5rem";
+      effectEl.style.fontSize = "0.85rem";
+      effectEl.style.color = "var(--muted)";
+      effectEl.style.marginTop = "0.5rem";
       effectEl.innerHTML = `Klara dagar (50%+ solsken): <strong>+${effectPct}%</strong> fler observationer jämfört med mulna (0–20%) · Soldata: SMHI ${data.sun_station}, ca 80 km från Tåkern`;
       document.getElementById("weatherScatterChart").parentNode.after(effectEl);
 
