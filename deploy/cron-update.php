@@ -350,6 +350,117 @@ if (isset($_GET['action']) && $_GET['action'] === 'artfakta-bootstrap') {
     exit;
 }
 
+// ── Import Rödlista 2025: update artfakta cache + SQLite from JSON ──
+if (isset($_GET['action']) && $_GET['action'] === 'import-rodlista-2025') {
+    $jsonFile = __DIR__ . '/rodlista_2025_takern.json';
+    if (!file_exists($jsonFile)) {
+        echo json_encode(['ok' => false, 'error' => 'rodlista_2025_takern.json missing – upload it first']);
+        exit;
+    }
+    $rodlista = json_decode(file_get_contents($jsonFile), true);
+    if (!$rodlista) {
+        echo json_encode(['ok' => false, 'error' => 'Could not parse JSON']);
+        exit;
+    }
+
+    // Build lookup: taxon_id → new data
+    $newRL = [];
+    foreach ($rodlista as $r) {
+        $newRL[$r['taxon_id']] = $r;
+    }
+
+    // Part 1: Update artfakta cache files
+    $cacheDir = __DIR__ . '/cache';
+    $cacheUpdated = 0; $cacheDownlisted = 0;
+    $artfaktaFiles = glob("$cacheDir/artfakta_*.json");
+    foreach ($artfaktaFiles as $f) {
+        $data = json_decode(file_get_contents($f), true);
+        if (!$data || !isset($data['taxon_id'])) continue;
+        $tid = $data['taxon_id'];
+
+        if (isset($newRL[$tid])) {
+            // Species is in Rödlista 2025 (rödlistad)
+            $r = $newRL[$tid];
+            $data['redlist'] = [
+                'category' => $r['category'],
+                'criterion' => $r['criterion'],
+                'criterion_text' => $r['criterion_text'],
+                'period' => 'Rödlistning 2025',
+            ];
+            file_put_contents($f, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            $cacheUpdated++;
+        } else {
+            // Species NOT in CSV → LC in 2025
+            if (isset($data['redlist']) && $data['redlist'] && isset($data['redlist']['category']) && $data['redlist']['category'] !== 'LC') {
+                $data['redlist'] = [
+                    'category' => 'LC',
+                    'criterion' => null,
+                    'criterion_text' => null,
+                    'period' => 'Rödlistning 2025',
+                ];
+                file_put_contents($f, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                $cacheDownlisted++;
+            }
+        }
+    }
+
+    // Part 2: Update SQLite observations table
+    $dbUpdated = 0;
+    if (file_exists($DB_FILE)) {
+        $db = new SQLite3($DB_FILE);
+        $db->busyTimeout(10000);
+        $db->exec('BEGIN TRANSACTION');
+
+        // Update species in the CSV
+        $stmt = $db->prepare('UPDATE observations SET redlist_category = :cat, is_redlisted = :rl WHERE taxon_id = :tid');
+        foreach ($newRL as $tid => $r) {
+            $isRedlisted = in_array($r['category'], ['CR', 'EN', 'VU', 'NT', 'DD', 'RE']) ? 1 : 0;
+            $stmt->bindValue(':cat', $r['category'], SQLITE3_TEXT);
+            $stmt->bindValue(':rl', $isRedlisted, SQLITE3_INTEGER);
+            $stmt->bindValue(':tid', $tid, SQLITE3_INTEGER);
+            $stmt->execute();
+            $stmt->reset();
+            $dbUpdated += $db->changes();
+        }
+
+        // Downlist species NOT in CSV that currently have non-LC category
+        $currentRL = $db->query("SELECT DISTINCT taxon_id, redlist_category FROM observations WHERE redlist_category IS NOT NULL AND redlist_category != 'LC' AND redlist_category != 'NA' AND redlist_category != 'NE'");
+        $stmtDown = $db->prepare('UPDATE observations SET redlist_category = :cat, is_redlisted = 0 WHERE taxon_id = :tid');
+        while ($row = $currentRL->fetchArray(SQLITE3_ASSOC)) {
+            $tid = intval($row['taxon_id']);
+            if (isset($newRL[$tid])) continue; // Already handled above
+            $stmtDown->bindValue(':cat', 'LC', SQLITE3_TEXT);
+            $stmtDown->bindValue(':tid', $tid, SQLITE3_INTEGER);
+            $stmtDown->execute();
+            $stmtDown->reset();
+            $dbUpdated += $db->changes();
+        }
+
+        $db->exec('COMMIT');
+        $db->close();
+    }
+
+    // Part 3: Clear stats-api cache
+    $cacheCleared = 0;
+    if (is_dir($cacheDir)) {
+        foreach (glob("$cacheDir/*.json") as $f) {
+            if (strpos(basename($f), 'artfakta_') === 0) continue;
+            if (strpos(basename($f), 'smhi_') === 0) continue;
+            unlink($f); $cacheCleared++;
+        }
+    }
+
+    echo json_encode([
+        'ok' => true,
+        'artfakta_updated' => $cacheUpdated,
+        'artfakta_downlisted' => $cacheDownlisted,
+        'db_rows_updated' => $dbUpdated,
+        'cache_cleared' => $cacheCleared,
+        'species_in_json' => count($newRL),
+    ]);
+    exit;
+}
+
 logMsg("=== Update started ===");
 
 // Load API key
@@ -515,7 +626,16 @@ if (file_exists($artfaktaKeyFile)) {
         $results = fetchArtfaktaBatch($batch, $artfaktaKey);
         foreach ($batch as $tid) {
             if (isset($results[$tid])) {
-                saveArtfaktaCache($tid, $results[$tid]);
+                $newData = $results[$tid];
+                // Guard: don't overwrite newer Rödlista 2025 with stale 2020 from API
+                $existing = getArtfaktaCache($tid);
+                if ($existing && isset($existing['redlist']['period'])
+                    && $existing['redlist']['period'] === 'Rödlistning 2025'
+                    && isset($newData['redlist']['period'])
+                    && $newData['redlist']['period'] !== 'Rödlistning 2025') {
+                    $newData['redlist'] = $existing['redlist'];
+                }
+                saveArtfaktaCache($tid, $newData);
                 $fetched++;
             }
         }
