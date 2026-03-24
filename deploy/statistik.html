@@ -1029,6 +1029,12 @@ if (document.prerendering) {
       }
 
       updateSectionNav(OVERVIEW_SECTIONS);
+
+      // Scroll to hash anchor after dynamic content is loaded
+      if (location.hash) {
+        const target = document.getElementById(location.hash.slice(1));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      }
     }
     init();
   </script>
