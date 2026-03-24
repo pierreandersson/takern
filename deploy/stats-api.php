@@ -1743,8 +1743,164 @@ if ($q === 'reporter') {
     jsonOut(['total_obs' => $totalObs, 'total_species' => $totalSpecies, 'per_year' => $perYear, 'top_species' => $topSpecies, 'observations' => $observations, 'rank_this_year' => $rankThisYear, 'obs_this_year' => $obsThisYear, 'total_observers_this_year' => $totalObserversThisYear, 'rank_year' => $currentYear, 'top_localities' => $topLocalities, 'top_observers_this_year' => $topObserversThisYear]);
 }
 
+// ── Weather & Activity correlation ──
+if ($q === 'weather-activity') {
+    // Step 1: Daily obs counts (last 12 months)
+    $oneYearAgo = date('Y-m-d', strtotime('-12 months'));
+    $stmt = $db->prepare("SELECT event_start_date, COUNT(*) n FROM observations WHERE event_start_date >= :from AND event_start_date IS NOT NULL GROUP BY event_start_date");
+    $stmt->bindValue(':from', $oneYearAgo, SQLITE3_TEXT);
+    $res = $stmt->execute();
+    $recentObs = [];
+    while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+        $recentObs[$row['event_start_date']] = intval($row['n']);
+    }
+
+    // Step 2: SMHI sunshine hours (parameter 10, Norrköping Sol 86655)
+    // Corrected archive (1983–~3 months ago) + latest-months (~4 months) = full coverage
+    $smhiSunFile = "$CACHE_DIR/smhi_sun_" . date('Y-m-d') . ".json";
+    $sunPerDay = [];
+    if (file_exists($smhiSunFile)) {
+        $sunPerDay = json_decode(file_get_contents($smhiSunFile), true) ?: [];
+    } else {
+        $smhiCtx = stream_context_create(['http' => ['timeout' => 30]]);
+        $sunRaw = [];
+
+        // Archive: CSV format, semicolon-separated, hourly data in seconds
+        $archiveCsv = @file_get_contents(
+            'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/10/station/86655/period/corrected-archive/data.csv',
+            false, $smhiCtx
+        );
+        if ($archiveCsv) {
+            $inData = false;
+            foreach (explode("\n", $archiveCsv) as $line) {
+                if (!$inData) {
+                    if (strpos($line, 'Datum;Tid') === 0) $inData = true;
+                    continue;
+                }
+                $parts = explode(';', $line);
+                if (count($parts) < 3) continue;
+                $dateStr = trim($parts[0]);
+                if ($dateStr < $oneYearAgo) continue;
+                $sunRaw[$dateStr] = ($sunRaw[$dateStr] ?? 0) + floatval($parts[2]);
+            }
+        }
+
+        // Latest months: JSON format, ms timestamps
+        $latestJson = @file_get_contents(
+            'https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/10/station/86655/period/latest-months/data.json',
+            false, $smhiCtx
+        );
+        if ($latestJson) {
+            $smhi = json_decode($latestJson, true);
+            foreach ($smhi['value'] ?? [] as $v) {
+                $dateStr = date('Y-m-d', intval($v['date']) / 1000);
+                if ($dateStr < $oneYearAgo) continue;
+                $sunRaw[$dateStr] = ($sunRaw[$dateStr] ?? 0) + floatval($v['value']);
+            }
+        }
+
+        // Convert seconds to hours
+        foreach ($sunRaw as $d => $secs) {
+            $sunPerDay[$d] = round($secs / 3600, 1);
+        }
+        if (!empty($sunPerDay)) {
+            file_put_contents($smhiSunFile, json_encode($sunPerDay));
+        }
+    }
+
+    // Step 3: Find matching days (both obs and sunshine data), compute weekday factors from this period
+    $today = date('Y-m-d');
+    $matchedDays = []; // date => [rawObs, weekday]
+    foreach ($recentObs as $d => $rawObs) {
+        if ($d === $today) continue;
+        if (!isset($sunPerDay[$d])) continue;
+        $matchedDays[$d] = ['raw' => $rawObs, 'wd' => intval(date('w', strtotime($d)))];
+    }
+
+    // Weekday factors computed from the displayed period only
+    $wdTotals = array_fill(0, 7, 0);
+    $wdDays   = array_fill(0, 7, 0);
+    foreach ($matchedDays as $d => $info) {
+        $wdTotals[$info['wd']] += $info['raw'];
+        $wdDays[$info['wd']]++;
+    }
+    $grandTotal = array_sum($wdTotals);
+    $grandDays  = array_sum($wdDays);
+    $grandAvg   = $grandDays > 0 ? $grandTotal / $grandDays : 1;
+    $wdFactors  = [];
+    for ($i = 0; $i < 7; $i++) {
+        $wdFactors[$i] = $wdDays[$i] > 0 ? ($wdTotals[$i] / $wdDays[$i]) / $grandAvg : 1;
+    }
+
+    // Build points with adjusted obs
+    $points = [];
+    foreach ($matchedDays as $d => $info) {
+        $factor = $wdFactors[$info['wd']];
+        $adjusted = $factor > 0 ? round($info['raw'] / $factor, 1) : $info['raw'];
+        $points[] = [
+            'sunshine' => $sunPerDay[$d],
+            'adjusted_obs' => $adjusted,
+            'raw_obs' => $info['raw'],
+            'weekday' => $info['wd'],
+            'date' => $d,
+        ];
+    }
+
+    // Sort by date
+    usort($points, fn($a, $b) => strcmp($a['date'], $b['date']));
+
+    // Step 4: Linear regression (OLS) on sunshine vs adjusted_obs
+    $regression = ['slope' => 0, 'intercept' => 0, 'r2' => 0];
+    $np = count($points);
+    if ($np >= 5) {
+        $sumX = $sumY = $sumXY = $sumX2 = 0;
+        foreach ($points as $p) {
+            $x = $p['sunshine'];
+            $y = $p['adjusted_obs'];
+            $sumX  += $x;
+            $sumY  += $y;
+            $sumXY += $x * $y;
+            $sumX2 += $x * $x;
+        }
+        $denom = $np * $sumX2 - $sumX * $sumX;
+        if (abs($denom) > 0.0001) {
+            $slope = ($np * $sumXY - $sumX * $sumY) / $denom;
+            $intercept = ($sumY - $slope * $sumX) / $np;
+            // R²
+            $meanY = $sumY / $np;
+            $ssTot = $ssRes = 0;
+            foreach ($points as $p) {
+                $pred = $intercept + $slope * $p['sunshine'];
+                $ssRes += ($p['adjusted_obs'] - $pred) ** 2;
+                $ssTot += ($p['adjusted_obs'] - $meanY) ** 2;
+            }
+            $r2 = $ssTot > 0 ? 1 - $ssRes / $ssTot : 0;
+            $regression = ['slope' => round($slope, 2), 'intercept' => round($intercept, 1), 'r2' => round($r2, 2)];
+        }
+    }
+
+    // Date range
+    $dates = array_column($points, 'date');
+    $dateRange = $np > 0 ? ['from' => min($dates), 'to' => max($dates)] : ['from' => '', 'to' => ''];
+
+    // Round weekday factors for output
+    $wdFactorsOut = [];
+    for ($i = 0; $i < 7; $i++) {
+        $wdFactorsOut[$i] = round($wdFactors[$i], 2);
+    }
+
+    jsonOut([
+        'points' => $points,
+        'weekday_factors' => $wdFactorsOut,
+        'regression' => $regression,
+        'date_range' => $dateRange,
+        'sun_station' => 'Norrköping Sol',
+        'total_days' => $np,
+    ]);
+}
+
 // ── Unknown endpoint ──
-echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=locality&name=X, ?q=week_context, ?q=accumulation, ?q=reporter&name=X, or ?q=init']);
+echo json_encode(['error' => 'Unknown query. Use ?q=overview, ?q=species, ?q=species&id=X, ?q=geo, ?q=localities, ?q=locality&name=X, ?q=week_context, ?q=accumulation, ?q=reporter&name=X, ?q=weather-activity, or ?q=init']);
 
 } catch (Throwable $e) {
     http_response_code(500);

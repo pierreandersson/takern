@@ -283,10 +283,11 @@ if (document.prerendering) {
       { id: "sec-rekord", label: "Rekord" },
       { id: "sec-perar", label: "Per år" },
       { id: "sec-aktivitet", label: "Aktivitet" },
+      { id: "sec-vader", label: "Väder" },
       { id: "sec-observatorer", label: "Observatörer" },
     ];
     // ── Load overview ──
-    let _yearChart = null, _richnessChart = null, _newSpeciesChart = null, _todChart = null;
+    let _yearChart = null, _richnessChart = null, _newSpeciesChart = null, _todChart = null, _weatherChart = null;
 
     async function loadOverview() {
       const overviewResp = await fetch("stats-api.php?q=overview");
@@ -423,7 +424,10 @@ if (document.prerendering) {
         </div>`;
       }
 
-      // 9. Top observers per year
+      // 9. Weather & activity
+      html += `<div class="chart-section" id="sec-vader"><div class="loading">Laddar väderdata...</div></div>`;
+
+      // 10. Top observers per year
       if (overview.top_observers) {
         const obsYears = Object.keys(overview.top_observers).sort().reverse();
         html += `<div class="chart-section" id="sec-observatorer">
@@ -593,8 +597,9 @@ if (document.prerendering) {
         });
       }
 
-      // Stability – loaded async
+      // Stability & weather – loaded async
       loadStability();
+      loadWeatherActivity();
 
       // Wire up click handlers – navigate to arter.html
       document.querySelectorAll("[data-taxon]").forEach(el => {
@@ -674,6 +679,220 @@ if (document.prerendering) {
           if (name) window.location.href = `arter.html?art=${toSlug(name)}`;
         });
       });
+    }
+
+    // ── Weather & Activity ──
+
+    async function loadWeatherActivity() {
+      const container = document.getElementById("sec-vader");
+      if (!container) return;
+      let data;
+      try {
+        const resp = await fetch("stats-api.php?q=weather-activity");
+        data = await resp.json();
+        if (data.error || !data.points || data.points.length < 10) {
+          container.style.display = "none";
+          return;
+        }
+      } catch (e) {
+        container.style.display = "none";
+        return;
+      }
+
+      const wdNames = ["sön", "mån", "tis", "ons", "tor", "fre", "lör"];
+      const wdFactors = data.weekday_factors; // index 0=sön, 1=mån, ..., 6=lör
+      const reg = data.regression;
+
+      // Build weekday factor badges (mån–sön order)
+      const wdOrder = [1, 2, 3, 4, 5, 6, 0]; // mån, tis, ons, tor, fre, lör, sön
+      const badges = wdOrder.map(i => {
+        const f = wdFactors[i];
+        const pct = Math.round((f - 1) * 100);
+        const sign = pct >= 0 ? "+" : "";
+        let cls = "badge-blue";
+        if (pct > 5) cls = "badge-green";
+        else if (pct < -5) cls = "badge-orange";
+        return `<span class="${cls}" style="font-size:0.78rem;padding:2px 8px">${wdNames[i]} ${sign}${pct}\u202f%</span>`;
+      }).join("");
+
+      // Date range
+      const from = data.date_range.from;
+      const to = data.date_range.to;
+
+      // R² description
+      const r2 = reg.r2;
+      let r2Desc = "svagt";
+      if (r2 >= 0.25) r2Desc = "tydligt";
+      else if (r2 >= 0.15) r2Desc = "visst";
+
+      container.innerHTML = `
+        <h2>Väder & rapporteringsaktivitet</h2>
+        <p style="font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem">
+          Andel solsken vs veckodagskorrigerat antal observationer · ${from} – ${to} · ${data.total_days} dagar
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem">
+          <span style="font-size:0.8rem;color:var(--muted);align-self:center">Veckodagsfaktor:</span>
+          ${badges}
+        </div>
+        <div class="chart-container"><canvas id="weatherScatterChart"></canvas></div>
+        <details class="trends-method" style="margin-top:0.75rem">
+          <summary>Om veckodagskorrigering och soldata</summary>
+          <p>Antalet observationer påverkas starkt av veckodag – det rapporteras betydligt fler fåglar på helger.
+          För att isolera vädereffekten beräknar vi en faktor per veckodag baserad på den visade perioden
+          och dividerar varje dags obs-antal med faktorn. Resultatet visar "om varje dag vore en genomsnittlig dag,
+          hur många observationer skulle vädret ge?" Soldata (soltimmar per dag) hämtas från SMHI:s station i Norrköping,
+          cirka 80 km öster om Tåkern – tillräckligt nära för att soltimmarna ska vara representativa.</p>
+        </details>`;
+
+      // Compute day length (hours) for a date at Tåkern's latitude
+      const TAKERN_LAT = 58.35;
+      function dayLength(dateStr) {
+        const d = new Date(dateStr);
+        const doy = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+        const latRad = TAKERN_LAT * Math.PI / 180;
+        const decl = 23.45 * Math.sin((2 * Math.PI / 365) * (284 + doy)) * Math.PI / 180;
+        const ha = Math.acos(-Math.tan(latRad) * Math.tan(decl));
+        return (2 * ha * 180 / Math.PI) / 15; // hours
+      }
+
+      // Normalize sunshine to percentage of possible daylight
+      const enriched = data.points.map(p => {
+        const dl = dayLength(p.date);
+        const pct = dl > 0 ? Math.min(100, Math.round(p.sunshine / dl * 100)) : 0;
+        return { ...p, sunPct: pct };
+      });
+
+      // Scatter chart with bin averages overlay
+      if (_weatherChart) { _weatherChart.destroy(); _weatherChart = null; }
+
+      const points = enriched.map(p => ({ x: p.sunPct, y: p.adjusted_obs }));
+
+      // LOESS (Locally Weighted Scatterplot Smoothing, Cleveland 1979)
+      // Tricube weight: w(u) = (1 - |u|^3)^3 for |u| < 1
+      function tricube(u) { const a = Math.abs(u); return a < 1 ? Math.pow(1 - a * a * a, 3) : 0; }
+
+      // LOESS: for each eval point, fit weighted local linear regression
+      function loess(xData, yData, span, evalPoints) {
+        const n = xData.length;
+        const k = Math.max(2, Math.floor(span * n)); // neighbours to use
+        return evalPoints.map(x0 => {
+          // Distances from x0
+          const dists = xData.map((x, i) => ({ i, d: Math.abs(x - x0) }));
+          dists.sort((a, b) => a.d - b.d);
+          const neighbours = dists.slice(0, k);
+          const maxDist = neighbours[neighbours.length - 1].d || 1;
+
+          // Weighted least squares: y = a + b*x
+          let swx = 0, swy = 0, swxx = 0, swxy = 0, sw = 0;
+          for (const nb of neighbours) {
+            const w = tricube(nb.d / maxDist);
+            const xi = xData[nb.i], yi = yData[nb.i];
+            sw   += w;
+            swx  += w * xi;
+            swy  += w * yi;
+            swxx += w * xi * xi;
+            swxy += w * xi * yi;
+          }
+          const det = sw * swxx - swx * swx;
+          if (Math.abs(det) < 1e-10) return { x: x0, y: swy / sw };
+          const a = (swxx * swy - swx * swxy) / det;
+          const b = (sw * swxy - swx * swy) / det;
+          return { x: x0, y: Math.round(a + b * x0) };
+        });
+      }
+
+      const xData = enriched.map(p => p.sunPct);
+      const yData = enriched.map(p => p.adjusted_obs);
+      const evalPts = [];
+      for (let x = 0; x <= 100; x += 2) evalPts.push(x);
+      const loessCurve = loess(xData, yData, 0.4, evalPts);
+
+      // Y-axis cap at 250 to keep chart readable (skewed count data has long upper tail)
+      const yMax = 250; // round up to nearest 50
+
+      // Effect size: clear days (50%+) vs overcast (0-20%)
+      const overcast = enriched.filter(p => p.sunPct < 20);
+      const clear = enriched.filter(p => p.sunPct >= 50);
+      const lowAvg = overcast.length ? overcast.reduce((a, p) => a + p.adjusted_obs, 0) / overcast.length : 1;
+      const highAvg = clear.length ? clear.reduce((a, p) => a + p.adjusted_obs, 0) / clear.length : 0;
+      const effectPct = lowAvg > 0 ? Math.round((highAvg - lowAvg) / lowAvg * 100) : 0;
+
+      _weatherChart = new Chart(document.getElementById("weatherScatterChart"), {
+        type: "scatter",
+        data: {
+          datasets: [
+            {
+              label: "Daglig aktivitet",
+              data: points,
+              backgroundColor: "rgba(234, 179, 8, 0.15)",
+              borderColor: "rgba(202, 138, 4, 0.25)",
+              borderWidth: 1,
+              pointRadius: 3.5,
+              pointHoverRadius: 5,
+              pointHoverBackgroundColor: "rgba(234, 179, 8, 0.7)",
+            },
+            {
+              type: "line",
+              label: "Glidande medelvärde",
+              data: loessCurve,
+              borderColor: "rgba(180, 120, 0, 0.85)",
+              borderWidth: 2.5,
+              pointRadius: 0,
+              pointHitRadius: 10,
+              fill: false,
+              tension: 0.4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  if (ctx.datasetIndex === 1) {
+                    const p = loessCurve[ctx.dataIndex];
+                    return [`LOESS-snitt: ${p.y} obs vid ${p.x}% solsken`];
+                  }
+                  const p = enriched[ctx.dataIndex];
+                  const wd = wdNames[p.weekday];
+                  const dl = dayLength(p.date);
+                  return [
+                    `${p.date} (${wd})`,
+                    `Sol: ${p.sunshine.toFixed(1)}h av ${dl.toFixed(1)}h möjliga (${p.sunPct}%)`,
+                    `Obs (råtal): ${p.raw_obs}`,
+                    `Obs (korrigerat): ${Math.round(p.adjusted_obs)}`,
+                  ];
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "Andel solsken (%)", font: { size: 12 } },
+              grid: { color: "rgba(0,0,0,0.05)" },
+              min: 0,
+              max: 100,
+              ticks: { callback: v => v + "%" },
+            },
+            y: {
+              title: { display: true, text: "Observationer (korrigerat)", font: { size: 12 } },
+              grid: { color: "rgba(0,0,0,0.05)" },
+              beginAtZero: true,
+              max: yMax,
+            },
+          },
+        },
+      });
+
+      // Effect size annotation below chart
+      const effectEl = document.createElement("p");
+      effectEl.style.cssText = "font-size:0.85rem;color:var(--muted);margin-top:0.5rem";
+      effectEl.innerHTML = `Klara dagar (50%+ solsken): <strong>+${effectPct}%</strong> fler observationer jämfört med mulna (0–20%) · Soldata: SMHI ${data.sun_station}, ca 80 km från Tåkern`;
+      document.getElementById("weatherScatterChart").parentNode.after(effectEl);
+
     }
 
     // ── Trends: "Tåkerns fågelfauna i förändring" ──
