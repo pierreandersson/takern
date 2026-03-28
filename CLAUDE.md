@@ -1,4 +1,4 @@
-# Tåkern Fågelobs – Projektkontext
+# Fåglar runt Tåkern – Projektkontext
 
 ## Vad detta är
 Fågelobservationssajt för Tåkern (svensk fågelsjö) på pierrea.se/takern/. Sex publika sidor: index.html (senaste obs), veckorapport.html ("Tåkern i veckan"), arter.html (artbrowser + artsidor), lokaler.html (lokalbrowser + lokalsidor), statistik.html (20 års historik), om.html. Plus **mina-obsar.html** (olistad personlig rapportörsvy, noindex) — konsumerar `?q=reporter`-endpointen + `api.php`. Plus **krysslista.html** (olistad personlig livskrysslista, noindex) — konsumerar `krysslista-api.php`. Vid backend-ändringar: kontrollera ALLTID alla konsumerande sidor, inklusive olänkade som mina-obsar.html och krysslista.html.

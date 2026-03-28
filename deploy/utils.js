@@ -1,4 +1,4 @@
-/* Tåkern Fågelobs – Shared utilities */
+/* Fåglar runt Tåkern – Shared utilities */
 
 // ── Mobile hamburger menu ──
 document.addEventListener("DOMContentLoaded", function() {

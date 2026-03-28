@@ -1,4 +1,4 @@
-# Tåkern Fågelobs
+# Fåglar runt Tåkern
 
 Webbsida med fågelobservationer från området kring Tåkern, baserat på data från [Artportalen](https://www.artportalen.se) via [SLU Artdatabankens API](https://www.artdatabanken.se).
 
